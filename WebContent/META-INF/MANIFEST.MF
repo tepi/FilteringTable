@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Implementation-Title: FilteringTable
+Implementation-Version: 0.5.0
+Vaadin-Package-Version: 1
+Class-Path: 
+Vaadin-Widgetsets: org.tepi.filtertable.gwt.FilterTableWidgetset
+
