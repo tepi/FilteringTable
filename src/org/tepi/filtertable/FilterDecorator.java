@@ -3,6 +3,7 @@ package org.tepi.filtertable;
 import java.util.Locale;
 
 import com.vaadin.terminal.Resource;
+import com.vaadin.ui.AbstractTextField.TextChangeEventMode;
 
 /**
  * Interface for decorating the UI of the filter components contained in
@@ -61,6 +62,23 @@ public interface FilterDecorator {
      * @return Resource for the icon of the given boolean value.
      */
     public Resource getBooleanFilterIcon(Object propertyId, boolean value);
+
+    /**
+     * Returns whether the text filter should update as the user types. This
+     * uses {@link TextChangeEventMode#LAZY}
+     * 
+     * @return true if the text field should use a TextChangeListener.
+     */
+    public boolean isTextFilterImmediate(Object propertyId);
+
+    /**
+     * The text change timeout dictates how often text change events are
+     * communicated to the application, and thus how often are the filter values
+     * updated.
+     * 
+     * @return the timeout in milliseconds
+     */
+    public int getTextChangeTimeout(Object propertyId);
 
     /**
      * Returns the preferred Locale for the DateFilter component
