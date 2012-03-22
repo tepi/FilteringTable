@@ -19,6 +19,7 @@ import com.vaadin.terminal.gwt.client.Container;
 import com.vaadin.terminal.gwt.client.Paintable;
 import com.vaadin.terminal.gwt.client.RenderSpace;
 import com.vaadin.terminal.gwt.client.UIDL;
+import com.vaadin.terminal.gwt.client.Util;
 import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable;
 
 public class VFilterTable extends VCustomScrollTable {
@@ -131,11 +132,10 @@ public class VFilterTable extends VCustomScrollTable {
         }
 
         public void setFilterWidth(int index, int width) {
-            /* Some size hacking... :( */
-            int realWidth = width + 13;
             Widget p = filters.get(getColKeyByIndex(index));
             if (p != null) {
-                p.setWidth(realWidth + "px");
+                p.setWidth(Util.getRequiredWidth(tHead.getHeaderCell(index))
+                        + "px");
             }
         }
 
