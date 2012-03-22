@@ -83,4 +83,14 @@ public class DemoFilterDecorator implements FilterDecorator {
         // use default caption
         return null;
     }
+
+    public boolean isTextFilterImmediate(Object propertyId) {
+        // use text change events for all the text fields
+        return true;
+    }
+
+    public int getTextChangeTimeout(Object propertyId) {
+        // use the same timeout for all the text fields
+        return 500;
+    }
 }

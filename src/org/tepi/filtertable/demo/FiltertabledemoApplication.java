@@ -29,6 +29,7 @@ public class FiltertabledemoApplication extends Application {
 
     @Override
     public void init() {
+        setTheme("runo");
         Window mainWindow = new Window("FilterTable Demo Application");
         setMainWindow(mainWindow);
 
@@ -76,6 +77,14 @@ public class FiltertabledemoApplication extends Application {
             }
         });
         buttonLayout.addComponent(hideFilters);
+        Button reset = new Button("Reset");
+        reset.addListener(new Button.ClickListener() {
+
+            public void buttonClick(ClickEvent event) {
+                filterTable.resetFilters();
+            }
+        });
+        buttonLayout.addComponent(reset);
         return buttonLayout;
     }
 
