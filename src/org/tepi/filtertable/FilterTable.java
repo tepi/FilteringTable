@@ -16,6 +16,8 @@ import org.tepi.filtertable.gwt.client.ui.VFilterTable;
 import com.vaadin.data.Container;
 import com.vaadin.data.Property;
 import com.vaadin.data.util.filter.SimpleStringFilter;
+import com.vaadin.event.FieldEvents.TextChangeEvent;
+import com.vaadin.event.FieldEvents.TextChangeListener;
 import com.vaadin.terminal.PaintException;
 import com.vaadin.terminal.PaintTarget;
 import com.vaadin.terminal.Resource;
@@ -135,7 +137,7 @@ public class FilterTable extends CustomTable {
     public void setContainerDataSource(Container newDataSource) {
         clearFilterData();
         super.setContainerDataSource(newDataSource);
-        initializeFilterFields(newDataSource);
+        initializeFilterFields(getContainerDataSource());
     }
 
     /**
@@ -143,12 +145,16 @@ public class FilterTable extends CustomTable {
      * used to provide proper translated display names and icons for the enum,
      * boolean and date values used in the filters.
      * 
+     * Note: Recreates the filter fields also!
+     * 
      * @param decorator
      *            An implementation of FilterDecorator to use with this
      *            FilterTable. Remove by giving null as this parameter.
      */
     public void setFilterDecorator(FilterDecorator decorator) {
         this.decorator = decorator;
+        clearFilterData();
+        initializeFilterFields(getContainerDataSource());
     }
 
     /**
@@ -163,6 +169,15 @@ public class FilterTable extends CustomTable {
     }
 
     /**
+     * Returns the current visibility state of the filter bar.
+     * 
+     * @return true if the filter bar is visible
+     */
+    public boolean isFiltersVisible() {
+        return filtersVisible;
+    }
+
+    /**
      * Sets the FilterGenerator to use for providing custom Filters to the
      * container for one or more properties.
      * 
@@ -172,6 +187,16 @@ public class FilterTable extends CustomTable {
      */
     public void setFilterGenerator(FilterGenerator generator) {
         filterGenerator = generator;
+    }
+
+    /**
+     * Resets all filters.
+     * 
+     * Note: Recreates the filter fields also!
+     */
+    public void resetFilters() {
+        clearFilterData();
+        initializeFilterFields(getContainerDataSource());
     }
 
     /* ValueChangeListener for filter components */
@@ -255,9 +280,15 @@ public class FilterTable extends CustomTable {
 
     private void clearFilterData() {
         if (filters != null) {
+            /* Remove all filters from container */
+            for (Object propertyId : filters.keySet()) {
+                ((Filterable) getContainerDataSource())
+                        .removeContainerFilter(filters.get(propertyId));
+            }
+            /* Clear the data related to filters */
             columnIdToFilterMap.clear();
             collapsedColumnIds.clear();
-            filtersVisible = false;
+            // filtersVisible = false;
             filters.clear();
             texts.clear();
             enums.clear();
@@ -314,7 +345,17 @@ public class FilterTable extends CustomTable {
     }
 
     private AbstractField createTextField(Object propertyId) {
-        TextField textField = new TextField();
+        final TextField textField = new TextField();
+        if (decorator != null && decorator.isTextFilterImmediate(propertyId)) {
+            textField.addListener(new TextChangeListener() {
+
+                public void textChange(TextChangeEvent event) {
+                    textField.setValue(event.getText());
+                }
+            });
+            textField.setTextChangeTimeout(decorator
+                    .getTextChangeTimeout(propertyId));
+        }
         texts.put(textField, propertyId);
         return textField;
     }
