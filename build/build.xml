@@ -18,32 +18,21 @@
 			includeemptydirs="true" defaultexcludes="false" failonerror="false"/>
 	</target>
 
-    <!-- Checks that all the required libraries exist. -->
-	<target name="check-libs">
-		<available file="${gwt.lib.dir}/gwt-user.jar" property="gwt-user.present" />
-		<available file="${gwt.lib.dir}/gwt-dev.jar" property="gwt-dev.present" />
-		<available file="${dependency.popupbutton.dir}/${dependency.popupbutton}"
-			property="popupbutton.present" />
-		<fail message="${dependency.popupbutton.dir}/${dependency.popupbutton} missing"
-			unless="popupbutton.present" />
-		<fail message="${gwt.lib.dir}/gwt-user.jar missing" unless="gwt-user.present" />
-		<fail message="${gwt.lib.dir}/gwt-dev.jar missing" unless="gwt-dev.present" />
-	</target>
-
     <!-- Initialization -->
 	<target name="init">
-		<echo>Requirements for classpath:</echo>
-		<echo> ${gwt.lib.dir}/gwt-user.jar</echo>
-		<echo> ${gwt.lib.dir}/gwt-dev.jar</echo>
-		<echo> ${dependency.popupbutton.dir}/${dependency.popupbutton}</echo>
         <property name="base-name" value="${addon.name}-${version}" />
         <property name="jar.name" value="${base-name}.jar"/>
         <property name="jar.path" value="${result-path}/${jar.name}"/>
-		<antcall target="check-libs"/>
 	    <path id="compile.classpath">
-		    <fileset dir="build/lib">
-			    <include name="**/*.jar" />
-            </fileset>
+	    	<fileset dir="${gwt.dev.dir}">
+				<include name="**/*.jar" />
+			</fileset>
+			<fileset dir="${gwt.user.dir}">
+				<include name="**/*.jar" />
+			</fileset>
+			<fileset dir="${gwt.deps.dir}">
+				<include name="**/*.jar" />
+			</fileset>
             <fileset dir="WebContent/WEB-INF/lib">
                 <include name="**/*.jar" />
             </fileset>
@@ -67,8 +56,9 @@
 			<classpath refid="compile.classpath" />
 			<classpath>
 				<path path="WebContent/WEB-INF/classes" />
-				<path path="${gwt.lib.dir}/gwt-user.jar" />
-				<path path="${gwt.lib.dir}/gwt-dev.jar" />
+				<path path="${gwt.dev.dir}" />
+				<path path="${gwt.user.dir}" />
+				<path path="${gwt.deps.dir}" />
 			</classpath>
 		</javac>
 	</target>
@@ -87,8 +77,14 @@
 				<path path="src" />
 				<path path="${basedir}/${result-path}/war/WEB-INF/classes" />
 				<path path="WebContent/WEB-INF/classes" />
-				<fileset dir="build/lib">
-					<include name="**/gwt-*.jar" />
+				<fileset dir="${gwt.dev.dir}">
+					<include name="**/*.jar" />
+				</fileset>
+				<fileset dir="${gwt.user.dir}">
+					<include name="**/*.jar" />
+				</fileset>
+				<fileset dir="${gwt.deps.dir}">
+					<include name="**/*.jar" />
 				</fileset>
 				<fileset dir="WebContent/WEB-INF/lib">
 					<include name="**/*.jar" />
@@ -148,14 +144,6 @@ Vaadin-Dependency: ${dependency.popupbutton}
             <zipfileset prefix="${addon.name}-${version}" file="${result-path}/${jar.name}" />
         	<!-- Dependency: PopupButton -->
         	<zipfileset prefix="" file="${dependency.popupbutton.dir}/${dependency.popupbutton}" />
-            <!-- Readme file -->
-        	<!-- 
-        	<zipfileset prefix="doc" dir="doc">
-                <patternset>
-                    <include name="readme.txt" />
-                </patternset>
-            </zipfileset>
-            -->
         </zip>
     </target>
 
