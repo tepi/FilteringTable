@@ -1,0 +1,8 @@
+build/result/*
+build/classes/*
+WebContent/VAADIN/*
+.settings/*
+target/*
+.settings/*
+.classpath
+.project
