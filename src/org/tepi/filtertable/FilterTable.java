@@ -1,6 +1,7 @@
 package org.tepi.filtertable;
 
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -415,4 +416,10 @@ public class FilterTable extends CustomTable {
         dates.put(dateFilterPopup, propertyId);
         return dateFilterPopup;
     }
+
+	public Map<String, Component> getColumnIdToFilterMapCopy() {
+		return Collections.unmodifiableMap(columnIdToFilterMap);
+	}
+    
+    
 }
