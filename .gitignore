@@ -1,7 +1,12 @@
+.classpath
+.project
+
 filteringtable/build/result/*
 filteringtable/build/classes/*
 filteringtable/WebContent/VAADIN/*
-.settings/*
-target/*
-.classpath
-.project
+
+filteringtable/.settings/*
+filteringtable/target/*
+
+filteringtable-demo/.settings/*
+filteringtable-demo/target/*
