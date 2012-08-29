@@ -1,0 +1,12 @@
+.classpath
+.project
+
+filteringtable/build/result/*
+filteringtable/build/classes/*
+filteringtable/src/main/java/VAADIN/*
+
+filteringtable/.settings/*
+filteringtable/target/*
+
+filteringtable-demo/.settings/*
+filteringtable-demo/target/*
