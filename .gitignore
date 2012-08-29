@@ -1,8 +1,7 @@
-build/result/*
-build/classes/*
-WebContent/VAADIN/*
+filteringtable/build/result/*
+filteringtable/build/classes/*
+filteringtable/WebContent/VAADIN/*
 .settings/*
 target/*
-.settings/*
 .classpath
 .project
