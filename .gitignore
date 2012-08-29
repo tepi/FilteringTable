@@ -3,7 +3,7 @@
 
 filteringtable/build/result/*
 filteringtable/build/classes/*
-filteringtable/WebContent/VAADIN/*
+filteringtable/src/main/java/VAADIN/*
 
 filteringtable/.settings/*
 filteringtable/target/*
