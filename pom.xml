@@ -5,8 +5,8 @@
 	<artifactId>filteringtable</artifactId>
 	<version>0.5.4</version>
 	<properties>
-		<java.version>1.5</java.version>
-		<vaadin.version>6.7.8</vaadin.version>
+		<java.version>1.6</java.version>
+		<vaadin.version>6.8.2</vaadin.version>
 		<gwt.version>2.3.0</gwt.version>
 		<gwt.plugin.version>2.3.0-1</gwt.plugin.version>
 	</properties>
