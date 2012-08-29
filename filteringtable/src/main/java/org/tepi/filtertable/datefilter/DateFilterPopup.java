@@ -22,6 +22,7 @@ import com.vaadin.ui.VerticalLayout;
  * @author Teppo Kurki
  * 
  */
+@SuppressWarnings("serial")
 public class DateFilterPopup extends PopupButton {
     private DateField fromField;
     private DateField toField;

@@ -37,6 +37,7 @@ import com.vaadin.ui.TextField;
  * @author Teppo Kurki
  * 
  */
+@SuppressWarnings("serial")
 @ClientWidget(VFilterTable.class)
 public class FilterTable extends CustomTable {
 
