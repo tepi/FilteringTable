@@ -49,6 +49,16 @@
 		</dependency>
 	</dependencies>
 	<build>
+		<!-- This is needed for the sources required by the GWT compiler to be 
+			included in the produced JARs -->
+		<resources>
+			<resource>
+				<directory>src/main/java</directory>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -60,14 +70,12 @@
 					<encoding>${project.build.sourceEncoding}</encoding>
 				</configuration>
 			</plugin>
-			<!-- <plugin>
+			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>gwt-maven-plugin</artifactId>
 				<version>${gwt.plugin.version}</version>
 				<configuration>
-					if you don't specify any modules, the plugin will find them <modules> 
-						.. </modules>
-					<webappDirectory>${project.build.directory}/${project.build.finalName}/VAADIN/widgetsets</webappDirectory>
+					<webappDirectory>${project.build.outputDirectory}/VAADIN/widgetsets</webappDirectory>
 					<extraJvmArgs>-Xmx512M -Xss1024k</extraJvmArgs>
 					<runTarget>${project.name}</runTarget>
 					<hostedWebapp>${project.build.directory}/${project.build.finalName}</hostedWebapp>
@@ -95,7 +103,7 @@
 						<version>${gwt.version}</version>
 					</dependency>
 				</dependencies>
-			</plugin> -->
+			</plugin>
 			<!-- Updates Vaadin 6.2+ widgetset definitions based on project dependencies -->
 			<plugin>
 				<groupId>com.vaadin</groupId>
@@ -119,7 +127,7 @@
 				<version>2.4</version>
 				<configuration>
 					<excludes>
-						<exclude>**/demo/*</exclude>
+						<exclude>VAADIN/widgetsets/WEB-INF/**</exclude>
 					</excludes>
 					<archive>
 						<manifestEntries>
@@ -134,7 +142,8 @@
 		</plugins>
 		<pluginManagement>
 			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<!--This plugin's configuration is used to store Eclipse m2e settings 
+					only. It has no influence on the Maven build itself. -->
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
@@ -155,6 +164,25 @@
 											<goal>
 												update-widgetset
 											</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.codehaus.mojo
+										</groupId>
+										<artifactId>
+											gwt-maven-plugin
+										</artifactId>
+										<versionRange>
+											[2.3.0-1,)
+										</versionRange>
+										<goals>
+											<goal>resources</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
