@@ -111,6 +111,8 @@
         	<!-- The built server-side classes and the widget set class are here. -->
             <fileset dir="${result.classes}">
                 <patternset>
+                	<include name="${src.customscrolltable.dir}/**/*" />
+                	<include name="${src.customtable.dir}/**/*" />
                     <include name="${src.package.dir}/**/*" />
                 	<exclude name="**/demo/**" />
                 </patternset>
@@ -118,6 +120,8 @@
         	<!-- Include sources. -->
         	<fileset dir="src">
                 <patternset>
+                	<include name="${src.customscrolltable.dir}/**/*" />
+                	<include name="${src.customtable.dir}/**/*" />
                 	<include name="${src.package.dir}/**/*" />
                 	<exclude name="**/demo/**" />
                 </patternset>

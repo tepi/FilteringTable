@@ -54,6 +54,7 @@ public class DateFilterPopup extends PopupButton {
                 cancelReset = false;
             }
         });
+        setNullCaption();
     }
 
     @Override
@@ -131,9 +132,6 @@ public class DateFilterPopup extends PopupButton {
         if (from != null || to != null) {
             value = new DateInterval(from, to);
             Locale locale = fromField.getLocale();
-            if (decorator != null && decorator.getLocale() != null) {
-                locale = decorator.getLocale();
-            }
             DateFormat dateFormatter = null;
             if (locale == null) {
                 dateFormatter = DateFormat.getDateTimeInstance(
@@ -146,7 +144,7 @@ public class DateFilterPopup extends PopupButton {
                     + (to == null ? "" : dateFormatter.format(to)));
         } else {
             value = null;
-            setCaption(null);
+            setNullCaption();
         }
         setPopupVisible(false);
         valueChange(new ValueChangeEvent(DateFilterPopup.this));
@@ -163,10 +161,6 @@ public class DateFilterPopup extends PopupButton {
         }
         /* Prepare DataFormatter with correct locale */
         Locale locale = getApplication().getLocale();
-        if (decorator != null) {
-            locale = decorator.getLocale() == null ? locale : decorator
-                    .getLocale();
-        }
         /* Set datefield locales */
         fromField.setLocale(locale);
         toField.setLocale(locale);
@@ -182,6 +176,14 @@ public class DateFilterPopup extends PopupButton {
         }
         if (decorator.getClearCaption() != null) {
             clear.setCaption(decorator.getClearCaption());
+        }
+    }
+
+    private void setNullCaption() {
+        if (decorator != null && decorator.getAllItemsVisibleString() != null) {
+            setCaption(decorator.getAllItemsVisibleString());
+        } else {
+            setCaption(null);
         }
     }
 }

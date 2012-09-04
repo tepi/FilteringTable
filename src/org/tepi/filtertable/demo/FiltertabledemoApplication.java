@@ -2,6 +2,7 @@ package org.tepi.filtertable.demo;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Random;
 
 import org.tepi.filtertable.FilterTable;
@@ -12,7 +13,10 @@ import com.vaadin.data.util.IndexedContainer;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Component;
+import com.vaadin.ui.CustomTable;
+import com.vaadin.ui.CustomTable.ColumnGenerator;
 import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Table;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 
@@ -29,7 +33,8 @@ public class FiltertabledemoApplication extends Application {
 
     @Override
     public void init() {
-        setTheme("runo");
+        setLocale(new Locale("fi", "FI"));
+
         Window mainWindow = new Window("FilterTable Demo Application");
         setMainWindow(mainWindow);
 
@@ -48,12 +53,40 @@ public class FiltertabledemoApplication extends Application {
     }
 
     private FilterTable buildFilterTable() {
-        FilterTable filterTable = new FilterTable();
+        FilterTable filterTable = new FilterTable("FilterTable Demo");
+
         filterTable.setSizeFull();
+
         filterTable.setFilterDecorator(new DemoFilterDecorator());
         filterTable.setFilterGenerator(new DemoFilterGenerator());
-        filterTable.setContainerDataSource(buildContainer());
+
         filterTable.setFiltersVisible(true);
+
+        filterTable.setSelectable(true);
+        filterTable.setImmediate(true);
+        filterTable.setMultiSelect(true);
+
+        filterTable.setRowHeaderMode(Table.ROW_HEADER_MODE_INDEX);
+
+        filterTable.setColumnCollapsingAllowed(true);
+
+        filterTable.setColumnCollapsed("state", true);
+
+        filterTable.setColumnReorderingAllowed(true);
+
+        filterTable.setContainerDataSource(buildContainer());
+
+        filterTable.addGeneratedColumn("foo", new ColumnGenerator() {
+
+            public Object generateCell(CustomTable source, Object itemId,
+                    Object columnId) {
+                return "testing";
+            }
+        });
+
+        filterTable.setVisibleColumns(new String[] { "name", "id", "foo",
+                "state", "date", "validated", "checked" });
+
         return filterTable;
     }
 
@@ -97,6 +130,7 @@ public class FiltertabledemoApplication extends Application {
         cont.addContainerProperty("state", State.class, null);
         cont.addContainerProperty("date", Date.class, null);
         cont.addContainerProperty("validated", Boolean.class, null);
+        cont.addContainerProperty("checked", Boolean.class, null);
 
         Random random = new Random();
         for (int i = 0; i < 10000; i++) {
@@ -120,6 +154,9 @@ public class FiltertabledemoApplication extends Application {
             c.add(Calendar.DAY_OF_MONTH, 1);
             /* Set validated property */
             cont.getContainerProperty(i, "validated").setValue(
+                    random.nextBoolean());
+            /* Set checked property */
+            cont.getContainerProperty(i, "checked").setValue(
                     random.nextBoolean());
         }
         return cont;
