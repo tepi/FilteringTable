@@ -250,7 +250,9 @@ public class FilterTable extends CustomTable {
     public Object getFilterFieldValue(String propertyId) {
         AbstractField field = (AbstractField) columnIdToFilterMap
                 .get(propertyId);
-        return field == null ? null : field.getValue();
+        return field == null ? null
+                : (field instanceof DateFilterPopup ? ((DateFilterPopup) field)
+                        .getDateValue() : field.getValue());
     }
 
     private Filter generateFilter(Property field, Object propertyId,
