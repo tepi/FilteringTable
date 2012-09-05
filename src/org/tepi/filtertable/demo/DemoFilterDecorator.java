@@ -1,10 +1,14 @@
 package org.tepi.filtertable.demo;
 
+import java.text.DateFormat;
+import java.util.Locale;
+
 import org.tepi.filtertable.FilterDecorator;
 import org.tepi.filtertable.demo.FiltertabledemoApplication.State;
 
 import com.vaadin.terminal.Resource;
 import com.vaadin.terminal.ThemeResource;
+import com.vaadin.ui.DateField;
 
 class DemoFilterDecorator implements FilterDecorator {
 
@@ -89,5 +93,16 @@ class DemoFilterDecorator implements FilterDecorator {
 
     public String getAllItemsVisibleString() {
         return "Show all";
+    }
+
+    public int getDateFieldResolution(Object propertyId) {
+        return DateField.RESOLUTION_DAY;
+    }
+
+    public DateFormat getDateFormat(Object propertyId) {
+        return DateFormat.getDateInstance(DateFormat.SHORT, new Locale("fi",
+                "FI"));
+        // return DateFormat.getDateTimeInstance(DateFormat.SHORT,
+        // DateFormat.SHORT, new Locale("fi", "FI"));
     }
 }

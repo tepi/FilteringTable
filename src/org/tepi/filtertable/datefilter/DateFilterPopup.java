@@ -1,6 +1,7 @@
 package org.tepi.filtertable.datefilter;
 
 import java.text.DateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -33,10 +34,13 @@ public class DateFilterPopup extends PopupButton {
     private Label toLabel;
     private Button set;
     private Button clear;
+    private final Object propertyId;
+    private DateFormat dateFormat;
 
-    public DateFilterPopup(FilterDecorator decorator, String caption) {
-        super(caption);
+    public DateFilterPopup(FilterDecorator decorator, Object propertyId) {
+        super(null);
         this.decorator = decorator;
+        this.propertyId = propertyId;
         setImmediate(true);
         buildPopup();
         setStyleName("datefilterpopup");
@@ -62,8 +66,9 @@ public class DateFilterPopup extends PopupButton {
         super.attach();
         if (decorator != null) {
             setFilterDecorator(decorator);
+        } else {
+            setDefaultDateFormat();
         }
-
     }
 
     private void buildPopup() {
@@ -130,18 +135,9 @@ public class DateFilterPopup extends PopupButton {
 
     public void setInternalValue(Date from, Date to) {
         if (from != null || to != null) {
-            value = new DateInterval(from, to);
-            Locale locale = fromField.getLocale();
-            DateFormat dateFormatter = null;
-            if (locale == null) {
-                dateFormatter = DateFormat.getDateTimeInstance(
-                        DateFormat.SHORT, DateFormat.SHORT);
-            } else {
-                dateFormatter = DateFormat.getDateTimeInstance(
-                        DateFormat.SHORT, DateFormat.SHORT, locale);
-            }
-            setCaption((from == null ? "" : dateFormatter.format(from)) + " - "
-                    + (to == null ? "" : dateFormatter.format(to)));
+            value = buildValue(from, to);
+            setCaption((from == null ? "" : dateFormat.format(from)) + " - "
+                    + (to == null ? "" : dateFormat.format(to)));
         } else {
             value = null;
             setNullCaption();
@@ -161,7 +157,7 @@ public class DateFilterPopup extends PopupButton {
         }
         /* Prepare DataFormatter with correct locale */
         Locale locale = getApplication().getLocale();
-        /* Set datefield locales */
+        /* Set DateField Locale */
         fromField.setLocale(locale);
         toField.setLocale(locale);
         /* Set captions */
@@ -177,6 +173,14 @@ public class DateFilterPopup extends PopupButton {
         if (decorator.getClearCaption() != null) {
             clear.setCaption(decorator.getClearCaption());
         }
+        int resolution = decorator.getDateFieldResolution(propertyId);
+        fromField.setResolution(resolution);
+        toField.setResolution(resolution);
+
+        dateFormat = decorator.getDateFormat(propertyId);
+        if (dateFormat == null) {
+            setDefaultDateFormat();
+        }
     }
 
     private void setNullCaption() {
@@ -185,5 +189,49 @@ public class DateFilterPopup extends PopupButton {
         } else {
             setCaption(null);
         }
+    }
+
+    private DateInterval buildValue(Date from, Date to) {
+        /* Truncate the from and to dates */
+        int res = decorator != null ? decorator
+                .getDateFieldResolution(propertyId) : DateField.RESOLUTION_MIN;
+        if (from != null) {
+            from = truncateDate(from, res, true);
+        }
+        if (to != null) {
+            to = truncateDate(to, res, false);
+        }
+        return new DateInterval(from, to);
+    }
+
+    private Date truncateDate(Date date, int resolution, boolean start) {
+        Calendar cal = Calendar.getInstance(getLocale());
+        cal.setTime(date);
+        if (resolution > DateField.RESOLUTION_MSEC) {
+            cal.set(Calendar.MILLISECOND, start ? 0 : 999);
+        }
+        if (resolution > DateField.RESOLUTION_SEC) {
+            cal.set(Calendar.SECOND, start ? 0 : 59);
+        }
+        if (resolution > DateField.RESOLUTION_MIN) {
+            cal.set(Calendar.MINUTE, start ? 0 : 59);
+        }
+        if (resolution > DateField.RESOLUTION_HOUR) {
+            cal.set(Calendar.HOUR_OF_DAY, start ? 0 : 23);
+        }
+        if (resolution > DateField.RESOLUTION_DAY) {
+            cal.set(Calendar.DAY_OF_MONTH,
+                    start ? 1 : cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+        }
+        if (resolution > DateField.RESOLUTION_MONTH) {
+            cal.set(Calendar.MONTH,
+                    start ? 0 : cal.getActualMaximum(Calendar.MONTH));
+        }
+        return cal.getTime();
+    }
+
+    private void setDefaultDateFormat() {
+        dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT,
+                DateFormat.SHORT, getLocale());
     }
 }

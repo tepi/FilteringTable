@@ -118,6 +118,14 @@ public class FiltertabledemoApplication extends Application {
             }
         });
         buttonLayout.addComponent(reset);
+        Button setVal = new Button("Test Setting State to 'Processed'");
+        setVal.addListener(new Button.ClickListener() {
+
+            public void buttonClick(ClickEvent event) {
+                filterTable.setFilterFieldValue("state", State.PROCESSED);
+            }
+        });
+        buttonLayout.addComponent(setVal);
         return buttonLayout;
     }
 

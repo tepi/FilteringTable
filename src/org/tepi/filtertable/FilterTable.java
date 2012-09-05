@@ -211,7 +211,8 @@ public class FilterTable extends CustomTable {
     }
 
     /**
-     * Set a value of a filter field
+     * Set a value of a filter field. Note that for Date filters you need to
+     * provide a value of {@link DateInterval} type.
      * 
      * @param propertyId
      *            Property id for which to set the value
@@ -227,7 +228,14 @@ public class FilterTable extends CustomTable {
                 .get(propertyId);
         boolean retVal = field != null;
         if (field != null) {
-            field.setValue(value);
+            if (field instanceof DateFilterPopup
+                    && value instanceof DateInterval) {
+                ((DateFilterPopup) field).setInternalValue(
+                        ((DateInterval) value).getFrom(),
+                        ((DateInterval) value).getTo());
+            } else {
+                field.setValue(value);
+            }
         }
         return retVal;
     }
