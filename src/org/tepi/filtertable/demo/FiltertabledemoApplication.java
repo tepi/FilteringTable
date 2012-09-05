@@ -25,7 +25,7 @@ public class FiltertabledemoApplication extends Application {
     /**
      * Example enum for enum filtering feature
      */
-    public enum State {
+    enum State {
         CREATED, PROCESSING, PROCESSED, FINISHED;
     }
 
