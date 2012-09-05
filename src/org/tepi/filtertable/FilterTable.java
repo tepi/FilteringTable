@@ -90,6 +90,7 @@ public class FilterTable extends CustomTable {
                 Component c = columnIdToFilterMap.get(key);
                 if (!c.isVisible()) {
                     c = new Label();
+                    c.setSizeUndefined();
                 }
                 c.paint(target);
                 target.endTag("filtercomponent");
