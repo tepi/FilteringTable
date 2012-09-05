@@ -1,7 +1,10 @@
 package org.tepi.filtertable;
 
+import java.text.DateFormat;
+
 import com.vaadin.terminal.Resource;
 import com.vaadin.ui.AbstractTextField.TextChangeEventMode;
+import com.vaadin.ui.DateField;
 
 /**
  * Interface for decorating the UI of the filter components contained in
@@ -105,6 +108,29 @@ public interface FilterDecorator {
      * @return caption for Clear button
      */
     public String getClearCaption();
+
+    /**
+     * Return DateField resolution for the Date filtering of the property ID.
+     * This will only be called for Date -typed properties. Filtering values
+     * output by the FilteringTable will also be truncated to this resolution.
+     * 
+     * @param propertyId
+     *            ID of the property the resolution will be applied to
+     * @return A resolution defined in {@link DateField}
+     */
+    public int getDateFieldResolution(Object propertyId);
+
+    /**
+     * Returns the DateFormat object to be used for formatting the date/time
+     * values shown in the filtering field of the given property ID. Note that
+     * this is completely independent from the resolution set for the property,
+     * and is used for display purposes only.
+     * 
+     * @param propertyId
+     *            ID of the property the format will be applied to
+     * @return A DateFormat or null to use the default formatting
+     */
+    public DateFormat getDateFormat(Object propertyId);
 
     /**
      * Return the string that should be used as an "input prompt" when no
