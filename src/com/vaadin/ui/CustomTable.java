@@ -78,7 +78,7 @@ import com.vaadin.terminal.gwt.client.ui.dd.VLazyInitItemIdentifiers;
  * </p>
  * 
  * @author Vaadin Ltd.
- * @version 6.8.2
+ * @version 6.8.3
  * @since 3.0
  */
 @SuppressWarnings({ "serial", "deprecation" })
