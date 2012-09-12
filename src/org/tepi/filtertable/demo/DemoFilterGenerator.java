@@ -8,9 +8,16 @@ import com.vaadin.data.util.filter.Or;
 import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.ComboBox;
-import com.vaadin.ui.TextField;
+import com.vaadin.ui.Window;
+import com.vaadin.ui.Window.Notification;
 
 class DemoFilterGenerator implements FilterGenerator {
+
+    private final Window window;
+
+    public DemoFilterGenerator(Window window) {
+        this.window = window;
+    }
 
     public Filter generateFilter(Object propertyId, Object value) {
         if ("id".equals(propertyId)) {
@@ -46,20 +53,22 @@ class DemoFilterGenerator implements FilterGenerator {
         } else if ("checked".equals(propertyId)) {
             CheckBox box = new CheckBox();
             return box;
-        } else if ("name".equals(propertyId)) {
-            TextField tf = new TextField();
-            tf.setVisible(false);
-            return tf;
         }
         return null;
     }
 
     public void filterRemoved(Object propertyId) {
-        // TODO Auto-generated method stub
+        Notification n = new Window.Notification("Filter removed from: "
+                + propertyId, Notification.TYPE_TRAY_NOTIFICATION);
+        n.setDelayMsec(800);
+        window.showNotification(n);
     }
 
     public void filterAdded(Object propertyId,
             Class<? extends Filter> filterType, Object value) {
-        // TODO Auto-generated method stub
+        Notification n = new Window.Notification("Filter added to: "
+                + propertyId, Notification.TYPE_TRAY_NOTIFICATION);
+        n.setDelayMsec(800);
+        window.showNotification(n);
     }
 }

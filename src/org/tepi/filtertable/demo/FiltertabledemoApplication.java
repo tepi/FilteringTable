@@ -9,13 +9,18 @@ import org.tepi.filtertable.FilterTable;
 
 import com.vaadin.Application;
 import com.vaadin.data.Container;
+import com.vaadin.data.Property;
+import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.data.util.IndexedContainer;
+import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
+import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomTable;
 import com.vaadin.ui.CustomTable.ColumnGenerator;
 import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Label;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
@@ -58,9 +63,10 @@ public class FiltertabledemoApplication extends Application {
         filterTable.setSizeFull();
 
         filterTable.setFilterDecorator(new DemoFilterDecorator());
-        filterTable.setFilterGenerator(new DemoFilterGenerator());
+        filterTable
+                .setFilterGenerator(new DemoFilterGenerator(getMainWindow()));
 
-        filterTable.setFiltersVisible(true);
+        filterTable.setFilterBarVisible(true);
 
         filterTable.setSelectable(true);
         filterTable.setImmediate(true);
@@ -92,24 +98,45 @@ public class FiltertabledemoApplication extends Application {
 
     private Component buildButtons() {
         HorizontalLayout buttonLayout = new HorizontalLayout();
-        buttonLayout.setSizeUndefined();
+        buttonLayout.setHeight(null);
+        buttonLayout.setWidth("100%");
         buttonLayout.setSpacing(true);
-        Button showFilters = new Button("Show filter bar");
-        showFilters.addListener(new Button.ClickListener() {
 
-            public void buttonClick(ClickEvent event) {
-                filterTable.setFiltersVisible(true);
+        Label hideFilters = new Label("Show Filters:");
+        hideFilters.setSizeUndefined();
+        buttonLayout.addComponent(hideFilters);
+        buttonLayout.setComponentAlignment(hideFilters, Alignment.MIDDLE_LEFT);
+
+        for (Object propId : filterTable.getContainerPropertyIds()) {
+            Component t = createToggle(propId);
+            buttonLayout.addComponent(t);
+            buttonLayout.setComponentAlignment(t, Alignment.MIDDLE_LEFT);
+        }
+
+        CheckBox showFilters = new CheckBox("Toggle Filter Bar visibility");
+        showFilters.setValue(filterTable.isFilterBarVisible());
+        showFilters.setImmediate(true);
+        showFilters.addListener(new Property.ValueChangeListener() {
+
+            public void valueChange(ValueChangeEvent event) {
+                filterTable.setFilterBarVisible((Boolean) event.getProperty()
+                        .getValue());
+
             }
         });
         buttonLayout.addComponent(showFilters);
-        Button hideFilters = new Button("Hide filter bar");
-        hideFilters.addListener(new Button.ClickListener() {
+        buttonLayout.setComponentAlignment(showFilters, Alignment.MIDDLE_RIGHT);
+        buttonLayout.setExpandRatio(showFilters, 1);
+
+        Button setVal = new Button("Set the State filter to 'Processed'");
+        setVal.addListener(new Button.ClickListener() {
 
             public void buttonClick(ClickEvent event) {
-                filterTable.setFiltersVisible(false);
+                filterTable.setFilterFieldValue("state", State.PROCESSED);
             }
         });
-        buttonLayout.addComponent(hideFilters);
+        buttonLayout.addComponent(setVal);
+
         Button reset = new Button("Reset");
         reset.addListener(new Button.ClickListener() {
 
@@ -118,14 +145,7 @@ public class FiltertabledemoApplication extends Application {
             }
         });
         buttonLayout.addComponent(reset);
-        Button setVal = new Button("Test Setting State to 'Processed'");
-        setVal.addListener(new Button.ClickListener() {
 
-            public void buttonClick(ClickEvent event) {
-                filterTable.setFilterFieldValue("state", State.PROCESSED);
-            }
-        });
-        buttonLayout.addComponent(setVal);
         return buttonLayout;
     }
 
@@ -168,5 +188,19 @@ public class FiltertabledemoApplication extends Application {
                     random.nextBoolean());
         }
         return cont;
+    }
+
+    private Component createToggle(final Object propId) {
+        CheckBox toggle = new CheckBox(propId.toString());
+        toggle.setValue(filterTable.isFilterFieldVisible(propId));
+        toggle.setImmediate(true);
+        toggle.addListener(new Property.ValueChangeListener() {
+
+            public void valueChange(ValueChangeEvent event) {
+                filterTable.setFilterFieldVisible(propId,
+                        !filterTable.isFilterFieldVisible(propId));
+            }
+        });
+        return toggle;
     }
 }

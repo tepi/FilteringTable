@@ -13,6 +13,6 @@
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/popupbutton-1.0.0.jar"/>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/vaadin-6.8.2.jar"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/vaadin-6.8.3.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

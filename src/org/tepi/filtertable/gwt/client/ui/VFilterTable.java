@@ -21,7 +21,6 @@ import com.vaadin.terminal.gwt.client.RenderSpace;
 import com.vaadin.terminal.gwt.client.UIDL;
 import com.vaadin.terminal.gwt.client.Util;
 import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable;
-import com.vaadin.terminal.gwt.client.ui.VLabel;
 
 public class VFilterTable extends VCustomScrollTable {
 
@@ -189,7 +188,6 @@ public class VFilterTable extends VCustomScrollTable {
                     /* No filter defined */
                     /* Use a place holder of the correct width */
                     Widget placeHolder = new FlowPanel();
-                    // placeHolder.setHeight("10px");
                     placeHolder.addStyleName("filterplaceholder");
                     container.add(placeHolder);
                     filters.put(key, placeHolder);
@@ -197,10 +195,6 @@ public class VFilterTable extends VCustomScrollTable {
                     continue;
                 }
                 Widget filter = (Widget) client.getPaintable(uidl);
-                if (filter instanceof VLabel) {
-                    /* Label is used in place of a hidden filter */
-                    // filter.setHeight("10px");
-                }
                 container.add(filter);
                 ((Paintable) filter).updateFromUIDL(uidl, client);
                 filters.put(key, filter);
