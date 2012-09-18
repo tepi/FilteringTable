@@ -1,14 +1,12 @@
 package org.tepi.filtertable.demo;
 
-import java.util.Locale;
-
 import org.tepi.filtertable.FilterDecorator;
 import org.tepi.filtertable.demo.FiltertabledemoApplication.State;
 
 import com.vaadin.terminal.Resource;
 import com.vaadin.terminal.ThemeResource;
 
-public class DemoFilterDecorator implements FilterDecorator {
+class DemoFilterDecorator implements FilterDecorator {
 
     public String getEnumFilterDisplayName(Object propertyId, Object value) {
         if ("state".equals(propertyId)) {
@@ -61,11 +59,6 @@ public class DemoFilterDecorator implements FilterDecorator {
         return null;
     }
 
-    public Locale getLocale() {
-        // will use the application locale
-        return null;
-    }
-
     public String getFromCaption() {
         return "Start date:";
     }
@@ -92,5 +85,9 @@ public class DemoFilterDecorator implements FilterDecorator {
     public int getTextChangeTimeout(Object propertyId) {
         // use the same timeout for all the text fields
         return 500;
+    }
+
+    public String getAllItemsVisibleString() {
+        return "Show all";
     }
 }

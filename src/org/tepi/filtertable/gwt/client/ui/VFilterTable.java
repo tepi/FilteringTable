@@ -21,6 +21,7 @@ import com.vaadin.terminal.gwt.client.RenderSpace;
 import com.vaadin.terminal.gwt.client.UIDL;
 import com.vaadin.terminal.gwt.client.Util;
 import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable;
+import com.vaadin.terminal.gwt.client.ui.VLabel;
 
 public class VFilterTable extends VCustomScrollTable {
 
@@ -103,7 +104,7 @@ public class VFilterTable extends VCustomScrollTable {
         super.onFocus(event);
     }
 
-    public class FilterPanel extends FlowPanel implements Container,
+    private class FilterPanel extends FlowPanel implements Container,
             ScrollHandler {
         private ApplicationConnection client;
         /* Column filter components - mapped by column keys */
@@ -131,7 +132,7 @@ public class VFilterTable extends VCustomScrollTable {
             wrap.getElement().setScrollLeft(scrollLeft);
         }
 
-        public void setFilterWidth(int index, int width) {
+        private void setFilterWidth(int index, int width) {
             Widget p = filters.get(getColKeyByIndex(index));
             if (p != null) {
                 p.setWidth(Util.getRequiredWidth(tHead.getHeaderCell(index))
@@ -149,6 +150,7 @@ public class VFilterTable extends VCustomScrollTable {
 
             /* If filters are not set visible, clear and hide filter panel */
             setVisible(filtersVisible);
+            setContainerHeight();
             Collection<Widget> oldFilters = filters.values();
             if (!filtersVisible) {
                 container.clear();
@@ -174,16 +176,32 @@ public class VFilterTable extends VCustomScrollTable {
             }
         }
 
-        public void reRenderFilterComponents() {
+        private void reRenderFilterComponents() {
             container.clear();
             filters.clear();
-            for (int i = 0; i < uidls.size(); i++) {
+            for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
                 String key = getColKeyByIndex(i);
                 if (key == null) {
                     continue;
                 }
                 UIDL uidl = uidls.get(key);
+
+                if (uidl == null) {
+                    /* No filter defined */
+                    /* Use a place holder of the correct width */
+                    Widget placeHolder = new FlowPanel();
+                    // placeHolder.setHeight("10px");
+                    placeHolder.addStyleName("filterplaceholder");
+                    container.add(placeHolder);
+                    filters.put(key, placeHolder);
+                    setFilterWidth(i, getColWidth(key));
+                    continue;
+                }
                 Widget filter = (Widget) client.getPaintable(uidl);
+                if (filter instanceof VLabel) {
+                    /* Label is used in place of a hidden filter */
+                    // filter.setHeight("10px");
+                }
                 container.add(filter);
                 ((Paintable) filter).updateFromUIDL(uidl, client);
                 filters.put(key, filter);

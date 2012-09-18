@@ -1,7 +1,5 @@
 package org.tepi.filtertable;
 
-import java.util.Locale;
-
 import com.vaadin.terminal.Resource;
 import com.vaadin.ui.AbstractTextField.TextChangeEventMode;
 
@@ -81,13 +79,6 @@ public interface FilterDecorator {
     public int getTextChangeTimeout(Object propertyId);
 
     /**
-     * Returns the preferred Locale for the DateFilter component
-     * 
-     * @return Preferred locale
-     */
-    public Locale getLocale();
-
-    /**
      * Return display caption for the From field
      * 
      * @return caption for From field
@@ -114,4 +105,12 @@ public interface FilterDecorator {
      * @return caption for Clear button
      */
     public String getClearCaption();
+
+    /**
+     * Return the string that should be used as an "input prompt" when no
+     * filtering is made on a filter component.
+     * 
+     * @return String to show for no filter defined
+     */
+    public String getAllItemsVisibleString();
 }
