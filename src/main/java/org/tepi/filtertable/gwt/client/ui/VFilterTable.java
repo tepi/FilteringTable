@@ -149,6 +149,7 @@ public class VFilterTable extends VCustomScrollTable {
 
             /* If filters are not set visible, clear and hide filter panel */
             setVisible(filtersVisible);
+            /*Adjust height so that the table can render horizontal scroll bar correctly*/
             setContainerHeight();
             Collection<Widget> oldFilters = filters.values();
             if (!filtersVisible) {

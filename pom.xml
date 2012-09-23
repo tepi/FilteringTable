@@ -126,7 +126,7 @@
 					<stopKey>filteringtabledemo</stopKey>
 					<!-- Redeploy every x seconds if changes are detected, 0 for no automatic 
 						redeployment -->
-					<scanIntervalSeconds>50</scanIntervalSeconds>
+					<scanIntervalSeconds>0</scanIntervalSeconds>
 					<!-- make sure Jetty also finds the widgetset -->
 					<webAppConfig>
 						<contextPath>/filteringtabledemo</contextPath>
