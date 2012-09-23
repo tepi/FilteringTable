@@ -1,0 +1,2 @@
+* Run jetty:run maven goal to view the demo application at, http://localhost:9000/filteringtabledemo/
+* To debug app one of jetty_debug scripts and connect with eclipse to port 4000.

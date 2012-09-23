@@ -1,0 +1,88 @@
+/* Styles for Filters panel and wrap */
+.filters-panel {
+	background-color: #D4D7D9;
+	width: 90000px;
+	overflow: hidden;
+	height: 23px;
+}
+
+.filters-panel .v-button,
+.filters-panel .v-textfield,
+.filters-panel .v-filterselect,
+.filters-panel .v-label,
+.filters-panel .filterplaceholder {
+	float: left !important;
+}
+
+.filters-panel .v-label,
+.filters-panel .filterplaceholder {
+	height: 23px;
+}
+
+.filters-wrap {
+	border-left: 1px solid #C2C3C4;
+	border-right: 1px solid #C2C3C4;
+}
+
+/* TextField within the Filter panel*/
+.v-table .filters-panel .v-textfield {
+	height: 19px;
+	border-radius: 0px;
+	-webkit-border-radius: 0px;
+	-moz-border-radius: 0px;
+	-o-border-radius: 0px;
+}
+
+.v-ie7 .filters-panel input.v-textfield {
+	margin-top: 0 !important;
+}
+
+/* DateFilter button styles */
+.datefilterpopup,
+.datefilterpopup:focus,
+.datefilterpopup:active,
+.datefilterpopup.v-pressed {
+	background: #fff none repeat-x 0 100%;
+	height: 23px;
+	border: 1px solid #b7b7b7;
+	border-top: 2px solid #b7b7b7;
+	position: relative;
+}
+
+.datefilterpopup .v-button-wrap,
+.datefilterpopup:focus .v-button-wrap,
+.datefilterpopup:active .v-button-wrap,
+.datefilterpopup.v-pressed .v-button-wrap {
+	background: none;
+	overflow: hidden;
+	padding: 0;
+	text-align: left;
+}
+
+.v-popupbutton.datefilterpopup .v-popup-indicator {
+	height: 21px;
+	width: 18px;
+	position: absolute;
+	right: 0;
+	top: 0;
+	zoom: 1;
+}
+
+.datefilterpopupcontent .v-datefield-popupcalendar input.v-datefield-textfield {
+	height: 19px;
+}
+
+.v-ie .v-popupbutton.datefilterpopup .v-popup-indicator {
+	display: inline;
+}
+
+.datefilterpopup .v-button-caption {
+	display: inline-block;
+	background: none;
+	height: 12px;
+	padding: 0;
+	padding-top: 2px;
+	font-size: 12px;
+	font-weight: normal;
+	font-size: 12px;
+}
