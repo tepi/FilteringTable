@@ -8,6 +8,8 @@ import java.util.Set;
 import org.tepi.filtertable.datefilter.DateFilterPopup;
 import org.tepi.filtertable.datefilter.DateInterval;
 import org.tepi.filtertable.gwt.client.ui.VFilterTable;
+import org.tepi.filtertable.numberfilter.NumberFilterPopup;
+import org.tepi.filtertable.numberfilter.NumberInterval;
 
 import com.vaadin.data.Container;
 import com.vaadin.terminal.PaintException;
@@ -116,6 +118,8 @@ public class FilterTable extends CustomTable {
                     ((TextField) c).setValue("");
                 } else if (c instanceof DateFilterPopup) {
                     ((DateFilterPopup) c).setInternalValue(null, null);
+                } else if (c instanceof NumberFilterPopup) {
+                    ((NumberFilterPopup) c).setInternalValue(null, null, null);
                 } else if (c instanceof Field) {
                     ((Field) c).setValue(null);
                 }
@@ -271,6 +275,12 @@ public class FilterTable extends CustomTable {
                 ((DateFilterPopup) field).setInternalValue(
                         ((DateInterval) value).getFrom(),
                         ((DateInterval) value).getTo());
+            } else if (field instanceof NumberFilterPopup
+                    && value instanceof NumberInterval) {
+                ((NumberFilterPopup) field).setInternalValue(
+                        ((NumberInterval) value).getLtValue(),
+                        ((NumberInterval) value).getGtValue(),
+                        ((NumberInterval) value).getEqValue());
             } else {
                 field.setValue(value);
             }
@@ -288,9 +298,17 @@ public class FilterTable extends CustomTable {
     public Object getFilterFieldValue(String propertyId) {
         AbstractField field = (AbstractField) getColumnIdToFilterMap().get(
                 propertyId);
-        return field == null ? null
-                : (field instanceof DateFilterPopup ? ((DateFilterPopup) field)
-                        .getDateValue() : field.getValue());
+        if (field != null) {
+            if (field instanceof DateFilterPopup) {
+               return ((DateFilterPopup) field).getDateValue();
+            } else if (field instanceof NumberFilterPopup) {
+                return ((NumberFilterPopup) field).getInterval();
+            } else {
+                return field.getValue();
+            }
+        } else {
+        	return null;
+        }
     }
 
     Filterable getFilterable() {
