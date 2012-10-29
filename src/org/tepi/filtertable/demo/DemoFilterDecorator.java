@@ -102,7 +102,5 @@ class DemoFilterDecorator implements FilterDecorator {
     public DateFormat getDateFormat(Object propertyId) {
         return DateFormat.getDateInstance(DateFormat.SHORT, new Locale("fi",
                 "FI"));
-        // return DateFormat.getDateTimeInstance(DateFormat.SHORT,
-        // DateFormat.SHORT, new Locale("fi", "FI"));
     }
 }
