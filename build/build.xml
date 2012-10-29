@@ -48,7 +48,7 @@
 		<echo>Compiling server side...</echo>
         <property name="result.classes" value="${result-path}/war/WEB-INF/classes"/>
         <mkdir dir="${result.classes}"/>
-		 <javac destdir="${result.classes}" target="1.5" source="1.5"> 
+		 <javac destdir="${result.classes}" target="1.5" source="1.5" debug="true">
 		 	<src path="src/${src.package.dir}" />		 	
 			<src path="${demo.src.base}" />
 		 	<src path="src/com/vaadin" />
