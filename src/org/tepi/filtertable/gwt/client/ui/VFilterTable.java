@@ -149,6 +149,7 @@ public class VFilterTable extends VCustomScrollTable {
 
             /* If filters are not set visible, clear and hide filter panel */
             setVisible(filtersVisible);
+            setContainerHeight();
             Collection<Widget> oldFilters = filters.values();
             if (!filtersVisible) {
                 container.clear();
