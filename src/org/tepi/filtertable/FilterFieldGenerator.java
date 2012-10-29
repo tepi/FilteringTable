@@ -1,5 +1,6 @@
 package org.tepi.filtertable;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.EnumSet;
@@ -25,7 +26,7 @@ import com.vaadin.ui.Component;
 import com.vaadin.ui.Component.Focusable;
 import com.vaadin.ui.TextField;
 
-class FilterFieldGenerator {
+class FilterFieldGenerator implements Serializable {
     private final FilterTable owner;
 
     /* Mapping for property IDs, filters and components */
@@ -258,7 +259,7 @@ class FilterFieldGenerator {
 
     private AbstractField createDateField(Object propertyId) {
         DateFilterPopup dateFilterPopup = new DateFilterPopup(
-                owner.getFilterDecorator(), null);
+                owner.getFilterDecorator(), propertyId);
         dates.put(dateFilterPopup, propertyId);
         return dateFilterPopup;
     }
