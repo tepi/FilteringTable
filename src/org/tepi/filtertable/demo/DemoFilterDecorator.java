@@ -5,6 +5,7 @@ import java.util.Locale;
 
 import org.tepi.filtertable.FilterDecorator;
 import org.tepi.filtertable.demo.FiltertabledemoApplication.State;
+import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
 import com.vaadin.terminal.Resource;
 import com.vaadin.terminal.ThemeResource;
@@ -102,5 +103,10 @@ class DemoFilterDecorator implements FilterDecorator {
     public DateFormat getDateFormat(Object propertyId) {
         return DateFormat.getDateInstance(DateFormat.SHORT, new Locale("fi",
                 "FI"));
+    }
+
+    public NumberFilterPopupConfig getNumberFilterPopupConfig() {
+        // work with default config
+        return null;
     }
 }

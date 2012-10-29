@@ -2,6 +2,8 @@ package org.tepi.filtertable;
 
 import java.text.DateFormat;
 
+import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
+
 import com.vaadin.terminal.Resource;
 import com.vaadin.ui.AbstractTextField.TextChangeEventMode;
 import com.vaadin.ui.DateField;
@@ -139,4 +141,11 @@ public interface FilterDecorator {
      * @return String to show for no filter defined
      */
     public String getAllItemsVisibleString();
+
+    /**
+     * Return configuration for the numeric filter field popup
+     * 
+     * @return
+     */
+    public NumberFilterPopupConfig getNumberFilterPopupConfig();
 }

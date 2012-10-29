@@ -7,7 +7,6 @@ import com.vaadin.data.util.filter.Compare;
 import com.vaadin.data.util.filter.Or;
 import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.CheckBox;
-import com.vaadin.ui.ComboBox;
 import com.vaadin.ui.Window;
 import com.vaadin.ui.Window.Notification;
 
@@ -45,12 +44,8 @@ class DemoFilterGenerator implements FilterGenerator {
     }
 
     public AbstractField getCustomFilterComponent(Object propertyId) {
-        if ("id".equals(propertyId)) {
-            ComboBox cb = new ComboBox();
-            cb.addItem("1");
-            cb.addItem("2");
-            return cb;
-        } else if ("checked".equals(propertyId)) {
+        // removed custom filter component for id
+        if ("checked".equals(propertyId)) {
             CheckBox box = new CheckBox();
             return box;
         }
