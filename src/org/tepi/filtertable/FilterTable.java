@@ -278,9 +278,9 @@ public class FilterTable extends CustomTable {
             } else if (field instanceof NumberFilterPopup
                     && value instanceof NumberInterval) {
                 ((NumberFilterPopup) field).setInternalValue(
-                        ((NumberInterval) value).getLtValue(),
-                        ((NumberInterval) value).getGtValue(),
-                        ((NumberInterval) value).getEqValue());
+                        ((NumberInterval) value).getLessThanValue(),
+                        ((NumberInterval) value).getGreaterThanValue(),
+                        ((NumberInterval) value).getEqualsValue());
             } else {
                 field.setValue(value);
             }

@@ -232,9 +232,9 @@ public class NumberFilterPopup extends PopupButton implements
             gtInput.setValue("");
             eqInput.setValue("");
         } else {
-            ltInput.setValue(interval.getLtValue());
-            gtInput.setValue(interval.getGtValue());
-            eqInput.setValue(interval.getEqValue());
+            ltInput.setValue(interval.getLessThanValue());
+            gtInput.setValue(interval.getGreaterThanValue());
+            eqInput.setValue(interval.getEqualsValue());
         }
     }
 
@@ -267,16 +267,16 @@ public class NumberFilterPopup extends PopupButton implements
 
     private String buildDisplayLabel() {
         if (interval != null) {
-            if (interval.getEqValue() != null) {
-                return valueMarker + " = " + interval.getEqValue();
-            } else if (interval.getGtValue() != null
-                    && interval.getLtValue() != null) {
-                return interval.getGtValue() + " < " + valueMarker + " < "
-                        + interval.getLtValue();
-            } else if (interval.getGtValue() != null) {
-                return valueMarker + " > " + interval.getGtValue();
-            } else if (interval.getLtValue() != null) {
-                return valueMarker + " < " + interval.getLtValue();
+            if (interval.getEqualsValue() != null) {
+                return valueMarker + " = " + interval.getEqualsValue();
+            } else if (interval.getGreaterThanValue() != null
+                    && interval.getLessThanValue() != null) {
+                return interval.getGreaterThanValue() + " < " + valueMarker + " < "
+                        + interval.getLessThanValue();
+            } else if (interval.getGreaterThanValue() != null) {
+                return valueMarker + " > " + interval.getGreaterThanValue();
+            } else if (interval.getLessThanValue() != null) {
+                return valueMarker + " < " + interval.getLessThanValue();
             }
         }
         return null;

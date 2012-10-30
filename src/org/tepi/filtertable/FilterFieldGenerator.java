@@ -1,7 +1,6 @@
 package org.tepi.filtertable;
 
 import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -122,9 +121,9 @@ class FilterFieldGenerator implements Serializable {
                     return newFilter;
                 }
             }
-            String ltValue = interval.getLtValue();
-            String gtValue = interval.getGtValue();
-            String eqValue = interval.getEqValue();
+            String ltValue = interval.getLessThanValue();
+            String gtValue = interval.getGreaterThanValue();
+            String eqValue = interval.getEqualsValue();
             Class<?> clazz = owner.getContainerDataSource().getType(propertyId);
             Method valueOf;
 
@@ -148,18 +147,10 @@ class FilterFieldGenerator implements Serializable {
                 } else {
                     return null;
                 }
-            } catch (SecurityException e) {
-                e.printStackTrace();
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-            } catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                throw new RuntimeException(
+                        "Creating number filter has failed.", e);
             }
-
         } else if (value != null && !value.equals("")) {
             /* Handle filtering for other data */
             if (owner.getFilterGenerator() != null) {
@@ -327,11 +318,6 @@ class FilterFieldGenerator implements Serializable {
         return dateFilterPopup;
     }
 
-    /**
-     * @param type
-     * @param property
-     * @return
-     */
     private AbstractField createNumericField(Class<?> type, Object propertyId) {
         NumberFilterPopup numberFilterPopup = new NumberFilterPopup(
                 owner.getFilterDecorator(), null);

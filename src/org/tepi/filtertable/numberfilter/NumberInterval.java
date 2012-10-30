@@ -6,40 +6,27 @@ package org.tepi.filtertable.numberfilter;
  */
 public class NumberInterval {
 
-    private final String ltValue;
-    private final String gtValue;
-    private final String eqValue;
+    private final String lessThanValue;
+    private final String greaterThanValue;
+    private final String equalsValue;
 
-    /**
-     * @param ltValue
-     * @param gtValue
-     * @param eqValue
-     */
-    NumberInterval(String ltValue, String gtValue, String eqValue) {
+    NumberInterval(String lessThanValue, String greaterThanValue,
+            String equalsValue) {
         super();
-        this.ltValue = ltValue;
-        this.gtValue = gtValue;
-        this.eqValue = eqValue;
+        this.lessThanValue = lessThanValue;
+        this.greaterThanValue = greaterThanValue;
+        this.equalsValue = equalsValue;
     }
 
-    /**
-     * @return the ltValue
-     */
-    public String getLtValue() {
-        return ltValue;
+    public String getLessThanValue() {
+        return lessThanValue;
     }
 
-    /**
-     * @return the gtValue
-     */
-    public String getGtValue() {
-        return gtValue;
+    public String getGreaterThanValue() {
+        return greaterThanValue;
     }
 
-    /**
-     * @return the eqValue
-     */
-    public String getEqValue() {
-        return eqValue;
+    public String getEqualsValue() {
+        return equalsValue;
     }
 }
