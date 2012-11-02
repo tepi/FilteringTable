@@ -93,10 +93,10 @@ import com.vaadin.terminal.gwt.client.ui.dd.VTransferable;
 import com.vaadin.terminal.gwt.client.ui.dd.VerticalDropLocation;
 
 /**
- * VCustomScrollTable
+ * VScrollTable
  * 
- * VCustomScrollTable is a FlowPanel having two widgets in it: * TableHead
- * component * ScrollPanel
+ * VScrollTable is a FlowPanel having two widgets in it: * TableHead component *
+ * ScrollPanel
  * 
  * TableHead contains table's header and widgets + logic for resizing,
  * reordering and hiding columns.
@@ -108,8 +108,8 @@ import com.vaadin.terminal.gwt.client.ui.dd.VerticalDropLocation;
  * This way we can use seamlessly traditional scrollbars and scrolling to fetch
  * more rows instead of "paging".
  * 
- * In VCustomScrollTable we listen to scroll events. On horizontal scrolling we
- * also update TableHeads scroll position which has its scrollbars hidden. On
+ * In VScrollTable we listen to scroll events. On horizontal scrolling we also
+ * update TableHeads scroll position which has its scrollbars hidden. On
  * vertical scroll events we will check if we are reaching the end of area where
  * we have rows rendered and
  * 
@@ -330,7 +330,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
     private final TableFooter tFoot = new TableFooter();
 
-    public final FocusableScrollPanel scrollBodyPanel = new FocusableScrollPanel(
+    protected final FocusableScrollPanel scrollBodyPanel = new FocusableScrollPanel(
             true);
 
     private KeyPressHandler navKeyPressHandler = new KeyPressHandler() {
@@ -6325,7 +6325,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     }
 
     private int contentAreaBorderHeight = -1;
-    public int scrollLeft;
+    protected int scrollLeft;
     private int scrollTop;
     private VScrollTableDropHandler dropHandler;
     private boolean navKeyDown;
