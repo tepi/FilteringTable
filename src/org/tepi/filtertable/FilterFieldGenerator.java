@@ -124,7 +124,8 @@ class FilterFieldGenerator implements Serializable {
             String ltValue = interval.getLessThanValue();
             String gtValue = interval.getGreaterThanValue();
             String eqValue = interval.getEqualsValue();
-            Class<?> clazz = owner.getContainerDataSource().getType(propertyId);
+            Class<?> clazz = getProperClass(propertyId);
+
             Method valueOf;
 
             // We use reflection to get the vaueOf method of the container
@@ -165,6 +166,23 @@ class FilterFieldGenerator implements Serializable {
         }
         /* Value is null or empty -> no filter */
         return null;
+    }
+
+    private Class<?> getProperClass(Object propertyId) {
+        Class<?> clazz = owner.getContainerDataSource().getType(propertyId);
+        if (clazz.equals(int.class)) {
+            clazz = Integer.class;
+        }
+        if (clazz.equals(long.class)) {
+            clazz = Long.class;
+        }
+        if (clazz.equals(float.class)) {
+            clazz = Float.class;
+        }
+        if (clazz.equals(double.class)) {
+            clazz = Double.class;
+        }
+        return clazz;
     }
 
     private void addFilterColumn(Object propertyId, Component filter) {
