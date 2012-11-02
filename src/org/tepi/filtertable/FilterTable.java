@@ -264,7 +264,7 @@ public class FilterTable extends CustomTable {
      * @throws ConversionException
      *             exception from the underlying field
      */
-    public boolean setFilterFieldValue(String propertyId, Object value)
+    public boolean setFilterFieldValue(Object propertyId, Object value)
             throws ConversionException {
         AbstractField field = (AbstractField) getColumnIdToFilterMap().get(
                 propertyId);
@@ -295,7 +295,7 @@ public class FilterTable extends CustomTable {
      *            Property id from which to get the value
      * @return Current value
      */
-    public Object getFilterFieldValue(String propertyId) {
+    public Object getFilterFieldValue(Object propertyId) {
         AbstractField field = (AbstractField) getColumnIdToFilterMap().get(
                 propertyId);
         if (field != null) {
