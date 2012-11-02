@@ -1,10 +1,12 @@
 package org.tepi.filtertable.numberfilter;
 
+import java.io.Serializable;
+
 /**
  * @author Vimukthi
  * 
  */
-public class NumberInterval {
+public class NumberInterval implements Serializable {
 
     private final String lessThanValue;
     private final String greaterThanValue;
