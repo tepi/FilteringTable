@@ -109,4 +109,9 @@ class DemoFilterDecorator implements FilterDecorator {
         // work with default config
         return null;
     }
+
+    public boolean usePopupForNumericProperty(Object propertyId) {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

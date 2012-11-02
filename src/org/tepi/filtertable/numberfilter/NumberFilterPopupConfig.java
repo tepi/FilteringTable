@@ -1,5 +1,7 @@
 package org.tepi.filtertable.numberfilter;
 
+import java.io.Serializable;
+
 /**
  * 
  * Provides way to set decorative configurations for the
@@ -8,7 +10,7 @@ package org.tepi.filtertable.numberfilter;
  * @author Vimukthi
  * 
  */
-public class NumberFilterPopupConfig {
+public class NumberFilterPopupConfig implements Serializable {
     private String ltPrompt;
     private String gtPrompt;
     private String eqPrompt;

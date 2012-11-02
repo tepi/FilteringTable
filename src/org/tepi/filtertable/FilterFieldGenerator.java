@@ -171,16 +171,16 @@ class FilterFieldGenerator implements Serializable {
     private Class<?> getProperClass(Object propertyId) {
         Class<?> clazz = owner.getContainerDataSource().getType(propertyId);
         if (clazz.equals(int.class)) {
-            clazz = Integer.class;
+            return Integer.class;
         }
         if (clazz.equals(long.class)) {
-            clazz = Long.class;
+            return Long.class;
         }
         if (clazz.equals(float.class)) {
-            clazz = Float.class;
+            return Float.class;
         }
         if (clazz.equals(double.class)) {
-            clazz = Double.class;
+            return Double.class;
         }
         return clazz;
     }
@@ -222,7 +222,13 @@ class FilterFieldGenerator implements Serializable {
                 || type == Float.class || type == Double.class
                 || type == int.class || type == long.class
                 || type == float.class || type == double.class) {
-            component = createNumericField(type, property);
+            if (owner.getFilterDecorator() != null
+                    && owner.getFilterDecorator().usePopupForNumericProperty(
+                            property)) {
+                component = createNumericField(type, property);
+            } else {
+                component = createTextField(property);
+            }
         } else if (type.isEnum()) {
             component = createEnumField(type, property);
         } else if (type == Date.class || type == Timestamp.class

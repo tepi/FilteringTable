@@ -148,4 +148,17 @@ public interface FilterDecorator {
      * @return
      */
     public NumberFilterPopupConfig getNumberFilterPopupConfig();
+
+    /**
+     * Defines whether a popup-style numeric filter should be used for the
+     * property with the given ID.
+     * 
+     * The types Integer, Long, Float and Double are considered to be 'numeric'
+     * within this context.
+     * 
+     * @param propertyId
+     *            ID of the property the popup will be applied to
+     * @return true to use popup-style, false to use a TextField
+     */
+    public boolean usePopupForNumericProperty(Object propertyId);
 }
