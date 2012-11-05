@@ -6,11 +6,9 @@
 	height: 23px;
 }
 
-.filters-panel .v-button,
-.filters-panel .v-textfield,
-.filters-panel .v-filterselect,
-.filters-panel .v-label,
-.filters-panel .filterplaceholder {
+.filters-panel > div,
+.filters-panel > span,
+.filters-panel > input {
 	float: left !important;
 }
 
@@ -45,8 +43,14 @@
 	background: #fff none repeat-x 0 100%;
 	height: 23px;
 	border: 1px solid #b7b7b7;
-	border-top: 2px solid #b7b7b7;
+	border-top: 1px solid #b7b7b7;
 	position: relative;
+}
+
+.datefilterpopup:focus,
+.datefilterpopup:active,
+.datefilterpopup.v-pressed {
+	border-color: #4F83B4 #5B97D0 #5CA0DF;
 }
 
 .datefilterpopup .v-button-wrap,
@@ -57,7 +61,9 @@
 	overflow: hidden;
 	padding: 0;
 	text-align: left;
+	padding-top: 1px;
 }
+
 
 .v-popupbutton.datefilterpopup .v-popup-indicator {
 	height: 21px;
@@ -66,6 +72,7 @@
 	right: 0;
 	top: 0;
 	zoom: 1;
+	background-position: -5px -8px;
 }
 
 .datefilterpopupcontent .v-datefield-popupcalendar input.v-datefield-textfield {
@@ -95,8 +102,14 @@
 	background: #fff none repeat-x 0 100%;
 	height: 23px;
 	border: 1px solid #b7b7b7;
-	border-top: 2px solid #b7b7b7;
+	border-top: 1px solid #b7b7b7;
 	position: relative;
+}
+
+.numberfilterpopup:focus,
+.numberfilterpopup:active,
+.numberfilterpopup.v-pressed {
+	border-color: #4F83B4 #5B97D0 #5CA0DF;
 }
 
 .numberfilterpopup .v-button-wrap,
@@ -107,6 +120,7 @@
 	overflow: hidden;
 	padding: 0;
 	text-align: left;
+	padding-top: 1px;
 }
 
 .v-popupbutton.numberfilterpopup .v-popup-indicator {
@@ -116,6 +130,7 @@
 	right: 0;
 	top: 0;
 	zoom: 1;
+	background-position: -5px -8px;
 }
 .numberfilterpopup .v-button-caption {
 	display: inline-block;
