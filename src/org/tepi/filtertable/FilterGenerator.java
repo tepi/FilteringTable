@@ -33,7 +33,7 @@ public interface FilterGenerator {
      * Allows you to provide a custom filtering field for the properties as
      * needed.
      * 
-     * @param property
+     * @param propertyId
      *            ID of the property for for which the field is asked for
      * @return a custom filtering field OR null if you want to use the generated
      *         default field.

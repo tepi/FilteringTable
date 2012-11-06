@@ -145,7 +145,7 @@ public interface FilterDecorator {
     /**
      * Return configuration for the numeric filter field popup
      * 
-     * @return
+     * @return Configuration for numeric filter
      */
     public NumberFilterPopupConfig getNumberFilterPopupConfig();
 

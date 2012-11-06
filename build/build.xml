@@ -2,7 +2,7 @@
 <project name="FilteringTable" basedir="../" default="all">
 
     <!-- Main target that does all -->
-    <target name="all" depends="clean-all, compile, widgetset, package-jar, package-zip, demo.war"/>
+    <target name="all" depends="clean-all, compile, widgetset, javadoc, sources-jar, package-jar, package-zip, demo.war"/>
 
     <!-- Non-project specific settings. -->
 	<property file="build/build.properties" />
@@ -16,6 +16,8 @@
 	<target name="clean-all">
 		<delete dir="${result-path}" includes="**/*" followsymlinks="false"
 			includeemptydirs="true" defaultexcludes="false" failonerror="false"/>
+		<delete dir="${build-path}/javadoc" includes="**/*" followsymlinks="false"
+					includeemptydirs="true" defaultexcludes="false" failonerror="false"/>
 	</target>
 
     <!-- Initialization -->
@@ -97,6 +99,29 @@
     <!-- Packaging                                                          -->
     <!-- ================================================================== -->
 
+	<!-- Create javadoc -->
+	  <target name='javadoc' >
+	    <javadoc  
+	      use='true' author='true'  version='true'
+	      access='package' 
+	      sourcepath='src'
+	      packagenames='*.*' 
+	      destdir='${build-path}/javadoc'
+	      windowtitle='${addon.title} ${version}'
+	      noqualifier='java.*:javax.*:com.sun.*'   
+	      linksource='true'
+	    >
+	      <classpath refid='compile.classpath'/>
+	      <link href='http://java.sun.com/javase/6/docs/api/'/>      
+	      <header><![CDATA[<h1>${app.name} ${app.version}</h1>]]></header>
+	    </javadoc>
+	  </target>
+	
+	<!-- Create sources JAR -->
+	<target name="sources-jar">
+	    <jar basedir="src" destfile="${result-path}/${addon.name}-${version}-sources.jar"/>
+	</target>
+	
     <!-- Create the JAR package [Note: JAR is not functional by itself]. -->
     <target name="package-jar" depends="compile" unless="run.no-package-jar">
     	<echo>Creating ${addon.title} JAR...</echo>
@@ -147,7 +172,11 @@ Vaadin-Dependency: ${dependency.popupbutton}
             <!-- The add-on library itself -->
             <zipfileset prefix="${addon.name}-${version}" file="${result-path}/${jar.name}" />
         	<!-- Dependency: PopupButton -->
-        	<zipfileset prefix="" file="${dependency.popupbutton.dir}/${dependency.popupbutton}" />
+        	<zipfileset file="${dependency.popupbutton.dir}/${dependency.popupbutton}" />
+        	<!-- Javadoc -->
+        	<zipfileset prefix="javadoc" dir="${build-path}/javadoc" />
+        	<!-- Sources -->
+        	<zipfileset file="${result-path}/${addon.name}-${version}-sources.jar" />
         </zip>
     </target>
 
