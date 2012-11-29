@@ -319,4 +319,10 @@ public class PagedFilteringTable<T extends Container.Indexed & Container.Filtera
         this.alwaysRecalculateColumnWidths = alwaysRecalculateColumnWidths;
     }
 
+    @Override
+    public void resetFilters() {
+        super.resetFilters();
+        setCurrentPage(1);
+    }
+
 }
