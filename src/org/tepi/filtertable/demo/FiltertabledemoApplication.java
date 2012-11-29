@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.tepi.filtertable.FilterTable;
+import org.tepi.filtertable.paged.PagedFilteringTable;
 
 import com.vaadin.Application;
 import com.vaadin.data.Container;
@@ -21,9 +22,12 @@ import com.vaadin.ui.CustomTable;
 import com.vaadin.ui.CustomTable.ColumnGenerator;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
+import com.vaadin.ui.Panel;
+import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
+import com.vaadin.ui.themes.Reindeer;
 
 public class FiltertabledemoApplication extends Application {
 
@@ -34,8 +38,6 @@ public class FiltertabledemoApplication extends Application {
         CREATED, PROCESSING, PROCESSED, FINISHED;
     }
 
-    private FilterTable filterTable;
-
     @Override
     public void init() {
         setLocale(new Locale("fi", "FI"));
@@ -43,23 +45,42 @@ public class FiltertabledemoApplication extends Application {
         Window mainWindow = new Window("FilterTable Demo Application");
         setMainWindow(mainWindow);
 
-        /* Create FilterTable */
-        filterTable = buildFilterTable();
+        VerticalLayout mainLayout = (VerticalLayout) mainWindow.getContent();
+        mainLayout.setMargin(true, false, false, false);
+        mainLayout.setSizeFull();
 
-        VerticalLayout mainLayout = new VerticalLayout();
+        final TabSheet ts = new TabSheet();
+        ts.setStyleName(Reindeer.TABSHEET_MINIMAL);
+        ts.setSizeFull();
+        mainLayout.addComponent(ts);
+        mainLayout.setExpandRatio(ts, 1);
+
+        ts.addTab(buildNormalTableTab(), "Normal FilterTable");
+        ts.addTab(buildPagedTableTab(), "Paged FilterTable");
+    }
+
+    private Component buildNormalTableTab() {
+        /* Create FilterTable */
+        FilterTable normalFilterTable = buildFilterTable();
+
+        final VerticalLayout mainLayout = new VerticalLayout();
         mainLayout.setSizeFull();
         mainLayout.setSpacing(true);
         mainLayout.setMargin(true);
-        mainLayout.addComponent(filterTable);
-        mainLayout.setExpandRatio(filterTable, 1);
-        mainLayout.addComponent(buildButtons());
+        mainLayout.addComponent(normalFilterTable);
+        mainLayout.setExpandRatio(normalFilterTable, 1);
+        mainLayout.addComponent(buildButtons(normalFilterTable));
 
-        mainWindow.setContent(mainLayout);
+        Panel p = new Panel();
+        p.setStyleName(Reindeer.PANEL_LIGHT);
+        p.setSizeFull();
+        p.setContent(mainLayout);
+
+        return p;
     }
 
     private FilterTable buildFilterTable() {
-        FilterTable filterTable = new FilterTable("FilterTable Demo");
-
+        FilterTable filterTable = new FilterTable();
         filterTable.setSizeFull();
 
         filterTable.setFilterDecorator(new DemoFilterDecorator());
@@ -83,7 +104,6 @@ public class FiltertabledemoApplication extends Application {
         filterTable.setContainerDataSource(buildContainer());
 
         filterTable.addGeneratedColumn("foo", new ColumnGenerator() {
-
             public Object generateCell(CustomTable source, Object itemId,
                     Object columnId) {
                 return "testing";
@@ -96,7 +116,57 @@ public class FiltertabledemoApplication extends Application {
         return filterTable;
     }
 
-    private Component buildButtons() {
+    private Component buildPagedTableTab() {
+        /* Create FilterTable */
+        PagedFilteringTable<IndexedContainer> pagedFilterTable = buildPagedFilterTable();
+
+        final VerticalLayout mainLayout = new VerticalLayout();
+        mainLayout.setSpacing(true);
+        mainLayout.setMargin(true);
+        mainLayout.addComponent(pagedFilterTable);
+        mainLayout.addComponent(pagedFilterTable.createControls());
+        mainLayout.addComponent(buildButtons(pagedFilterTable));
+        return mainLayout;
+    }
+
+    private PagedFilteringTable<IndexedContainer> buildPagedFilterTable() {
+        PagedFilteringTable<IndexedContainer> filterTable = new PagedFilteringTable<IndexedContainer>();
+        filterTable.setWidth("100%");
+
+        filterTable.setFilterDecorator(new DemoFilterDecorator());
+        filterTable
+                .setFilterGenerator(new DemoFilterGenerator(getMainWindow()));
+
+        filterTable.setFilterBarVisible(true);
+
+        filterTable.setSelectable(true);
+        filterTable.setImmediate(true);
+        filterTable.setMultiSelect(true);
+
+        filterTable.setRowHeaderMode(Table.ROW_HEADER_MODE_INDEX);
+
+        filterTable.setColumnCollapsingAllowed(true);
+
+        filterTable.setColumnCollapsed("state", true);
+
+        filterTable.setColumnReorderingAllowed(true);
+
+        filterTable.setContainerDataSource(buildContainer());
+
+        filterTable.addGeneratedColumn("foo", new ColumnGenerator() {
+            public Object generateCell(CustomTable source, Object itemId,
+                    Object columnId) {
+                return "testing";
+            }
+        });
+
+        filterTable.setVisibleColumns(new String[] { "name", "id", "foo",
+                "state", "date", "validated", "checked" });
+
+        return filterTable;
+    }
+
+    private Component buildButtons(final FilterTable relatedFilterTable) {
         HorizontalLayout buttonLayout = new HorizontalLayout();
         buttonLayout.setHeight(null);
         buttonLayout.setWidth("100%");
@@ -107,20 +177,20 @@ public class FiltertabledemoApplication extends Application {
         buttonLayout.addComponent(hideFilters);
         buttonLayout.setComponentAlignment(hideFilters, Alignment.MIDDLE_LEFT);
 
-        for (Object propId : filterTable.getContainerPropertyIds()) {
-            Component t = createToggle(propId);
+        for (Object propId : relatedFilterTable.getContainerPropertyIds()) {
+            Component t = createToggle(relatedFilterTable, propId);
             buttonLayout.addComponent(t);
             buttonLayout.setComponentAlignment(t, Alignment.MIDDLE_LEFT);
         }
 
         CheckBox showFilters = new CheckBox("Toggle Filter Bar visibility");
-        showFilters.setValue(filterTable.isFilterBarVisible());
+        showFilters.setValue(relatedFilterTable.isFilterBarVisible());
         showFilters.setImmediate(true);
         showFilters.addListener(new Property.ValueChangeListener() {
 
             public void valueChange(ValueChangeEvent event) {
-                filterTable.setFilterBarVisible((Boolean) event.getProperty()
-                        .getValue());
+                relatedFilterTable.setFilterBarVisible((Boolean) event
+                        .getProperty().getValue());
 
             }
         });
@@ -132,7 +202,8 @@ public class FiltertabledemoApplication extends Application {
         setVal.addListener(new Button.ClickListener() {
 
             public void buttonClick(ClickEvent event) {
-                filterTable.setFilterFieldValue("state", State.PROCESSED);
+                relatedFilterTable
+                        .setFilterFieldValue("state", State.PROCESSED);
             }
         });
         buttonLayout.addComponent(setVal);
@@ -141,7 +212,7 @@ public class FiltertabledemoApplication extends Application {
         reset.addListener(new Button.ClickListener() {
 
             public void buttonClick(ClickEvent event) {
-                filterTable.resetFilters();
+                relatedFilterTable.resetFilters();
             }
         });
         buttonLayout.addComponent(reset);
@@ -190,15 +261,16 @@ public class FiltertabledemoApplication extends Application {
         return cont;
     }
 
-    private Component createToggle(final Object propId) {
+    private Component createToggle(final FilterTable relatedFilterTable,
+            final Object propId) {
         CheckBox toggle = new CheckBox(propId.toString());
-        toggle.setValue(filterTable.isFilterFieldVisible(propId));
+        toggle.setValue(relatedFilterTable.isFilterFieldVisible(propId));
         toggle.setImmediate(true);
         toggle.addListener(new Property.ValueChangeListener() {
 
             public void valueChange(ValueChangeEvent event) {
-                filterTable.setFilterFieldVisible(propId,
-                        !filterTable.isFilterFieldVisible(propId));
+                relatedFilterTable.setFilterFieldVisible(propId,
+                        !relatedFilterTable.isFilterFieldVisible(propId));
             }
         });
         return toggle;

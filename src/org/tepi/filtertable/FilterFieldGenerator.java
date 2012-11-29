@@ -12,6 +12,7 @@ import org.tepi.filtertable.datefilter.DateFilterPopup;
 import org.tepi.filtertable.datefilter.DateInterval;
 import org.tepi.filtertable.numberfilter.NumberFilterPopup;
 import org.tepi.filtertable.numberfilter.NumberInterval;
+import org.tepi.filtertable.paged.PagedFilteringTable;
 
 import com.vaadin.data.Container;
 import com.vaadin.data.Container.Filter;
@@ -385,6 +386,11 @@ class FilterFieldGenerator implements Serializable {
                         owner.getFilterGenerator().filterRemoved(propertyId);
                     }
                 }
+                /* If the owner is a PagedFilteringTable, move to the first page */
+                if (owner instanceof PagedFilteringTable<?>) {
+                    ((PagedFilteringTable<?>) owner).setCurrentPage(1);
+                }
+
                 /*
                  * Handle focusing. Note: The size comparison is an ugly hack
                  * due to some focusing behavior within the VScrollTable which I
