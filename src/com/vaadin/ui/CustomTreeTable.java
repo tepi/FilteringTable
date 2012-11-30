@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.tepi.filtertable.gwt.client.ui.VFilterTreeTable;
+
 import com.vaadin.data.Container;
 import com.vaadin.data.Container.Hierarchical;
 import com.vaadin.data.Container.ItemSetChangeEvent;
@@ -33,7 +35,6 @@ import com.vaadin.data.util.HierarchicalContainer;
 import com.vaadin.terminal.PaintException;
 import com.vaadin.terminal.PaintTarget;
 import com.vaadin.terminal.Resource;
-import com.vaadin.terminal.gwt.client.ui.VCustomTreeTable;
 import com.vaadin.terminal.gwt.client.ui.VTreeTable;
 import com.vaadin.ui.Tree.CollapseEvent;
 import com.vaadin.ui.Tree.CollapseListener;
@@ -60,7 +61,7 @@ import com.vaadin.ui.treetable.HierarchicalContainerOrderedWrapper;
  * share UI state in the container.
  */
 @SuppressWarnings({ "serial" })
-@ClientWidget(VCustomTreeTable.class)
+@ClientWidget(VFilterTreeTable.class)
 public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     private interface ContainerStrategy extends Serializable {

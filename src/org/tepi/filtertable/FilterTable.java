@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
 import org.tepi.filtertable.datefilter.DateFilterPopup;
 import org.tepi.filtertable.datefilter.DateInterval;
 import org.tepi.filtertable.gwt.client.ui.VFilterTable;
@@ -30,7 +31,7 @@ import com.vaadin.ui.TextField;
  * 
  */
 @ClientWidget(VFilterTable.class)
-public class FilterTable extends CustomTable {
+public class FilterTable extends CustomTable implements IFilterTable {
     /* Maps property id's to column filter components */
     private Map<Object, Component> columnIdToFilterMap = new HashMap<Object, Component>();
     /* Internal list of currently collapsed column id:s */
@@ -320,24 +321,28 @@ public class FilterTable extends CustomTable {
         return filterGenerator;
     }
 
-    FilterDecorator getFilterDecorator() {
+    public FilterDecorator getFilterDecorator() {
         return decorator;
     }
 
-    void focusFilter(Focusable toFocus) {
+    public void focusFilter(Focusable toFocus) {
         super.focusFilterComponent(toFocus);
     }
 
-    void setFilterToFocus(Object propertyId) {
+    public void setFilterToFocus(Object propertyId) {
         filterToFocus = propertyId;
     }
 
-    Map<Object, Component> getColumnIdToFilterMap() {
+    public Map<Object, Component> getColumnIdToFilterMap() {
         return columnIdToFilterMap;
     }
 
     public void setAlwaysRecalculateColumnWidths(
             boolean alwaysRecalculateColumnWidths) {
         this.alwaysRecalculateColumnWidths = alwaysRecalculateColumnWidths;
+    }
+
+    public Component getAsComponent() {
+        return this;
     }
 }

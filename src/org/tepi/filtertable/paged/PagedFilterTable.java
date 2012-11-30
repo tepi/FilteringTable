@@ -314,6 +314,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         listeners.remove(listener);
     }
 
+    @Override
     public void setAlwaysRecalculateColumnWidths(
             boolean alwaysRecalculateColumnWidths) {
         this.alwaysRecalculateColumnWidths = alwaysRecalculateColumnWidths;

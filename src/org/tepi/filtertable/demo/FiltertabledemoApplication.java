@@ -1,13 +1,14 @@
 package org.tepi.filtertable.demo;
 
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 
 import org.tepi.filtertable.FilterTable;
+import org.tepi.filtertable.FilterTreeTable;
 import org.tepi.filtertable.paged.PagedFilterTable;
-import org.tepi.filtertable.treetable.FilterTreeTable;
 
 import com.vaadin.Application;
 import com.vaadin.data.Container;
@@ -343,7 +344,7 @@ public class FiltertabledemoApplication extends Application {
         cont.addContainerProperty("name", String.class, null);
         cont.addContainerProperty("id", Integer.class, null);
         cont.addContainerProperty("state", State.class, null);
-        cont.addContainerProperty("date", Date.class, null);
+        cont.addContainerProperty("date", Timestamp.class, null);
         cont.addContainerProperty("validated", Boolean.class, null);
         cont.addContainerProperty("checked", Boolean.class, null);
 
@@ -365,7 +366,8 @@ public class FiltertabledemoApplication extends Application {
             }
             cont.getContainerProperty(i, "state").setValue(stateToSet);
             /* Set date property */
-            cont.getContainerProperty(i, "date").setValue(c.getTime());
+            cont.getContainerProperty(i, "date").setValue(
+                    new Timestamp(c.getTimeInMillis()));
             c.add(Calendar.DAY_OF_MONTH, 1);
             /* Set validated property */
             cont.getContainerProperty(i, "validated").setValue(

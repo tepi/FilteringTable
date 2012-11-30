@@ -1,9 +1,9 @@
 package org.tepi.filtertable.paged;
 
-public class PagedTableChangeEvent {
-    final PagedFilterTable<?> table;
+class PagedTableChangeEvent {
+    private final PagedFilterTable<?> table;
 
-    public PagedTableChangeEvent(PagedFilterTable<?> table) {
+    PagedTableChangeEvent(PagedFilterTable<?> table) {
         this.table = table;
     }
 

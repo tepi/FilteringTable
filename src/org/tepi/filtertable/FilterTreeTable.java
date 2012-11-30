@@ -1,12 +1,11 @@
-package org.tepi.filtertable.treetable;
+package org.tepi.filtertable;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.tepi.filtertable.FilterDecorator;
-import org.tepi.filtertable.FilterGenerator;
+import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
 import org.tepi.filtertable.datefilter.DateFilterPopup;
 import org.tepi.filtertable.datefilter.DateInterval;
 import org.tepi.filtertable.gwt.client.ui.VFilterTreeTable;
@@ -25,14 +24,14 @@ import com.vaadin.ui.Label;
 import com.vaadin.ui.TextField;
 
 /**
- * FilterTable is an extension of the Vaadin Table component that provides
- * automatically generated filter fields for each column.
+ * FilterTreeTable is an extension of the Vaadin TreeTable component that
+ * provides automatically generated filter fields for each column.
  * 
  * @author Teppo Kurki
  * 
  */
 @ClientWidget(VFilterTreeTable.class)
-public class FilterTreeTable extends CustomTreeTable {
+public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
     /* Maps property id's to column filter components */
     private Map<Object, Component> columnIdToFilterMap = new HashMap<Object, Component>();
     /* Internal list of currently collapsed column id:s */
@@ -47,7 +46,7 @@ public class FilterTreeTable extends CustomTreeTable {
     /* Temporary reference to to-be-focused filter field */
     private Object filterToFocus;
     /* FilterFieldGenerator instance */
-    private TreeTableFilterFieldGenerator generator;
+    private FilterFieldGenerator generator;
     /* Is initialization done */
     private boolean initDone;
 
@@ -66,7 +65,7 @@ public class FilterTreeTable extends CustomTreeTable {
      */
     public FilterTreeTable(String caption) {
         super(caption);
-        generator = new TreeTableFilterFieldGenerator(this);
+        generator = new FilterFieldGenerator(this);
         initDone = true;
     }
 
@@ -313,33 +312,37 @@ public class FilterTreeTable extends CustomTreeTable {
         }
     }
 
-    Filterable getFilterable() {
+    public Filterable getFilterable() {
         return getContainerDataSource() instanceof Filterable ? (Filterable) getContainerDataSource()
                 : null;
     }
 
-    FilterGenerator getFilterGenerator() {
+    public FilterGenerator getFilterGenerator() {
         return filterGenerator;
     }
 
-    FilterDecorator getFilterDecorator() {
+    public FilterDecorator getFilterDecorator() {
         return decorator;
     }
 
-    void focusFilter(Focusable toFocus) {
+    public void focusFilter(Focusable toFocus) {
         super.focusFilterComponent(toFocus);
     }
 
-    void setFilterToFocus(Object propertyId) {
+    public void setFilterToFocus(Object propertyId) {
         filterToFocus = propertyId;
     }
 
-    Map<Object, Component> getColumnIdToFilterMap() {
+    public Map<Object, Component> getColumnIdToFilterMap() {
         return columnIdToFilterMap;
     }
 
     public void setAlwaysRecalculateColumnWidths(
             boolean alwaysRecalculateColumnWidths) {
         this.alwaysRecalculateColumnWidths = alwaysRecalculateColumnWidths;
+    }
+
+    public Component getAsComponent() {
+        return this;
     }
 }
