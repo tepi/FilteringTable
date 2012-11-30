@@ -1,13 +1,15 @@
-package org.tepi.filtertable;
+package org.tepi.filtertable.treetable;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.tepi.filtertable.FilterDecorator;
+import org.tepi.filtertable.FilterGenerator;
 import org.tepi.filtertable.datefilter.DateFilterPopup;
 import org.tepi.filtertable.datefilter.DateInterval;
-import org.tepi.filtertable.gwt.client.ui.VFilterTable;
+import org.tepi.filtertable.gwt.client.ui.VFilterTreeTable;
 import org.tepi.filtertable.numberfilter.NumberFilterPopup;
 import org.tepi.filtertable.numberfilter.NumberInterval;
 
@@ -17,7 +19,7 @@ import com.vaadin.terminal.PaintTarget;
 import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.ClientWidget;
 import com.vaadin.ui.Component;
-import com.vaadin.ui.CustomTable;
+import com.vaadin.ui.CustomTreeTable;
 import com.vaadin.ui.Field;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.TextField;
@@ -29,8 +31,8 @@ import com.vaadin.ui.TextField;
  * @author Teppo Kurki
  * 
  */
-@ClientWidget(VFilterTable.class)
-public class FilterTable extends CustomTable {
+@ClientWidget(VFilterTreeTable.class)
+public class FilterTreeTable extends CustomTreeTable {
     /* Maps property id's to column filter components */
     private Map<Object, Component> columnIdToFilterMap = new HashMap<Object, Component>();
     /* Internal list of currently collapsed column id:s */
@@ -45,14 +47,14 @@ public class FilterTable extends CustomTable {
     /* Temporary reference to to-be-focused filter field */
     private Object filterToFocus;
     /* FilterFieldGenerator instance */
-    private FilterFieldGenerator generator;
+    private TreeTableFilterFieldGenerator generator;
     /* Is initialization done */
     private boolean initDone;
 
     /**
      * Creates a new empty FilterTable
      */
-    public FilterTable() {
+    public FilterTreeTable() {
         this(null);
     }
 
@@ -62,9 +64,9 @@ public class FilterTable extends CustomTable {
      * @param caption
      *            Caption to set for the FilterTable
      */
-    public FilterTable(String caption) {
+    public FilterTreeTable(String caption) {
         super(caption);
-        generator = new FilterFieldGenerator(this);
+        generator = new TreeTableFilterFieldGenerator(this);
         initDone = true;
     }
 
@@ -311,12 +313,12 @@ public class FilterTable extends CustomTable {
         }
     }
 
-    public Filterable getFilterable() {
+    Filterable getFilterable() {
         return getContainerDataSource() instanceof Filterable ? (Filterable) getContainerDataSource()
                 : null;
     }
 
-    public FilterGenerator getFilterGenerator() {
+    FilterGenerator getFilterGenerator() {
         return filterGenerator;
     }
 

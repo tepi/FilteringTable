@@ -1,4 +1,4 @@
-package org.tepi.filtertable;
+package org.tepi.filtertable.treetable;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -12,7 +12,6 @@ import org.tepi.filtertable.datefilter.DateFilterPopup;
 import org.tepi.filtertable.datefilter.DateInterval;
 import org.tepi.filtertable.numberfilter.NumberFilterPopup;
 import org.tepi.filtertable.numberfilter.NumberInterval;
-import org.tepi.filtertable.paged.PagedFilterTable;
 
 import com.vaadin.data.Container;
 import com.vaadin.data.Container.Filter;
@@ -31,8 +30,8 @@ import com.vaadin.ui.Component;
 import com.vaadin.ui.Component.Focusable;
 import com.vaadin.ui.TextField;
 
-class FilterFieldGenerator implements Serializable {
-    private final FilterTable owner;
+class TreeTableFilterFieldGenerator implements Serializable {
+    private final FilterTreeTable owner;
 
     /* Mapping for property IDs, filters and components */
     private Map<Object, Filter> filters = new HashMap<Object, Container.Filter>();
@@ -46,7 +45,7 @@ class FilterFieldGenerator implements Serializable {
     /* ValueChangeListener for filter components */
     private ValueChangeListener listener = initializeListener();
 
-    FilterFieldGenerator(FilterTable owner) {
+    TreeTableFilterFieldGenerator(FilterTreeTable owner) {
         this.owner = owner;
     }
 
@@ -385,10 +384,6 @@ class FilterFieldGenerator implements Serializable {
                     if (owner.getFilterGenerator() != null) {
                         owner.getFilterGenerator().filterRemoved(propertyId);
                     }
-                }
-                /* If the owner is a PagedFilteringTable, move to the first page */
-                if (owner instanceof PagedFilterTable<?>) {
-                    ((PagedFilterTable<?>) owner).setCurrentPage(1);
                 }
 
                 /*

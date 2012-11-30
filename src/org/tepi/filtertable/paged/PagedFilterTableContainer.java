@@ -8,7 +8,7 @@ import com.vaadin.data.Item;
 import com.vaadin.data.Property;
 import com.vaadin.data.util.filter.UnsupportedFilterException;
 
-public class PagedFilteringTableContainer<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>
+public class PagedFilterTableContainer<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>
         implements Container, Container.Indexed, Container.Sortable,
         Container.Filterable, Container.ItemSetChangeNotifier {
     private static final long serialVersionUID = -2134233618583099046L;
@@ -17,7 +17,7 @@ public class PagedFilteringTableContainer<T extends Container.Indexed & Containe
     private int pageLength = 25;
     private int startIndex = 0;
 
-    public PagedFilteringTableContainer(T container) {
+    public PagedFilterTableContainer(T container) {
         this.container = container;
     }
 

@@ -17,7 +17,7 @@ import com.vaadin.ui.Label;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.themes.Reindeer;
 
-public class PagedFilteringTable<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>
+public class PagedFilterTable<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>
         extends FilterTable {
     private static final long serialVersionUID = 6881455780158545828L;
 
@@ -27,13 +27,13 @@ public class PagedFilteringTable<T extends Container.Indexed & Container.Filtera
 
     private List<PageChangeListener> listeners = null;
 
-    private PagedFilteringTableContainer<T> container;
+    private PagedFilterTableContainer<T> container;
 
-    public PagedFilteringTable() {
+    public PagedFilterTable() {
         this(null);
     }
 
-    public PagedFilteringTable(String caption) {
+    public PagedFilterTable(String caption) {
         super(caption);
         setPageLength(25);
         addStyleName("pagedtable");
@@ -197,7 +197,7 @@ public class PagedFilteringTable<T extends Container.Indexed & Container.Filtera
     }
 
     @Override
-    public PagedFilteringTableContainer<T> getContainerDataSource() {
+    public PagedFilterTableContainer<T> getContainerDataSource() {
         return container;
     }
 
@@ -209,7 +209,7 @@ public class PagedFilteringTable<T extends Container.Indexed & Container.Filtera
             throw new IllegalArgumentException(
                     "PagedFilteringTable can only use containers that implement Container.Indexed AND Container.Filterable");
         }
-        PagedFilteringTableContainer<T> pagedFilteringTableContainer = new PagedFilteringTableContainer<T>(
+        PagedFilterTableContainer<T> pagedFilteringTableContainer = new PagedFilterTableContainer<T>(
                 (T) newDataSource);
         pagedFilteringTableContainer.setPageLength(getPageLength());
         container = pagedFilteringTableContainer;

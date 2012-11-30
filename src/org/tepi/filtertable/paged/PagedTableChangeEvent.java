@@ -1,13 +1,13 @@
 package org.tepi.filtertable.paged;
 
 public class PagedTableChangeEvent {
-    final PagedFilteringTable<?> table;
+    final PagedFilterTable<?> table;
 
-    public PagedTableChangeEvent(PagedFilteringTable<?> table) {
+    public PagedTableChangeEvent(PagedFilterTable<?> table) {
         this.table = table;
     }
 
-    public PagedFilteringTable<?> getTable() {
+    public PagedFilterTable<?> getTable() {
         return table;
     }
 
