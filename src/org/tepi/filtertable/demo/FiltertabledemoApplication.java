@@ -133,6 +133,8 @@ public class FiltertabledemoApplication extends Application {
         PagedFilteringTable<IndexedContainer> filterTable = new PagedFilteringTable<IndexedContainer>();
         filterTable.setWidth("100%");
 
+        filterTable.setAlwaysRecalculateColumnWidths(true);
+
         filterTable.setFilterDecorator(new DemoFilterDecorator());
         filterTable
                 .setFilterGenerator(new DemoFilterGenerator(getMainWindow()));
