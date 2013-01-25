@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="FilteringTable" basedir="../" default="all">
+
+<project name="Calendar" basedir="../" default="all" xmlns:ivy="antlib:org.apache.ivy.ant">
 
 	<!-- Main target that does all -->
-	<target name="all" depends="clean-all, compile, widgetset, javadoc, sources-jar, package-jar, package-zip, demo.war" />
+	<target name="all" depends="clean-all, compile, widgetset, package-jar, demo.war, cleanup" />
 
 	<!-- Non-project specific settings. -->
 	<property file="build/build.properties" />
@@ -15,28 +16,15 @@
 	<!-- Clean old compilation results. -->
 	<target name="clean-all">
 		<delete dir="${result-path}" includes="**/*" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
-		<delete dir="${build-path}/javadoc" includes="**/*" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
 	</target>
 
 	<!-- Initialization -->
 	<target name="init">
+		<ivy:cachepath pathid="ivy.deps" conf="widgetset-compile" />
 		<property name="base-name" value="${addon.name}-${version}" />
 		<property name="jar.name" value="${base-name}.jar" />
 		<property name="jar.path" value="${result-path}/${jar.name}" />
-		<path id="compile.classpath">
-			<fileset dir="${gwt.dev.dir}">
-				<include name="**/*.jar" />
-			</fileset>
-			<fileset dir="${gwt.user.dir}">
-				<include name="**/*.jar" />
-			</fileset>
-			<fileset dir="${gwt.deps.dir}">
-				<include name="**/*.jar" />
-			</fileset>
-			<fileset dir="WebContent/WEB-INF/lib">
-				<include name="**/*.jar" />
-			</fileset>
-		</path>
+		<ivy:retrieve pattern="${temp.lib.dir}/[artifact]-[type]-[revision].[ext]" conf="widgetset-compile" />
 	</target>
 
 	<!-- ================================================================== -->
@@ -48,37 +36,27 @@
 		<echo>Compiling server side...</echo>
 		<property name="result.classes" value="${result-path}/war/WEB-INF/classes" />
 		<mkdir dir="${result.classes}" />
-		<javac includeantruntime="false" srcdir="src" verbose="yes" destdir="${result.classes}" target="1.5" source="1.5">
-			<classpath refid="compile.classpath" />
+		<javac includeantruntime="false" srcdir="src" verbose="yes" destdir="${result.classes}" target="1.6" source="1.6">
+			<classpath refid="ivy.deps" />
 		</javac>
 	</target>
 
 	<!-- Compile client-side Java -->
 	<target name="widgetset" depends="init">
 		<echo>Compiling widgetset...</echo>
-		<java classname="com.vaadin.tools.WidgetsetCompiler" failonerror="yes" fork="yes" maxmemory="512m">
-			<arg value="-out" />
-			<arg value="WebContent/VAADIN/widgetsets/" />
+		<java classname="com.google.gwt.dev.Compiler" failonerror="yes" fork="yes" maxmemory="1024m">
+			<arg value="-war" />
+			<arg value="${webcontent.dir}/${webcontent.widgetset.dir}" />
 			<arg value="${addon.widgetset}" />
+			<arg value="-logLevel" />
+			<arg value="INFO" />
 			<jvmarg value="-Xss1024k" />
 			<jvmarg value="-Xmx1024M" />
 			<jvmarg value="-Djava.awt.headless=true" />
+			<classpath refid="ivy.deps" />
 			<classpath>
 				<path path="src" />
 				<path path="${basedir}/${result-path}/war/WEB-INF/classes" />
-				<path path="WebContent/WEB-INF/classes" />
-				<fileset dir="${gwt.dev.dir}">
-					<include name="**/*.jar" />
-				</fileset>
-				<fileset dir="${gwt.user.dir}">
-					<include name="**/*.jar" />
-				</fileset>
-				<fileset dir="${gwt.deps.dir}">
-					<include name="**/*.jar" />
-				</fileset>
-				<fileset dir="WebContent/WEB-INF/lib">
-					<include name="**/*.jar" />
-				</fileset>
 			</classpath>
 		</java>
 	</target>
@@ -87,93 +65,51 @@
 	<!-- Packaging                                                          -->
 	<!-- ================================================================== -->
 
-	<!-- Create javadoc -->
-	<target name='javadoc'>
-		<javadoc use='true' author='true' version='true' access='package' sourcepath='src' packagenames='*.*' destdir='${build-path}/javadoc' windowtitle='${addon.title} ${version}' noqualifier='java.*:javax.*:com.sun.*' linksource='true'>
-			<classpath refid='compile.classpath' />
-			<link href='http://java.sun.com/javase/6/docs/api/' />
-			<header>
-				<![CDATA[<h1>${app.name} ${app.version}</h1>]]></header>
-	</javadoc>
-</target>
+	<!-- Create the JAR package [Note: JAR is not functional by itself]. -->
+	<target name="package-jar" depends="compile" unless="run.no-package-jar">
+		<echo>Creating ${addon.title} JAR...</echo>
+		<jar jarfile="${jar.path}" compress="true">
+			<manifest>
+				<attribute name="Vaadin-Package-Version" value="1" />
+				<attribute name="Vaadin-Widgetsets" value="${addon.widgetset}" />
+				<attribute name="Implementation-Title" value="${addon.title}" />
+				<attribute name="Implementation-Version" value="${version}" />
+				<attribute name="Implementation-Vendor" value="${addon.vendor}" />
+			</manifest>
+			<!-- The built server-side classes and the widget set class are here. -->
+			<fileset dir="${result.classes}">
+				<patternset>
+					<!--<include name="${src.package.dir}/**/*" />-->
+					<exclude name="**/demo/**" />
+				</patternset>
+			</fileset>
+			<!-- Include sources. -->
+			<fileset dir="src">
+				<patternset>
+					<!--<include name="${src.package.dir}/**/*" />-->
+					<exclude name="**/demo/**" />
+				</patternset>
+			</fileset>
+		</jar>
+	</target>
 
-<!-- Create sources JAR -->
-<target name="sources-jar">
-	<jar basedir="src" destfile="${result-path}/${addon.name}-${version}-sources.jar" />
-</target>
+	<!-- Create demo application WAR -->
+	<target name="demo.war" depends="package-jar">
+		<echo>Creating ${addon.title} Demo Application WAR...</echo>
+		<property name="war.path" value="${result-path}/${addon.name}-v7.war" />
+		<war destfile="${war.path}" webxml="${web.xml.location}">
+			<classes dir="${result.classes}" />
+			<lib file="${jar.path}" />
+			<lib dir="${temp.lib.dir}" />
+			<fileset dir="${webcontent.dir}">
+				<patternset>
+					<include name="${webcontent.widgetset.dir}${addon.widgetset}/**/*" />
+				</patternset>
+			</fileset>
+		</war>
+	</target>
 
-<!-- Create the JAR package [Note: JAR is not functional by itself]. -->
-<target name="package-jar" depends="compile" unless="run.no-package-jar">
-	<echo>Creating ${addon.title} JAR...</echo>
-	<jar jarfile="${jar.path}" compress="true">
-		<manifest>
-			<attribute name="Vaadin-Package-Version" value="1" />
-			<attribute name="Vaadin-Widgetsets" value="${addon.widgetset}" />
-			<attribute name="Implementation-Title" value="${addon.title}" />
-			<attribute name="Implementation-Version" value="${version}" />
-			<attribute name="Implementation-Vendor" value="${addon.vendor}" />
-		</manifest>
-		<!-- The built server-side classes and the widget set class are here. -->
-		<fileset dir="${result.classes}">
-			<patternset>
-				<include name="${src.customscrolltable.dir}/**/*" />
-				<include name="${src.customtable.dir}/**/*" />
-				<include name="${src.package.dir}/**/*" />
-				<exclude name="**/demo/**" />
-			</patternset>
-		</fileset>
-		<!-- Include sources. -->
-		<fileset dir="src">
-			<patternset>
-				<include name="${src.customscrolltable.dir}/**/*" />
-				<include name="${src.customtable.dir}/**/*" />
-				<include name="${src.package.dir}/**/*" />
-				<exclude name="**/demo/**" />
-			</patternset>
-		</fileset>
-	</jar>
-</target>
-
-<!-- Create the ZIP distribution package. -->
-<target name="package-zip" depends="package-jar">
-	<echo>Creating ${addon.title} ZIP...</echo>
-	<property name="zip.name" value="${result-path}/${addon.name}-${version}.zip" />
-	<!-- Make the zip manifest -->
-	<mkdir dir="${result-path}/META-INF" />
-	<echo file="${result-path}/META-INF/MANIFEST.MF">Vaadin-Addon: ${addon.name}-${version}/${jar.name}
-Vaadin-Package-Version: 1
-Implementation-Title: ${addon.title}
-Implementation-Version: ${version}
-Implementation-Vendor: ${addon.vendor}
-Vaadin-Dependency: ${dependency.popupbutton}
-       </echo>
-	<zip destfile="${zip.name}">
-		<zipfileset dir="${result-path}" includes="META-INF/MANIFEST.MF" />
-		<!-- The add-on library itself -->
-		<zipfileset prefix="${addon.name}-${version}" file="${result-path}/${jar.name}" />
-		<!-- Dependency: PopupButton -->
-		<zipfileset file="${dependency.popupbutton.dir}/${dependency.popupbutton}" />
-		<!-- Javadoc -->
-		<zipfileset prefix="javadoc" dir="${build-path}/javadoc" />
-		<!-- Sources -->
-		<zipfileset file="${result-path}/${addon.name}-${version}-sources.jar" />
-	</zip>
-</target>
-
-<!-- Create demo application WAR -->
-<target name="demo.war" depends="package-jar">
-	<echo>Creating ${addon.title} Demo Application WAR...</echo>
-	<property name="war.path" value="${result-path}/${addon.name}.war" />
-	<war destfile="${war.path}" webxml="WebContent/WEB-INF/web.xml">
-		<classes dir="${result.classes}" />
-		<lib dir="WebContent/WEB-INF/lib" excludes="*src*" />
-		<lib file="${jar.path}" />
-		<fileset dir="WebContent">
-			<patternset>
-				<include name="VAADIN/widgetsets/${addon.widgetset}/**/*" />
-				<include name="VAADIN/themes/**/*" />
-			</patternset>
-		</fileset>
-	</war>
-</target>
+	<target name="cleanup">
+		<delete dir="${temp.lib.dir}" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+	</target>
 </project>

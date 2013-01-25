@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Vaadin Ltd.
+ * Copyright 2000-2013 Vaadin Ltd.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.vaadin.terminal.gwt.client.ui;
+package com.vaadin.client.ui;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.gwt.core.client.JavaScriptObject;
@@ -34,6 +35,7 @@ import com.google.gwt.dom.client.Node;
 import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Display;
+import com.google.gwt.dom.client.Style.Overflow;
 import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Style.Visibility;
@@ -65,79 +67,79 @@ import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HasWidgets;
 import com.google.gwt.user.client.ui.Panel;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.UIObject;
 import com.google.gwt.user.client.ui.Widget;
-import com.vaadin.terminal.gwt.client.ApplicationConnection;
-import com.vaadin.terminal.gwt.client.BrowserInfo;
-import com.vaadin.terminal.gwt.client.Container;
-import com.vaadin.terminal.gwt.client.Focusable;
-import com.vaadin.terminal.gwt.client.MouseEventDetails;
-import com.vaadin.terminal.gwt.client.Paintable;
-import com.vaadin.terminal.gwt.client.RenderSpace;
-import com.vaadin.terminal.gwt.client.TooltipInfo;
-import com.vaadin.terminal.gwt.client.UIDL;
-import com.vaadin.terminal.gwt.client.Util;
-import com.vaadin.terminal.gwt.client.VConsole;
-import com.vaadin.terminal.gwt.client.VTooltip;
-import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
-import com.vaadin.terminal.gwt.client.ui.dd.DDUtil;
-import com.vaadin.terminal.gwt.client.ui.dd.VAbstractDropHandler;
-import com.vaadin.terminal.gwt.client.ui.dd.VAcceptCallback;
-import com.vaadin.terminal.gwt.client.ui.dd.VDragAndDropManager;
-import com.vaadin.terminal.gwt.client.ui.dd.VDragEvent;
-import com.vaadin.terminal.gwt.client.ui.dd.VHasDropHandler;
-import com.vaadin.terminal.gwt.client.ui.dd.VTransferable;
-import com.vaadin.terminal.gwt.client.ui.dd.VerticalDropLocation;
+import com.vaadin.client.ApplicationConnection;
+import com.vaadin.client.BrowserInfo;
+import com.vaadin.client.ComponentConnector;
+import com.vaadin.client.ConnectorMap;
+import com.vaadin.client.Focusable;
+import com.vaadin.client.MouseEventDetailsBuilder;
+import com.vaadin.client.TooltipInfo;
+import com.vaadin.client.UIDL;
+import com.vaadin.client.Util;
+import com.vaadin.client.VConsole;
+import com.vaadin.client.VTooltip;
+import com.vaadin.client.ui.VCustomScrollTable.VCustomScrollTableBody.VCustomScrollTableRow;
+import com.vaadin.client.ui.dd.DDUtil;
+import com.vaadin.client.ui.dd.VAbstractDropHandler;
+import com.vaadin.client.ui.dd.VAcceptCallback;
+import com.vaadin.client.ui.dd.VDragAndDropManager;
+import com.vaadin.client.ui.dd.VDragEvent;
+import com.vaadin.client.ui.dd.VHasDropHandler;
+import com.vaadin.client.ui.dd.VTransferable;
+import com.vaadin.shared.AbstractComponentState;
+import com.vaadin.shared.MouseEventDetails;
+import com.vaadin.shared.ui.dd.VerticalDropLocation;
+import com.vaadin.shared.ui.table.TableConstants;
 
 /**
- * VScrollTable
+ * VCustomScrollTable
  * 
- * VScrollTable is a FlowPanel having two widgets in it: * TableHead component *
- * ScrollPanel
+ * VCustomScrollTable is a FlowPanel having two widgets in it: * TableHead
+ * component * ScrollPanel
  * 
  * TableHead contains table's header and widgets + logic for resizing,
  * reordering and hiding columns.
  * 
- * ScrollPanel contains VScrollTableBody object which handles content. To save
- * some bandwidth and to improve clients responsiveness with loads of data, in
- * VScrollTableBody all rows are not necessary rendered. There are "spacers" in
- * VScrollTableBody to use the exact same space as non-rendered rows would use.
- * This way we can use seamlessly traditional scrollbars and scrolling to fetch
- * more rows instead of "paging".
+ * ScrollPanel contains VCustomScrollTableBody object which handles content. To
+ * save some bandwidth and to improve clients responsiveness with loads of data,
+ * in VCustomScrollTableBody all rows are not necessary rendered. There are
+ * "spacers" in VCustomScrollTableBody to use the exact same space as
+ * non-rendered rows would use. This way we can use seamlessly traditional
+ * scrollbars and scrolling to fetch more rows instead of "paging".
  * 
- * In VScrollTable we listen to scroll events. On horizontal scrolling we also
- * update TableHeads scroll position which has its scrollbars hidden. On
+ * In VCustomScrollTable we listen to scroll events. On horizontal scrolling we
+ * also update TableHeads scroll position which has its scrollbars hidden. On
  * vertical scroll events we will check if we are reaching the end of area where
  * we have rows rendered and
  * 
  * TODO implement unregistering for child components in Cells
  */
-public class VCustomScrollTable extends FlowPanel implements Table,
+public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         ScrollHandler, VHasDropHandler, FocusHandler, BlurHandler, Focusable,
         ActionOwner {
 
-    public static final String ATTRIBUTE_PAGEBUFFER_FIRST = "pb-ft";
-    public static final String ATTRIBUTE_PAGEBUFFER_LAST = "pb-l";
+    public static final String STYLENAME = "v-table";
 
-    /**
-     * Tell the client that old keys are no longer valid because the server has
-     * cleared its key map.
-     */
-    public static final String ATTRIBUTE_KEY_MAPPER_RESET = "clearKeyMap";
+    public enum SelectMode {
+        NONE(0), SINGLE(1), MULTI(2);
+        private int id;
+
+        private SelectMode(int id) {
+            this.id = id;
+        }
+
+        public int getId() {
+            return id;
+        }
+    }
 
     private static final String ROW_HEADER_COLUMN_KEY = "0";
-
-    public static final String CLASSNAME = "v-table";
-    public static final String CLASSNAME_SELECTION_FOCUS = CLASSNAME + "-focus";
-
-    public static final String ITEM_CLICK_EVENT_ID = "itemClick";
-    public static final String HEADER_CLICK_EVENT_ID = "handleHeaderClick";
-    public static final String FOOTER_CLICK_EVENT_ID = "handleFooterClick";
-    public static final String COLUMN_RESIZE_EVENT_ID = "columnResize";
-    public static final String COLUMN_REORDER_EVENT_ID = "columnReorder";
 
     private static final double CACHE_RATE_DEFAULT = 2;
 
@@ -174,17 +176,22 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     private int pageLength = 15;
     private int lastRequestedFirstvisible = 0; // to detect "serverside scroll"
 
-    protected boolean showRowHeaders = false;
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean showRowHeaders = false;
 
     private String[] columnOrder;
 
     protected ApplicationConnection client;
-    protected String paintableId;
 
-    private boolean immediate;
+    /** For internal use only. May be removed or replaced in the future. */
+    public String paintableId;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean immediate;
+
     private boolean nullSelectionAllowed = true;
 
-    private int selectMode = Table.SELECT_MODE_NONE;
+    private SelectMode selectMode = SelectMode.NONE;
 
     private final HashSet<String> selectedRowKeys = new HashSet<String>();
 
@@ -197,26 +204,37 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     /*
      * These are used when jumping between pages when pressing Home and End
      */
-    private boolean selectLastItemInNextRender = false;
-    private boolean selectFirstItemInNextRender = false;
-    private boolean focusFirstItemInNextRender = false;
-    private boolean focusLastItemInNextRender = false;
 
-    /*
-     * The currently focused row
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean selectLastItemInNextRender = false;
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean selectFirstItemInNextRender = false;
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean focusFirstItemInNextRender = false;
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean focusLastItemInNextRender = false;
+
+    /**
+     * The currently focused row.
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      */
-    private VScrollTableRow focusedRow;
+    public VCustomScrollTableRow focusedRow;
 
-    /*
+    /**
      * Helper to store selection range start in when using the keyboard
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      */
-    private VScrollTableRow selectionRangeStart;
+    public VCustomScrollTableRow selectionRangeStart;
 
-    /*
+    /**
      * Flag for notifying when the selection has changed and should be sent to
      * the server
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      */
-    private boolean selectionChanged = false;
+    public boolean selectionChanged = false;
 
     /*
      * The speed (in pixels) which the scrolling scrolls vertically/horizontally
@@ -225,7 +243,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
     private Timer scrollingVelocityTimer = null;
 
-    private String[] bodyActionKeys;
+    /** For internal use only. May be removed or replaced in the future. */
+    public String[] bodyActionKeys;
 
     private boolean enableDebug = false;
 
@@ -240,11 +259,12 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * custom row heights and a fixed page length after removing the last row
      * from the table.
      * 
-     * A new VScrollTableBody instance is created every time the number of rows
-     * changes causing {@link VScrollTableBody#rowHeight} to be discarded and
-     * the height recalculated by {@link VScrollTableBody#getRowHeight(boolean)}
-     * to avoid some rounding problems, e.g. round(2 * 19.8) / 2 = 20 but
-     * round(3 * 19.8) / 3 = 19.66.
+     * A new VCustomScrollTableBody instance is created every time the number of
+     * rows changes causing {@link VCustomScrollTableBody#rowHeight} to be
+     * discarded and the height recalculated by
+     * {@link VCustomScrollTableBody#getRowHeight(boolean)} to avoid some
+     * rounding problems, e.g. round(2 * 19.8) / 2 = 20 but round(3 * 19.8) / 3
+     * = 19.66.
      */
     private double lastKnownRowHeight = Double.NaN;
 
@@ -252,14 +272,15 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * Represents a select range of rows
      */
     private class SelectionRange {
-        private VScrollTableRow startRow;
+        private VCustomScrollTableRow startRow;
         private final int length;
 
         /**
          * Constuctor.
          */
-        public SelectionRange(VScrollTableRow row1, VScrollTableRow row2) {
-            VScrollTableRow endRow;
+        public SelectionRange(VCustomScrollTableRow row1,
+                VCustomScrollTableRow row2) {
+            VCustomScrollTableRow endRow;
             if (row2.isBefore(row1)) {
                 startRow = row2;
                 endRow = row1;
@@ -270,7 +291,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             length = endRow.getIndex() - startRow.getIndex() + 1;
         }
 
-        public SelectionRange(VScrollTableRow row, int length) {
+        public SelectionRange(VCustomScrollTableRow row, int length) {
             startRow = row;
             this.length = length;
         }
@@ -280,17 +301,18 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          * 
          * @see java.lang.Object#toString()
          */
+
         @Override
         public String toString() {
             return startRow.getKey() + "-" + length;
         }
 
-        private boolean inRange(VScrollTableRow row) {
+        private boolean inRange(VCustomScrollTableRow row) {
             return row.getIndex() >= startRow.getIndex()
                     && row.getIndex() < startRow.getIndex() + length;
         }
 
-        public Collection<SelectionRange> split(VScrollTableRow row) {
+        public Collection<SelectionRange> split(VCustomScrollTableRow row) {
             assert row.isAttached();
             ArrayList<SelectionRange> ranges = new ArrayList<SelectionRange>(2);
 
@@ -303,10 +325,12 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             int startOfSecondRange = row.getIndex() + 1;
             if (!(getEndIndex() - startOfSecondRange < 0)) {
                 // create range of second part unless its length is < 1
-                VScrollTableRow startOfRange = scrollBody
+                VCustomScrollTableRow startOfRange = scrollBody
                         .getRowByRowIndex(startOfSecondRange);
-                ranges.add(new SelectionRange(startOfRange, getEndIndex()
-                        - startOfSecondRange + 1));
+                if (startOfRange != null) {
+                    ranges.add(new SelectionRange(startOfRange, getEndIndex()
+                            - startOfSecondRange + 1));
+                }
             }
             return ranges;
         }
@@ -319,21 +343,29 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
     private final HashSet<SelectionRange> selectedRowRanges = new HashSet<SelectionRange>();
 
-    private boolean initializedAndAttached = false;
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean initializedAndAttached = false;
 
     /**
      * Flag to indicate if a column width recalculation is needed due update.
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      */
-    private boolean headerChangedDuringUpdate = false;
+    public boolean headerChangedDuringUpdate = false;
 
-    protected final TableHead tHead = new TableHead();
+    /** For internal use only. May be removed or replaced in the future. */
+    public final TableHead tHead = new TableHead();
 
-    private final TableFooter tFoot = new TableFooter();
+    /** For internal use only. May be removed or replaced in the future. */
+    public final TableFooter tFoot = new TableFooter();
 
-    protected final FocusableScrollPanel scrollBodyPanel = new FocusableScrollPanel(
+    /** For internal use only. May be removed or replaced in the future. */
+    public final FocusableScrollPanel scrollBodyPanel = new FocusableScrollPanel(
             true);
 
     private KeyPressHandler navKeyPressHandler = new KeyPressHandler() {
+
+        @Override
         public void onKeyPress(KeyPressEvent keyPressEvent) {
             // This is used for Firefox only, since Firefox auto-repeat
             // works correctly only if we use a key press handler, other
@@ -371,6 +403,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
     private KeyUpHandler navKeyUpHandler = new KeyUpHandler() {
 
+        @Override
         public void onKeyUp(KeyUpEvent keyUpEvent) {
             NativeEvent event = keyUpEvent.getNativeEvent();
             int keyCode = event.getKeyCode();
@@ -398,6 +431,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
     private KeyDownHandler navKeyDownHandler = new KeyDownHandler() {
 
+        @Override
         public void onKeyDown(KeyDownEvent keyDownEvent) {
             NativeEvent event = keyDownEvent.getNativeEvent();
             // This is not used for Firefox
@@ -420,12 +454,18 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             }
         }
     };
-    private int totalRows;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public int totalRows;
 
     private Set<String> collapsedColumns;
 
-    private final RowRequestHandler rowRequestHandler;
-    protected VScrollTableBody scrollBody;
+    /** For internal use only. May be removed or replaced in the future. */
+    public final RowRequestHandler rowRequestHandler;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public VCustomScrollTableBody scrollBody;
+
     private int firstvisible = 0;
     private boolean sortAscending;
     private String sortColumn;
@@ -440,32 +480,43 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     private String[] visibleColOrder;
     private boolean initialContentReceived = false;
     private Element scrollPositionElement;
-    private boolean enabled;
-    private boolean showColHeaders;
-    private boolean showColFooters;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean enabled;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean showColHeaders;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean showColFooters;
 
     /** flag to indicate that table body has changed */
     private boolean isNewBody = true;
 
-    /*
+    /**
      * Read from the "recalcWidths" -attribute. When it is true, the table will
      * recalculate the widths for columns - desirable in some cases. For #1983,
      * marked experimental.
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      */
-    boolean recalcWidths = false;
+    public boolean recalcWidths = false;
 
-    private final ArrayList<Panel> lazyUnregistryBag = new ArrayList<Panel>();
-    protected String height;
-    private String width = "";
-    private boolean rendering = false;
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean rendering = false;
+
     private boolean hasFocus = false;
     private int dragmode;
 
     private int multiselectmode;
-    private int tabIndex;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public int tabIndex;
+
     private TouchScrollDelegate touchScrollDelegate;
 
-    private int lastRenderedHeight;
+    /** For internal use only. May be removed or replaced in the future. */
+    public int lastRenderedHeight;
 
     /**
      * Values (serverCacheFirst+serverCacheLast) sent by server that tells which
@@ -478,37 +529,43 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * If the server side cache contains additional rows with e.g. buttons,
      * scrolling in the client will cause empty buttons to be rendered
      * (cached=true request for non-existing components)
+     * 
+     * For internal use only. May be removed or replaced in the future.
      */
-    private int serverCacheFirst = -1;
-    private int serverCacheLast = -1;
+    public int serverCacheFirst = -1;
+    public int serverCacheLast = -1;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean sizeNeedsInit = true;
 
     /**
      * Used to recall the position of an open context menu if we need to close
      * and reopen it during a row update.
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      */
-    private class ContextMenuDetails {
-        String rowKey;
-        int left;
-        int top;
+    public class ContextMenuDetails {
+        public String rowKey;
+        public int left;
+        public int top;
 
-        ContextMenuDetails(String rowKey, int left, int top) {
+        public ContextMenuDetails(String rowKey, int left, int top) {
             this.rowKey = rowKey;
             this.left = left;
             this.top = top;
         }
     }
 
-    ContextMenuDetails contextMenu;
+    /** For internal use only. May be removed or replaced in the future. */
+    public ContextMenuDetails contextMenu = null;
 
     public VCustomScrollTable() {
         setMultiSelectMode(MULTISELECT_MODE_DEFAULT);
 
-        scrollBodyPanel.addStyleName(CLASSNAME + "-body-wrapper");
         scrollBodyPanel.addFocusHandler(this);
         scrollBodyPanel.addBlurHandler(this);
 
         scrollBodyPanel.addScrollHandler(this);
-        scrollBodyPanel.addStyleName(CLASSNAME + "-body");
 
         /*
          * Firefox auto-repeat works correctly only if we use a key press
@@ -526,18 +583,70 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
         scrollBodyPanel.sinkEvents(Event.ONCONTEXTMENU);
         scrollBodyPanel.addDomHandler(new ContextMenuHandler() {
+
+            @Override
             public void onContextMenu(ContextMenuEvent event) {
                 handleBodyContextMenu(event);
             }
         }, ContextMenuEvent.getType());
 
-        setStyleName(CLASSNAME);
+        setStyleName(STYLENAME);
 
         add(tHead);
         add(scrollBodyPanel);
         add(tFoot);
 
         rowRequestHandler = new RowRequestHandler();
+    }
+
+    @Override
+    public void setStyleName(String style) {
+        updateStyleNames(style, false);
+    }
+
+    @Override
+    public void setStylePrimaryName(String style) {
+        updateStyleNames(style, true);
+    }
+
+    private void updateStyleNames(String newStyle, boolean isPrimary) {
+        scrollBodyPanel
+                .removeStyleName(getStylePrimaryName() + "-body-wrapper");
+        scrollBodyPanel.removeStyleName(getStylePrimaryName() + "-body");
+
+        if (scrollBody != null) {
+            scrollBody.removeStyleName(getStylePrimaryName()
+                    + "-body-noselection");
+        }
+
+        if (isPrimary) {
+            super.setStylePrimaryName(newStyle);
+        } else {
+            super.setStyleName(newStyle);
+        }
+
+        scrollBodyPanel.addStyleName(getStylePrimaryName() + "-body-wrapper");
+        scrollBodyPanel.addStyleName(getStylePrimaryName() + "-body");
+
+        tHead.updateStyleNames(getStylePrimaryName());
+        tFoot.updateStyleNames(getStylePrimaryName());
+
+        if (scrollBody != null) {
+            scrollBody.updateStyleNames(getStylePrimaryName());
+        }
+    }
+
+    public void init(ApplicationConnection client) {
+        this.client = client;
+        // Add a handler to clear saved context menu details when the menu
+        // closes. See #8526.
+        client.getContextMenu().addCloseHandler(new CloseHandler<PopupPanel>() {
+
+            @Override
+            public void onClose(CloseEvent<PopupPanel> event) {
+                contextMenu = null;
+            }
+        });
     }
 
     private void handleBodyContextMenu(ContextMenuEvent event) {
@@ -614,10 +723,10 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             if (focusedRow == null && scrollBody.iterator().hasNext()) {
                 // FIXME should focus first visible from top, not first rendered
                 // ??
-                return setRowFocus((VScrollTableRow) scrollBody.iterator()
-                        .next());
+                return setRowFocus((VCustomScrollTableRow) scrollBody
+                        .iterator().next());
             } else {
-                VScrollTableRow next = getNextRow(focusedRow, offset);
+                VCustomScrollTableRow next = getNextRow(focusedRow, offset);
                 if (next != null) {
                     return setRowFocus(next);
                 }
@@ -648,10 +757,10 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             if (focusedRow == null && scrollBody.iterator().hasNext()) {
                 // FIXME logic is exactly the same as in moveFocusDown, should
                 // be the opposite??
-                return setRowFocus((VScrollTableRow) scrollBody.iterator()
-                        .next());
+                return setRowFocus((VCustomScrollTableRow) scrollBody
+                        .iterator().next());
             } else {
-                VScrollTableRow prev = getPreviousRow(focusedRow, offset);
+                VCustomScrollTableRow prev = getPreviousRow(focusedRow, offset);
                 if (prev != null) {
                     return setRowFocus(prev);
                 } else {
@@ -730,7 +839,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             for (Iterator<String> iterator = selectedRowKeys.iterator(); iterator
                     .hasNext();) {
                 String key = iterator.next();
-                VScrollTableRow renderedRowByKey = getRenderedRowByKey(key);
+                VCustomScrollTableRow renderedRowByKey = getRenderedRowByKey(key);
                 if (renderedRowByKey != null) {
                     for (SelectionRange range : selectedRowRanges) {
                         if (range.inRange(renderedRowByKey)) {
@@ -851,257 +960,10 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         return KeyCodes.KEY_END;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.vaadin.terminal.gwt.client.Paintable#updateFromUIDL(com.vaadin.terminal
-     * .gwt.client.UIDL, com.vaadin.terminal.gwt.client.ApplicationConnection)
-     */
-    public void updateFromUIDL(UIDL uidl, ApplicationConnection client) {
-        rendering = true;
-
-        // On the first rendering, add a handler to clear saved context menu
-        // details when the menu closes. See #8526.
-        if (this.client == null) {
-            client.getContextMenu().addCloseHandler(
-                    new CloseHandler<PopupPanel>() {
-                        public void onClose(CloseEvent<PopupPanel> event) {
-                            contextMenu = null;
-                        }
-                    });
-        }
-        // If a row has an open context menu, it will be closed as the row is
-        // detached. Retain a reference here so we can restore the menu if
-        // required.
-        ContextMenuDetails savedContextMenu = contextMenu;
-
-        if (uidl.hasAttribute(ATTRIBUTE_PAGEBUFFER_FIRST)) {
-            serverCacheFirst = uidl.getIntAttribute(ATTRIBUTE_PAGEBUFFER_FIRST);
-            serverCacheLast = uidl.getIntAttribute(ATTRIBUTE_PAGEBUFFER_LAST);
-        } else {
-            serverCacheFirst = -1;
-            serverCacheLast = -1;
-        }
-        /*
-         * We need to do this before updateComponent since updateComponent calls
-         * this.setHeight() which will calculate a new body height depending on
-         * the space available.
-         */
-        if (uidl.hasAttribute("colfooters")) {
-            showColFooters = uidl.getBooleanAttribute("colfooters");
-        }
-
-        tFoot.setVisible(showColFooters);
-
-        if (client.updateComponent(this, uidl, true)) {
-            rendering = false;
-            return;
-        }
-
-        enabled = !uidl.hasAttribute("disabled");
-
-        if (BrowserInfo.get().isIE8() && !enabled) {
-            /*
-             * The disabled shim will not cover the table body if it is relative
-             * in IE8. See #7324
-             */
-            scrollBodyPanel.getElement().getStyle()
-                    .setPosition(Position.STATIC);
-        } else if (BrowserInfo.get().isIE8()) {
-            scrollBodyPanel.getElement().getStyle()
-                    .setPosition(Position.RELATIVE);
-        }
-
-        this.client = client;
-        paintableId = uidl.getStringAttribute("id");
-        immediate = uidl.getBooleanAttribute("immediate");
-
-        int previousTotalRows = totalRows;
-        updateTotalRows(uidl);
-        boolean totalRowsChanged = (totalRows != previousTotalRows);
-
-        updateDragMode(uidl);
-
-        updateSelectionProperties(uidl);
-
-        if (uidl.hasAttribute("alb")) {
-            bodyActionKeys = uidl.getStringArrayAttribute("alb");
-        } else {
-            // Need to clear the actions if the action handlers have been
-            // removed
-            bodyActionKeys = null;
-        }
-
-        setCacheRateFromUIDL(uidl);
-
-        recalcWidths = uidl.hasAttribute("recalcWidths");
-        if (recalcWidths) {
-            tHead.clear();
-            tFoot.clear();
-        }
-
-        updatePageLength(uidl);
-
-        updateFirstVisibleAndScrollIfNeeded(uidl);
-
-        showRowHeaders = uidl.getBooleanAttribute("rowheaders");
-        showColHeaders = uidl.getBooleanAttribute("colheaders");
-
-        updateSortingProperties(uidl);
-
-        boolean keyboardSelectionOverRowFetchInProgress = selectSelectedRows(uidl);
-
-        updateActionMap(uidl);
-
-        updateColumnProperties(uidl);
-
-        UIDL ac = uidl.getChildByTagName("-ac");
-        if (ac == null) {
-            if (dropHandler != null) {
-                // remove dropHandler if not present anymore
-                dropHandler = null;
-            }
-        } else {
-            if (dropHandler == null) {
-                dropHandler = new VScrollTableDropHandler();
-            }
-            dropHandler.updateAcceptRules(ac);
-        }
-
-        UIDL partialRowAdditions = uidl.getChildByTagName("prows");
-        UIDL partialRowUpdates = uidl.getChildByTagName("urows");
-        if (partialRowUpdates != null || partialRowAdditions != null) {
-            // we may have pending cache row fetch, cancel it. See #2136
-            rowRequestHandler.cancel();
-
-            updateRowsInBody(partialRowUpdates);
-            addAndRemoveRows(partialRowAdditions);
-        } else {
-            UIDL rowData = uidl.getChildByTagName("rows");
-            if (rowData != null) {
-                // we may have pending cache row fetch, cancel it. See #2136
-                rowRequestHandler.cancel();
-
-                if (!recalcWidths && initializedAndAttached) {
-                    updateBody(rowData, uidl.getIntAttribute("firstrow"),
-                            uidl.getIntAttribute("rows"));
-                    if (headerChangedDuringUpdate) {
-                        triggerLazyColumnAdjustment(true);
-                    } else if (!isScrollPositionVisible()
-                            || totalRowsChanged
-                            || lastRenderedHeight != scrollBody
-                                    .getOffsetHeight()) {
-                        // webkits may still bug with their disturbing scrollbar
-                        // bug, see #3457
-                        // Run overflow fix for the scrollable area
-                        // #6698 - If there's a scroll going on, don't abort it
-                        // by changing overflows as the length of the contents
-                        // *shouldn't* have changed (unless the number of rows
-                        // or the height of the widget has also changed)
-                        Scheduler.get().scheduleDeferred(new Command() {
-                            public void execute() {
-                                Util.runWebkitOverflowAutoFix(scrollBodyPanel
-                                        .getElement());
-                            }
-                        });
-                    }
-                } else {
-                    initializeRows(uidl, rowData);
-                }
-            }
-        }
-
-        // If a row had an open context menu before the update, and after the
-        // update there's a row with the same key as that row, restore the
-        // context menu. See #8526.
-        if (enabled && savedContextMenu != null) {
-            for (Widget w : scrollBody.renderedRows) {
-                VScrollTableRow row = (VScrollTableRow) w;
-                if (row.isVisible()
-                        && row.getKey().equals(savedContextMenu.rowKey)) {
-                    contextMenu = savedContextMenu;
-                    client.getContextMenu().showAt(row, savedContextMenu.left,
-                            savedContextMenu.top);
-                }
-            }
-        }
-
-        if (!isSelectable()) {
-            scrollBody.addStyleName(CLASSNAME + "-body-noselection");
-        } else {
-            scrollBody.removeStyleName(CLASSNAME + "-body-noselection");
-        }
-
-        hideScrollPositionAnnotation();
-        purgeUnregistryBag();
-
-        // selection is no in sync with server, avoid excessive server visits by
-        // clearing to flag used during the normal operation
-        if (!keyboardSelectionOverRowFetchInProgress) {
-            selectionChanged = false;
-        }
-
-        /*
-         * This is called when the Home or page up button has been pressed in
-         * selectable mode and the next selected row was not yet rendered in the
-         * client
-         */
-        if (selectFirstItemInNextRender || focusFirstItemInNextRender) {
-            selectFirstRenderedRowInViewPort(focusFirstItemInNextRender);
-            selectFirstItemInNextRender = focusFirstItemInNextRender = false;
-        }
-
-        /*
-         * This is called when the page down or end button has been pressed in
-         * selectable mode and the next selected row was not yet rendered in the
-         * client
-         */
-        if (selectLastItemInNextRender || focusLastItemInNextRender) {
-            selectLastRenderedRowInViewPort(focusLastItemInNextRender);
-            selectLastItemInNextRender = focusLastItemInNextRender = false;
-        }
-        multiselectPending = false;
-
-        if (focusedRow != null) {
-            if (!focusedRow.isAttached() && !rowRequestHandler.isRunning()) {
-                // focused row has been orphaned, can't focus
-                focusRowFromBody();
-            }
-        }
-
-        /*
-         * If the server has (re)initialized the rows, our selectionRangeStart
-         * row will point to an index that the server knows nothing about,
-         * causing problems if doing multi selection with shift. The field will
-         * be cleared a little later when the row focus has been restored.
-         * (#8584)
-         */
-        if (uidl.hasAttribute(ATTRIBUTE_KEY_MAPPER_RESET)
-                && uidl.getBooleanAttribute(ATTRIBUTE_KEY_MAPPER_RESET)
-                && selectionRangeStart != null) {
-            assert !selectionRangeStart.isAttached();
-            selectionRangeStart = focusedRow;
-        }
-
-        tabIndex = uidl.hasAttribute("tabindex") ? uidl
-                .getIntAttribute("tabindex") : 0;
-        setProperTabIndex();
-
-        resizeSortedColumnForSortIndicator();
-
-        // Remember this to detect situations where overflow hack might be
-        // needed during scrolling
-        lastRenderedHeight = scrollBody.getOffsetHeight();
-
-        rendering = false;
-        headerChangedDuringUpdate = false;
-    }
-
-    private void initializeRows(UIDL uidl, UIDL rowData) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void initializeRows(UIDL uidl, UIDL rowData) {
         if (scrollBody != null) {
             scrollBody.removeFromParent();
-            lazyUnregistryBag.add(scrollBody);
         }
         scrollBody = createScrollBody();
 
@@ -1115,13 +977,12 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         tFoot.setHorizontalScrollPosition(0);
 
         initialContentReceived = true;
-        if (isAttached()) {
-            sizeInit();
-        }
+        sizeNeedsInit = true;
         scrollBody.restoreRowVisibility();
     }
 
-    private void updateColumnProperties(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateColumnProperties(UIDL uidl) {
         updateColumnOrder(uidl);
 
         updateCollapsedColumns(uidl);
@@ -1160,7 +1021,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
     }
 
-    private boolean selectSelectedRows(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean selectSelectedRows(UIDL uidl) {
         boolean keyboardSelectionOverRowFetchInProgress = false;
 
         if (uidl.hasVariable("selected")) {
@@ -1173,7 +1035,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                      * Make the focus reflect to the server side state unless we
                      * are currently selecting multiple rows with keyboard.
                      */
-                    VScrollTableRow row = (VScrollTableRow) iterator.next();
+                    VCustomScrollTableRow row = (VCustomScrollTableRow) iterator
+                            .next();
                     boolean selected = selectedKeys.contains(row.getKey());
                     if (!selected
                             && unSyncedselectionsBeforeRowFetch != null
@@ -1197,7 +1060,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         return keyboardSelectionOverRowFetchInProgress;
     }
 
-    private void updateSortingProperties(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateSortingProperties(UIDL uidl) {
         oldSortColumn = sortColumn;
         if (uidl.hasVariable("sortascending")) {
             sortAscending = uidl.getBooleanVariable("sortascending");
@@ -1205,7 +1069,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
     }
 
-    private void resizeSortedColumnForSortIndicator() {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void resizeSortedColumnForSortIndicator() {
         // Force recalculation of the captionContainer element inside the header
         // cell to accomodate for the size of the sort arrow.
         HeaderCell sortedHeader = tHead.getHeaderCell(sortColumn);
@@ -1220,7 +1085,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
     }
 
-    private void updateFirstVisibleAndScrollIfNeeded(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateFirstVisibleAndScrollIfNeeded(UIDL uidl) {
         firstvisible = uidl.hasVariable("firstvisible") ? uidl
                 .getIntVariable("firstvisible") : 0;
         if (firstvisible != lastRequestedFirstvisible && scrollBody != null) {
@@ -1235,7 +1101,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         return (int) (rowIx * scrollBody.getRowHeight());
     }
 
-    private void updatePageLength(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updatePageLength(UIDL uidl) {
         int oldPageLength = pageLength;
         if (uidl.hasAttribute("pagelength")) {
             pageLength = uidl.getIntAttribute("pagelength");
@@ -1246,11 +1113,13 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
         if (oldPageLength != pageLength && initializedAndAttached) {
             // page length changed, need to update size
-            sizeInit();
+            sizeNeedsInit = true;
         }
     }
 
-    private void updateSelectionProperties(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateSelectionProperties(UIDL uidl,
+            AbstractComponentState state, boolean readOnly) {
         setMultiSelectMode(uidl.hasAttribute("multiselectmode") ? uidl
                 .getIntAttribute("multiselectmode") : MULTISELECT_MODE_DEFAULT);
 
@@ -1258,19 +1127,20 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 .getBooleanAttribute("nsa") : true;
 
         if (uidl.hasAttribute("selectmode")) {
-            if (uidl.getBooleanAttribute("readonly")) {
-                selectMode = Table.SELECT_MODE_NONE;
+            if (readOnly) {
+                selectMode = SelectMode.NONE;
             } else if (uidl.getStringAttribute("selectmode").equals("multi")) {
-                selectMode = Table.SELECT_MODE_MULTI;
+                selectMode = SelectMode.MULTI;
             } else if (uidl.getStringAttribute("selectmode").equals("single")) {
-                selectMode = Table.SELECT_MODE_SINGLE;
+                selectMode = SelectMode.SINGLE;
             } else {
-                selectMode = Table.SELECT_MODE_NONE;
+                selectMode = SelectMode.NONE;
             }
         }
     }
 
-    private void updateDragMode(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateDragMode(UIDL uidl) {
         dragmode = uidl.hasAttribute("dragmode") ? uidl
                 .getIntAttribute("dragmode") : 0;
         if (BrowserInfo.get().isIE()) {
@@ -1283,7 +1153,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
     }
 
-    protected void updateTotalRows(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateTotalRows(UIDL uidl) {
         int newTotalRows = uidl.getIntAttribute("totalrows");
         if (newTotalRows != getTotalRows()) {
             if (scrollBody != null) {
@@ -1303,16 +1174,17 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         totalRows = newTotalRows;
     }
 
-    protected int getTotalRows() {
+    public int getTotalRows() {
         return totalRows;
     }
 
-    private void focusRowFromBody() {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void focusRowFromBody() {
         if (selectedRowKeys.size() == 1) {
             // try to focus a row currently selected and in viewport
             String selectedRowKey = selectedRowKeys.iterator().next();
             if (selectedRowKey != null) {
-                VScrollTableRow renderedRow = getRenderedRowByKey(selectedRowKey);
+                VCustomScrollTableRow renderedRow = getRenderedRowByKey(selectedRowKey);
                 if (renderedRow == null || !renderedRow.isInViewPort()) {
                     setRowFocus(scrollBody.getRowByRowIndex(firstRowInViewPort));
                 } else {
@@ -1325,19 +1197,22 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
     }
 
-    protected VScrollTableBody createScrollBody() {
-        return new VScrollTableBody();
+    protected VCustomScrollTableBody createScrollBody() {
+        return new VCustomScrollTableBody();
     }
 
     /**
      * Selects the last row visible in the table
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      * 
      * @param focusOnly
      *            Should the focus only be moved to the last row
      */
-    private void selectLastRenderedRowInViewPort(boolean focusOnly) {
+    public void selectLastRenderedRowInViewPort(boolean focusOnly) {
         int index = firstRowInViewPort + getFullyVisibleRowCount();
-        VScrollTableRow lastRowInViewport = scrollBody.getRowByRowIndex(index);
+        VCustomScrollTableRow lastRowInViewport = scrollBody
+                .getRowByRowIndex(index);
         if (lastRowInViewport == null) {
             // this should not happen in normal situations (white space at the
             // end of viewport). Select the last rendered as a fallback.
@@ -1356,13 +1231,16 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
     /**
      * Selects the first row visible in the table
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      * 
      * @param focusOnly
      *            Should the focus only be moved to the first row
      */
-    private void selectFirstRenderedRowInViewPort(boolean focusOnly) {
+    public void selectFirstRenderedRowInViewPort(boolean focusOnly) {
         int index = firstRowInViewPort;
-        VScrollTableRow firstInViewport = scrollBody.getRowByRowIndex(index);
+        VCustomScrollTableRow firstInViewport = scrollBody
+                .getRowByRowIndex(index);
         if (firstInViewport == null) {
             // this should not happen in normal situations
             return;
@@ -1374,7 +1252,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
     }
 
-    private void setCacheRateFromUIDL(UIDL uidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void setCacheRateFromUIDL(UIDL uidl) {
         setCacheRate(uidl.hasAttribute("cr") ? uidl.getDoubleAttribute("cr")
                 : CACHE_RATE_DEFAULT);
     }
@@ -1386,20 +1265,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
     }
 
-    /**
-     * Unregisters Paintables in "trashed" HasWidgets (IScrollTableBodys or
-     * IScrollTableRows). This is done lazily as Table must survive from
-     * "subtreecaching" logic.
-     */
-    private void purgeUnregistryBag() {
-        for (Iterator<Panel> iterator = lazyUnregistryBag.iterator(); iterator
-                .hasNext();) {
-            client.unregisterChildPaintables(iterator.next());
-        }
-        lazyUnregistryBag.clear();
-    }
-
-    private void updateActionMap(UIDL mainUidl) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateActionMap(UIDL mainUidl) {
         UIDL actionsUidl = mainUidl.getChildByTagName("actions");
         if (actionsUidl == null) {
             return;
@@ -1494,6 +1361,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     }
 
     /**
+     * For internal use only. May be removed or replaced in the future.
+     * 
      * @param uidl
      *            which contains row data
      * @param firstRow
@@ -1501,7 +1370,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * @param reqRows
      *            amount of rows in data set
      */
-    private void updateBody(UIDL uidl, int firstRow, int reqRows) {
+    public void updateBody(UIDL uidl, int firstRow, int reqRows) {
         if (uidl == null || reqRows < 1) {
             // container is empty, remove possibly existing rows
             if (firstRow <= 0) {
@@ -1518,7 +1387,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         discardRowsOutsideCacheWindow();
     }
 
-    private void updateRowsInBody(UIDL partialRowUpdates) {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateRowsInBody(UIDL partialRowUpdates) {
         if (partialRowUpdates == null) {
             return;
         }
@@ -1603,11 +1473,13 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     /**
      * Inserts rows in the table body or removes them from the table body based
      * on the commands in the UIDL.
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      * 
      * @param partialRowAdditions
      *            the UIDL containing row updates.
      */
-    protected void addAndRemoveRows(UIDL partialRowAdditions) {
+    public void addAndRemoveRows(UIDL partialRowAdditions) {
         if (partialRowAdditions == null) {
             return;
         }
@@ -1651,20 +1523,20 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     }
 
     private boolean isMultiSelectModeSimple() {
-        return selectMode == Table.SELECT_MODE_MULTI
+        return selectMode == SelectMode.MULTI
                 && multiselectmode == MULTISELECT_MODE_SIMPLE;
     }
 
     private boolean isSingleSelectMode() {
-        return selectMode == Table.SELECT_MODE_SINGLE;
+        return selectMode == SelectMode.SINGLE;
     }
 
     private boolean isMultiSelectModeAny() {
-        return selectMode == Table.SELECT_MODE_MULTI;
+        return selectMode == SelectMode.MULTI;
     }
 
     private boolean isMultiSelectModeDefault() {
-        return selectMode == Table.SELECT_MODE_MULTI
+        return selectMode == SelectMode.MULTI
                 && multiselectmode == MULTISELECT_MODE_DEFAULT;
     }
 
@@ -1679,8 +1551,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
     }
 
-    protected boolean isSelectable() {
-        return selectMode > Table.SELECT_MODE_NONE;
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean isSelectable() {
+        return selectMode.getId() > SelectMode.NONE.getId();
     }
 
     private boolean isCollapsedColumn(String colKey) {
@@ -1731,12 +1604,12 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      *            The key to search with
      * @return
      */
-    protected VScrollTableRow getRenderedRowByKey(String key) {
+    public VCustomScrollTableRow getRenderedRowByKey(String key) {
         if (scrollBody != null) {
             final Iterator<Widget> it = scrollBody.iterator();
-            VScrollTableRow r = null;
+            VCustomScrollTableRow r = null;
             while (it.hasNext()) {
-                r = (VScrollTableRow) it.next();
+                r = (VCustomScrollTableRow) it.next();
                 if (r.getKey().equals(key)) {
                     return r;
                 }
@@ -1753,15 +1626,16 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * 
      * @return The next row or null if no row exists
      */
-    private VScrollTableRow getNextRow(VScrollTableRow row, int offset) {
+    private VCustomScrollTableRow getNextRow(VCustomScrollTableRow row,
+            int offset) {
         final Iterator<Widget> it = scrollBody.iterator();
-        VScrollTableRow r = null;
+        VCustomScrollTableRow r = null;
         while (it.hasNext()) {
-            r = (VScrollTableRow) it.next();
+            r = (VCustomScrollTableRow) it.next();
             if (r == row) {
                 r = null;
                 while (offset >= 0 && it.hasNext()) {
-                    r = (VScrollTableRow) it.next();
+                    r = (VCustomScrollTableRow) it.next();
                     offset--;
                 }
                 return r;
@@ -1778,15 +1652,16 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      *            The row to calculate from
      * @return The previous row or null if no row exists
      */
-    private VScrollTableRow getPreviousRow(VScrollTableRow row, int offset) {
+    private VCustomScrollTableRow getPreviousRow(VCustomScrollTableRow row,
+            int offset) {
         final Iterator<Widget> it = scrollBody.iterator();
         final Iterator<Widget> offsetIt = scrollBody.iterator();
-        VScrollTableRow r = null;
-        VScrollTableRow prev = null;
+        VCustomScrollTableRow r = null;
+        VCustomScrollTableRow prev = null;
         while (it.hasNext()) {
-            r = (VScrollTableRow) it.next();
+            r = (VCustomScrollTableRow) it.next();
             if (offset < 0) {
-                prev = (VScrollTableRow) offsetIt.next();
+                prev = (VCustomScrollTableRow) offsetIt.next();
             }
             if (r == row) {
                 return prev;
@@ -1856,16 +1731,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             }
         }
         client.updateVariable(paintableId, "columnorder", columnOrder, false);
-        if (client.hasEventListeners(this, COLUMN_REORDER_EVENT_ID)) {
+        if (client.hasEventListeners(this,
+                TableConstants.COLUMN_REORDER_EVENT_ID)) {
             client.sendPendingVariableChanges();
-        }
-    }
-
-    @Override
-    protected void onAttach() {
-        super.onAttach();
-        if (initialContentReceived) {
-            sizeInit();
         }
     }
 
@@ -1891,8 +1759,14 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * * Sets proper width and height
      * 
      * * Makes deferred request to get some cache rows
+     * 
+     * For internal use only. May be removed or replaced in the future.
      */
-    private void sizeInit() {
+    public void sizeInit() {
+        sizeNeedsInit = false;
+
+        scrollBody.setContainerHeight();
+
         /*
          * We will use browsers table rendering algorithm to find proper column
          * widths. If content and header take less space than available, we will
@@ -1947,7 +1821,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         boolean willHaveScrollbarz = willHaveScrollbars();
 
         // fix "natural" width if width not set
-        if (width == null || "".equals(width)) {
+        if (isDynamicWidth()) {
             int w = total;
             w += scrollBody.getCellExtraWidth() * visibleColOrder.length;
             if (willHaveScrollbarz) {
@@ -1968,14 +1842,12 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
 
         // TODO refactor this code to be the same as in resize timer
-        boolean needsReLayout = false;
 
         if (availW > total) {
             // natural size is smaller than available space
             final int extraSpace = availW - total;
             final int totalWidthR = total - totalExplicitColumnsWidths;
             int checksum = 0;
-            needsReLayout = true;
 
             if (extraSpace == 1) {
                 // We cannot divide one single pixel so we give it the first
@@ -2065,17 +1937,13 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
         initializedAndAttached = true;
 
-        if (needsReLayout) {
-            scrollBody.reLayoutComponents();
-        }
-
         updatePageLength();
 
         /*
          * Fix "natural" height if height is not set. This must be after width
          * fixing so the components' widths have been adjusted.
          */
-        if (height == null || "".equals(height)) {
+        if (isDynamicHeight()) {
             /*
              * We must force an update of the row height as this point as it
              * might have been (incorrectly) calculated earlier
@@ -2108,6 +1976,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         if (firstvisible > 0) {
             // Deferred due to some Firefox oddities
             Scheduler.get().scheduleDeferred(new Command() {
+
+                @Override
                 public void execute() {
                     scrollBodyPanel
                             .setScrollPosition(measureRowHeightOffset(firstvisible));
@@ -2140,8 +2010,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          * Ensures the column alignments are correct at initial loading. <br/>
          * (child components widths are correct)
          */
-        scrollBody.reLayoutComponents();
         Scheduler.get().scheduleDeferred(new Command() {
+
+            @Override
             public void execute() {
                 Util.runWebkitOverflowAutoFix(scrollBodyPanel.getElement());
             }
@@ -2155,7 +2026,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * @return true if content area will have scrollbars visible.
      */
     protected boolean willHaveScrollbars() {
-        if (!(height != null && !height.equals(""))) {
+        if (isDynamicHeight()) {
             if (pageLength < totalRows) {
                 return true;
             }
@@ -2174,7 +2045,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     private void announceScrollPosition() {
         if (scrollPositionElement == null) {
             scrollPositionElement = DOM.createDiv();
-            scrollPositionElement.setClassName(CLASSNAME + "-scrollposition");
+            scrollPositionElement.setClassName(getStylePrimaryName()
+                    + "-scrollposition");
             scrollPositionElement.getStyle().setPosition(Position.ABSOLUTE);
             scrollPositionElement.getStyle().setDisplay(Display.NONE);
             getElement().appendChild(scrollPositionElement);
@@ -2194,19 +2066,22 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         style.setDisplay(Display.BLOCK);
     }
 
-    private void hideScrollPositionAnnotation() {
+    /** For internal use only. May be removed or replaced in the future. */
+    public void hideScrollPositionAnnotation() {
         if (scrollPositionElement != null) {
             DOM.setStyleAttribute(scrollPositionElement, "display", "none");
         }
     }
 
-    private boolean isScrollPositionVisible() {
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean isScrollPositionVisible() {
         return scrollPositionElement != null
                 && !scrollPositionElement.getStyle().getDisplay()
                         .equals(Display.NONE.toString());
     }
 
-    private class RowRequestHandler extends Timer {
+    /** For internal use only. May be removed or replaced in the future. */
+    public class RowRequestHandler extends Timer {
 
         private int reqFirstRow = 0;
         private int reqRows = 0;
@@ -2381,11 +2256,10 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          * of the caption container element by the correct amount
          */
         public void resizeCaptionContainer(int rightSpacing) {
-
             int captionContainerWidth = width
                     - colResizeWidget.getOffsetWidth() - rightSpacing;
 
-            if (BrowserInfo.get().isIE6() || td.getClassName().contains("-asc")
+            if (td.getClassName().contains("-asc")
                     || td.getClassName().contains("-desc")) {
                 // Leave room for the sort indicator
                 captionContainerWidth -= sortIndicator.getOffsetWidth();
@@ -2414,24 +2288,15 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         public HeaderCell(String colId, String headerText) {
             cid = colId;
 
-            DOM.setElementProperty(colResizeWidget, "className", CLASSNAME
-                    + "-resizer");
-
             setText(headerText);
 
-            DOM.appendChild(td, colResizeWidget);
-
-            DOM.setElementProperty(sortIndicator, "className", CLASSNAME
-                    + "-sort-indicator");
-            DOM.appendChild(td, sortIndicator);
-
-            DOM.setElementProperty(captionContainer, "className", CLASSNAME
-                    + "-caption-container");
+            td.appendChild(colResizeWidget);
 
             // ensure no clipping initially (problem on column additions)
-            DOM.setStyleAttribute(captionContainer, "overflow", "visible");
+            captionContainer.getStyle().setOverflow(Overflow.VISIBLE);
 
-            DOM.appendChild(td, captionContainer);
+            td.appendChild(sortIndicator);
+            td.appendChild(captionContainer);
 
             DOM.sinkEvents(td, Event.MOUSEEVENTS | Event.ONDBLCLICK
                     | Event.ONCONTEXTMENU | Event.TOUCHEVENTS);
@@ -2439,6 +2304,38 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             setElement(td);
 
             setAlign(ALIGN_LEFT);
+        }
+
+        protected void updateStyleNames(String primaryStyleName) {
+            colResizeWidget.setClassName(primaryStyleName + "-resizer");
+            sortIndicator.setClassName(primaryStyleName + "-sort-indicator");
+            captionContainer.setClassName(primaryStyleName
+                    + "-caption-container");
+            if (sorted) {
+                if (sortAscending) {
+                    setStyleName(primaryStyleName + "-header-cell-asc");
+                } else {
+                    setStyleName(primaryStyleName + "-header-cell-desc");
+                }
+            } else {
+                setStyleName(primaryStyleName + "-header-cell");
+            }
+
+            final String ALIGN_PREFIX = primaryStyleName
+                    + "-caption-container-align-";
+
+            switch (align) {
+            case ALIGN_CENTER:
+                captionContainer.addClassName(ALIGN_PREFIX + "center");
+                break;
+            case ALIGN_RIGHT:
+                captionContainer.addClassName(ALIGN_PREFIX + "right");
+                break;
+            default:
+                captionContainer.addClassName(ALIGN_PREFIX + "left");
+                break;
+            }
+
         }
 
         public void disableAutoWidthCalculation() {
@@ -2473,6 +2370,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     setWidth(tdWidth + "px");
                 } else {
                     Scheduler.get().scheduleDeferred(new Command() {
+
+                        @Override
                         public void execute() {
                             int tdWidth = width
                                     + scrollBody.getCellExtraWidth();
@@ -2512,20 +2411,13 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
         private void setSorted(boolean sorted) {
             this.sorted = sorted;
-            if (sorted) {
-                if (sortAscending) {
-                    this.setStyleName(CLASSNAME + "-header-cell-asc");
-                } else {
-                    this.setStyleName(CLASSNAME + "-header-cell-desc");
-                }
-            } else {
-                this.setStyleName(CLASSNAME + "-header-cell");
-            }
+            updateStyleNames(VCustomScrollTable.this.getStylePrimaryName());
         }
 
         /**
          * Handle column reordering.
          */
+
         @Override
         public void onBrowserEvent(Event event) {
             if (enabled && event != null) {
@@ -2555,7 +2447,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     if (event.getTypeInt() == Event.ONCONTEXTMENU
                             && !client.hasEventListeners(
                                     VCustomScrollTable.this,
-                                    HEADER_CLICK_EVENT_ID)) {
+                                    TableConstants.HEADER_CLICK_EVENT_ID)) {
                         // Prevent showing the browser's context menu only when
                         // there is a header click listener.
                         stopPropagation = false;
@@ -2574,7 +2466,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             floatingCopyOfHeaderCell = DOM
                     .getChild(floatingCopyOfHeaderCell, 2);
             DOM.setElementProperty(floatingCopyOfHeaderCell, "className",
-                    CLASSNAME + "-header-drag");
+                    VCustomScrollTable.this.getStylePrimaryName()
+                            + "-header-drag");
             // otherwise might wrap or be cut if narrow column
             DOM.setStyleAttribute(floatingCopyOfHeaderCell, "width", "auto");
             updateFloatingCopysPosition(DOM.getAbsoluteLeft(td),
@@ -2608,8 +2501,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          */
         private void fireHeaderClickedEvent(Event event) {
             if (client.hasEventListeners(VCustomScrollTable.this,
-                    HEADER_CLICK_EVENT_ID)) {
-                MouseEventDetails details = new MouseEventDetails(event);
+                    TableConstants.HEADER_CLICK_EVENT_ID)) {
+                MouseEventDetails details = MouseEventDetailsBuilder
+                        .buildMouseEventDetails(event);
                 client.updateVariable(paintableId, "headerClickEvent",
                         details.toString(), false);
                 client.updateVariable(paintableId, "headerClickCID", cid, true);
@@ -2821,24 +2715,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
 
         public void setAlign(char c) {
-            final String ALIGN_PREFIX = CLASSNAME + "-caption-container-align-";
-            if (align != c) {
-                captionContainer.removeClassName(ALIGN_PREFIX + "center");
-                captionContainer.removeClassName(ALIGN_PREFIX + "right");
-                captionContainer.removeClassName(ALIGN_PREFIX + "left");
-                switch (c) {
-                case ALIGN_CENTER:
-                    captionContainer.addClassName(ALIGN_PREFIX + "center");
-                    break;
-                case ALIGN_RIGHT:
-                    captionContainer.addClassName(ALIGN_PREFIX + "right");
-                    break;
-                default:
-                    captionContainer.addClassName(ALIGN_PREFIX + "left");
-                    break;
-                }
-            }
             align = c;
+            updateStyleNames(VCustomScrollTable.this.getStylePrimaryName());
         }
 
         public char getAlign() {
@@ -2866,8 +2744,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
                     int hw = captionContainer.getOffsetWidth()
                             + scrollBody.getCellExtraWidth();
-                    if (BrowserInfo.get().isGecko()
-                            || BrowserInfo.get().isIE7()) {
+                    if (BrowserInfo.get().isGecko()) {
                         hw += sortIndicator.getOffsetWidth();
                     }
                     if (columnIndex < 0) {
@@ -2911,7 +2788,13 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
         RowHeadersHeaderCell() {
             super(ROW_HEADER_COLUMN_KEY, "");
-            this.setStyleName(CLASSNAME + "-header-cell-rowheader");
+            updateStyleNames(VCustomScrollTable.this.getStylePrimaryName());
+        }
+
+        @Override
+        protected void updateStyleNames(String primaryStyleName) {
+            super.updateStyleNames(primaryStyleName);
+            setStyleName(primaryStyleName + "-header-cell-rowheader");
         }
 
         @Override
@@ -2946,12 +2829,6 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             }
 
             DOM.setStyleAttribute(hTableWrapper, "overflow", "hidden");
-            DOM.setElementProperty(hTableWrapper, "className", CLASSNAME
-                    + "-header");
-
-            // TODO move styles to CSS
-            DOM.setElementProperty(columnSelector, "className", CLASSNAME
-                    + "-column-selector");
             DOM.setStyleAttribute(columnSelector, "display", "none");
 
             DOM.appendChild(table, headerTableBody);
@@ -2962,12 +2839,19 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             DOM.appendChild(div, columnSelector);
             setElement(div);
 
-            setStyleName(CLASSNAME + "-header-wrap");
-
             DOM.sinkEvents(columnSelector, Event.ONCLICK);
 
             availableCells.put(ROW_HEADER_COLUMN_KEY,
                     new RowHeadersHeaderCell());
+        }
+
+        protected void updateStyleNames(String primaryStyleName) {
+            hTableWrapper.setClassName(primaryStyleName + "-header");
+            columnSelector.setClassName(primaryStyleName + "-column-selector");
+            setStyleName(primaryStyleName + "-header-wrap");
+            for (HeaderCell c : availableCells.values()) {
+                c.updateStyleNames(primaryStyleName);
+            }
         }
 
         public void resizeCaptionContainer(HeaderCell cell) {
@@ -3070,6 +2954,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         final int newWidth = width;
                         Scheduler.get().scheduleDeferred(
                                 new ScheduledCommand() {
+
+                                    @Override
                                     public void execute() {
                                         setColWidth(colIx, newWidth, true);
                                     }
@@ -3097,6 +2983,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             if (refreshContentWidths) {
                 // Recalculate the column sizings if any column has changed
                 Scheduler.get().scheduleDeferred(new ScheduledCommand() {
+
+                    @Override
                     public void execute() {
                         triggerLazyColumnAdjustment(true);
                     }
@@ -3134,12 +3022,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
 
         public void setHorizontalScrollPosition(int scrollLeft) {
-            if (BrowserInfo.get().isIE6()) {
-                hTableWrapper.getStyle().setPosition(Position.RELATIVE);
-                hTableWrapper.getStyle().setLeft(-scrollLeft, Unit.PX);
-            } else {
-                hTableWrapper.setScrollLeft(scrollLeft);
-            }
+            hTableWrapper.setScrollLeft(scrollLeft);
         }
 
         public void setColumnCollapsingAllowed(boolean cc) {
@@ -3213,6 +3096,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             visibleCells.add(newIndex, hCell);
         }
 
+        @Override
         public Iterator<Widget> iterator() {
             return visibleCells.iterator();
         }
@@ -3236,15 +3120,17 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         private void focusSlot(int index) {
             removeSlotFocus();
             if (index > 0) {
-                DOM.setElementProperty(
-                        DOM.getFirstChild(DOM.getChild(tr, index - 1)),
-                        "className", CLASSNAME + "-resizer " + CLASSNAME
-                                + "-focus-slot-right");
+                Element child = tr.getChild(index - 1).getFirstChild().cast();
+                child.setClassName(VCustomScrollTable.this
+                        .getStylePrimaryName() + "-resizer");
+                child.addClassName(VCustomScrollTable.this
+                        .getStylePrimaryName() + "-focus-slot-right");
             } else {
-                DOM.setElementProperty(
-                        DOM.getFirstChild(DOM.getChild(tr, index)),
-                        "className", CLASSNAME + "-resizer " + CLASSNAME
-                                + "-focus-slot-left");
+                Element child = tr.getChild(index).getFirstChild().cast();
+                child.setClassName(VCustomScrollTable.this
+                        .getStylePrimaryName() + "-resizer");
+                child.addClassName(VCustomScrollTable.this
+                        .getStylePrimaryName() + "-focus-slot-left");
             }
             focusedSlot = index;
         }
@@ -3254,13 +3140,14 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 return;
             }
             if (focusedSlot == 0) {
-                DOM.setElementProperty(
-                        DOM.getFirstChild(DOM.getChild(tr, focusedSlot)),
-                        "className", CLASSNAME + "-resizer");
+                Element child = tr.getChild(focusedSlot).getFirstChild().cast();
+                child.setClassName(VCustomScrollTable.this
+                        .getStylePrimaryName() + "-resizer");
             } else if (focusedSlot > 0) {
-                DOM.setElementProperty(
-                        DOM.getFirstChild(DOM.getChild(tr, focusedSlot - 1)),
-                        "className", CLASSNAME + "-resizer");
+                Element child = tr.getChild(focusedSlot - 1).getFirstChild()
+                        .cast();
+                child.setClassName(VCustomScrollTable.this
+                        .getStylePrimaryName() + "-resizer");
             }
             focusedSlot = -1;
         }
@@ -3291,7 +3178,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             String colKey;
             private boolean collapsed;
             private boolean noncollapsible = false;
-            private VScrollTableRow currentlyFocusedRow;
+            private VCustomScrollTableRow currentlyFocusedRow;
 
             public VisibleColumnAction(String colKey) {
                 super(VCustomScrollTable.TableHead.this);
@@ -3335,6 +3222,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             /**
              * Override default method to distinguish on/off columns
              */
+
             @Override
             public String getHTML() {
                 final StringBuffer buf = new StringBuffer();
@@ -3360,6 +3248,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         /*
          * Returns columns as Action array for column select popup
          */
+
+        @Override
         public Action[] getActions() {
             Object[] cols;
             if (columnReordering && columnOrder != null) {
@@ -3398,10 +3288,12 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             return actions;
         }
 
+        @Override
         public ApplicationConnection getClient() {
             return client;
         }
 
+        @Override
         public String getPaintableId() {
             return paintableId;
         }
@@ -3455,9 +3347,6 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
             setText(headerText);
 
-            DOM.setElementProperty(captionContainer, "className", CLASSNAME
-                    + "-footer-container");
-
             // ensure no clipping initially (problem on column additions)
             DOM.setStyleAttribute(captionContainer, "overflow", "visible");
 
@@ -3469,6 +3358,13 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     | Event.ONCONTEXTMENU);
 
             setElement(td);
+
+            updateStyleNames(VCustomScrollTable.this.getStylePrimaryName());
+        }
+
+        protected void updateStyleNames(String primaryStyleName) {
+            captionContainer.setClassName(primaryStyleName
+                    + "-footer-container");
         }
 
         /**
@@ -3568,6 +3464,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     setWidth(Math.max(tdWidth, 0) + "px");
                 } else {
                     Scheduler.get().scheduleDeferred(new Command() {
+
+                        @Override
                         public void execute() {
                             int tdWidth = width
                                     + scrollBody.getCellExtraWidth()
@@ -3648,7 +3546,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 boolean stopPropagation = true;
                 if (event.getTypeInt() == Event.ONCONTEXTMENU
                         && !client.hasEventListeners(VCustomScrollTable.this,
-                                FOOTER_CLICK_EVENT_ID)) {
+                                TableConstants.FOOTER_CLICK_EVENT_ID)) {
                     // Show browser context menu if a footer click listener is
                     // not present
                     stopPropagation = false;
@@ -3682,8 +3580,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          */
         private void fireFooterClickedEvent(Event event) {
             if (client.hasEventListeners(VCustomScrollTable.this,
-                    FOOTER_CLICK_EVENT_ID)) {
-                MouseEventDetails details = new MouseEventDetails(event);
+                    TableConstants.FOOTER_CLICK_EVENT_ID)) {
+                MouseEventDetails details = MouseEventDetailsBuilder
+                        .buildMouseEventDetails(event);
                 client.updateVariable(paintableId, "footerClickEvent",
                         details.toString(), false);
                 client.updateVariable(paintableId, "footerClickCID", cid, true);
@@ -3779,8 +3678,6 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         public TableFooter() {
 
             DOM.setStyleAttribute(hTableWrapper, "overflow", "hidden");
-            DOM.setElementProperty(hTableWrapper, "className", CLASSNAME
-                    + "-footer");
 
             DOM.appendChild(table, headerTableBody);
             DOM.appendChild(headerTableBody, tr);
@@ -3789,10 +3686,18 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             DOM.appendChild(div, hTableWrapper);
             setElement(div);
 
-            setStyleName(CLASSNAME + "-footer-wrap");
-
             availableCells.put(ROW_HEADER_COLUMN_KEY,
                     new RowHeadersFooterCell());
+
+            updateStyleNames(VCustomScrollTable.this.getStylePrimaryName());
+        }
+
+        protected void updateStyleNames(String primaryStyleName) {
+            hTableWrapper.setClassName(primaryStyleName + "-footer");
+            setStyleName(primaryStyleName + "-footer-wrap");
+            for (FooterCell c : availableCells.values()) {
+                c.updateStyleNames(primaryStyleName);
+            }
         }
 
         @Override
@@ -3812,6 +3717,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          * com.google.gwt.user.client.ui.Panel#remove(com.google.gwt.user.client
          * .ui.Widget)
          */
+
         @Override
         public boolean remove(Widget w) {
             if (visibleCells.contains(w)) {
@@ -3828,6 +3734,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          * 
          * @see com.google.gwt.user.client.ui.HasWidgets#iterator()
          */
+
+        @Override
         public Iterator<Widget> iterator() {
             return visibleCells.iterator();
         }
@@ -4013,12 +3921,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          *            The value of the leftScroll
          */
         public void setHorizontalScrollPosition(int scrollLeft) {
-            if (BrowserInfo.get().isIE6()) {
-                hTableWrapper.getStyle().setProperty("position", "relative");
-                hTableWrapper.getStyle().setPropertyPx("left", -scrollLeft);
-            } else {
-                hTableWrapper.setScrollLeft(scrollLeft);
-            }
+            hTableWrapper.setScrollLeft(scrollLeft);
         }
 
         /**
@@ -4042,12 +3945,12 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     }
 
     /**
-     * This Panel can only contain VScrollTableRow type of widgets. This
+     * This Panel can only contain VCustomScrollTableRow type of widgets. This
      * "simulates" very large table, keeping spacers which take room of
      * unrendered rows.
      * 
      */
-    public class VScrollTableBody extends Panel {
+    public class VCustomScrollTableBody extends Panel {
 
         public static final int DEFAULT_ROW_HEIGHT = 24;
 
@@ -4075,15 +3978,15 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
         private char[] aligns;
 
-        protected VScrollTableBody() {
+        protected VCustomScrollTableBody() {
             constructDOM();
             setElement(container);
         }
 
-        public VScrollTableRow getRowByRowIndex(int indexInTable) {
+        public VCustomScrollTableRow getRowByRowIndex(int indexInTable) {
             int internalIndex = indexInTable - firstRendered;
             if (internalIndex >= 0 && internalIndex < renderedRows.size()) {
-                return (VScrollTableRow) renderedRows.get(internalIndex);
+                return (VCustomScrollTableRow) renderedRows.get(internalIndex);
             } else {
                 return null;
             }
@@ -4098,14 +4001,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
 
         private void constructDOM() {
-            DOM.setElementProperty(table, "className", CLASSNAME + "-table");
             if (BrowserInfo.get().isIE()) {
                 table.setPropertyInt("cellSpacing", 0);
             }
-            DOM.setElementProperty(preSpacer, "className", CLASSNAME
-                    + "-row-spacer");
-            DOM.setElementProperty(postSpacer, "className", CLASSNAME
-                    + "-row-spacer");
 
             table.appendChild(tBodyElement);
             DOM.appendChild(container, preSpacer);
@@ -4119,7 +4017,17 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                             "translate3d(0,0,0)");
                 }
             }
+            updateStyleNames(VCustomScrollTable.this.getStylePrimaryName());
+        }
 
+        protected void updateStyleNames(String primaryStyleName) {
+            table.setClassName(primaryStyleName + "-table");
+            preSpacer.setClassName(primaryStyleName + "-row-spacer");
+            postSpacer.setClassName(primaryStyleName + "-row-spacer");
+            for (Widget w : renderedRows) {
+                VCustomScrollTableRow row = (VCustomScrollTableRow) w;
+                row.updateStyleNames(primaryStyleName);
+            }
         }
 
         public int getAvailableWidth() {
@@ -4133,7 +4041,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             final Iterator<?> it = rowData.getChildIterator();
             aligns = tHead.getColumnAlignments();
             while (it.hasNext()) {
-                final VScrollTableRow row = createRow((UIDL) it.next(), aligns);
+                final VCustomScrollTableRow row = createRow((UIDL) it.next(),
+                        aligns);
                 addRow(row);
             }
             if (isAttached()) {
@@ -4147,13 +4056,14 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             final Iterator<?> it = rowData.getChildIterator();
             if (firstIndex == lastRendered + 1) {
                 while (it.hasNext()) {
-                    final VScrollTableRow row = prepareRow((UIDL) it.next());
+                    final VCustomScrollTableRow row = prepareRow((UIDL) it
+                            .next());
                     addRow(row);
                     lastRendered++;
                 }
                 fixSpacers();
             } else if (firstIndex + rows == firstRendered) {
-                final VScrollTableRow[] rowArray = new VScrollTableRow[rows];
+                final VCustomScrollTableRow[] rowArray = new VCustomScrollTableRow[rows];
                 int i = rows;
                 while (it.hasNext()) {
                     i--;
@@ -4168,7 +4078,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 while (lastRendered + 1 > firstRendered) {
                     unlinkRow(false);
                 }
-                final VScrollTableRow row = prepareRow((UIDL) it.next());
+                final VCustomScrollTableRow row = prepareRow((UIDL) it.next());
                 firstRendered = firstIndex;
                 lastRendered = firstIndex - 1;
                 addRow(row);
@@ -4245,22 +4155,23 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          *            the number of rows
          * @return a list of the rows added.
          */
-        protected List<VScrollTableRow> insertRows(UIDL rowData,
+        protected List<VCustomScrollTableRow> insertRows(UIDL rowData,
                 int firstIndex, int rows) {
             aligns = tHead.getColumnAlignments();
             final Iterator<?> it = rowData.getChildIterator();
-            List<VScrollTableRow> insertedRows = new ArrayList<VScrollTableRow>();
+            List<VCustomScrollTableRow> insertedRows = new ArrayList<VCustomScrollTableRow>();
 
             if (firstIndex == lastRendered + 1) {
                 while (it.hasNext()) {
-                    final VScrollTableRow row = prepareRow((UIDL) it.next());
+                    final VCustomScrollTableRow row = prepareRow((UIDL) it
+                            .next());
                     addRow(row);
                     insertedRows.add(row);
                     lastRendered++;
                 }
                 fixSpacers();
             } else if (firstIndex + rows == firstRendered) {
-                final VScrollTableRow[] rowArray = new VScrollTableRow[rows];
+                final VCustomScrollTableRow[] rowArray = new VCustomScrollTableRow[rows];
                 int i = rows;
                 while (it.hasNext()) {
                     i--;
@@ -4275,7 +4186,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 // insert in the middle
                 int ix = firstIndex;
                 while (it.hasNext()) {
-                    VScrollTableRow row = prepareRow((UIDL) it.next());
+                    VCustomScrollTableRow row = prepareRow((UIDL) it.next());
                     insertRowAt(row, ix);
                     insertedRows.add(row);
                     lastRendered++;
@@ -4286,15 +4197,16 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             return insertedRows;
         }
 
-        protected List<VScrollTableRow> insertAndReindexRows(UIDL rowData,
-                int firstIndex, int rows) {
-            List<VScrollTableRow> inserted = insertRows(rowData, firstIndex,
-                    rows);
+        protected List<VCustomScrollTableRow> insertAndReindexRows(
+                UIDL rowData, int firstIndex, int rows) {
+            List<VCustomScrollTableRow> inserted = insertRows(rowData,
+                    firstIndex, rows);
             int actualIxOfFirstRowAfterInserted = firstIndex + rows
                     - firstRendered;
             for (int ix = actualIxOfFirstRowAfterInserted; ix < renderedRows
                     .size(); ix++) {
-                VScrollTableRow r = (VScrollTableRow) renderedRows.get(ix);
+                VCustomScrollTableRow r = (VCustomScrollTableRow) renderedRows
+                        .get(ix);
                 r.setIndex(r.getIndex() + rows);
             }
             setContainerHeight();
@@ -4317,21 +4229,21 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          * 
          * @param uidl
          */
-        private VScrollTableRow prepareRow(UIDL uidl) {
-            final VScrollTableRow row = createRow(uidl, aligns);
+        private VCustomScrollTableRow prepareRow(UIDL uidl) {
+            final VCustomScrollTableRow row = createRow(uidl, aligns);
             row.initCellWidths();
             return row;
         }
 
-        protected VScrollTableRow createRow(UIDL uidl, char[] aligns2) {
+        protected VCustomScrollTableRow createRow(UIDL uidl, char[] aligns2) {
             if (uidl.hasAttribute("gen_html")) {
                 // This is a generated row.
-                return new VScrollTableGeneratedRow(uidl, aligns2);
+                return new VCustomScrollTableGeneratedRow(uidl, aligns2);
             }
-            return new VScrollTableRow(uidl, aligns2);
+            return new VCustomScrollTableRow(uidl, aligns2);
         }
 
-        private void addRowBeforeFirstRendered(VScrollTableRow row) {
+        private void addRowBeforeFirstRendered(VCustomScrollTableRow row) {
             row.setIndex(firstRendered - 1);
             if (row.isSelected()) {
                 row.addStyleName("v-selected");
@@ -4342,7 +4254,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             renderedRows.add(0, row);
         }
 
-        private void addRow(VScrollTableRow row) {
+        private void addRow(VCustomScrollTableRow row) {
             row.setIndex(firstRendered + renderedRows.size());
             if (row.isSelected()) {
                 row.addStyleName("v-selected");
@@ -4354,17 +4266,17 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             adopt(row);
         }
 
-        private void insertRowAt(VScrollTableRow row, int index) {
+        private void insertRowAt(VCustomScrollTableRow row, int index) {
             row.setIndex(index);
             if (row.isSelected()) {
                 row.addStyleName("v-selected");
             }
             if (index > 0) {
-                VScrollTableRow sibling = getRowByRowIndex(index - 1);
+                VCustomScrollTableRow sibling = getRowByRowIndex(index - 1);
                 tBodyElement
                         .insertAfter(row.getElement(), sibling.getElement());
             } else {
-                VScrollTableRow sibling = getRowByRowIndex(index);
+                VCustomScrollTableRow sibling = getRowByRowIndex(index);
                 tBodyElement.insertBefore(row.getElement(),
                         sibling.getElement());
             }
@@ -4373,6 +4285,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             renderedRows.add(actualIx, row);
         }
 
+        @Override
         public Iterator<Widget> iterator() {
             return renderedRows.iterator();
         }
@@ -4423,7 +4336,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             unlinkRows(firstIndex, count);
             int actualFirstIx = firstIndex - firstRendered;
             for (int ix = actualFirstIx; ix < renderedRows.size(); ix++) {
-                VScrollTableRow r = (VScrollTableRow) renderedRows.get(ix);
+                VCustomScrollTableRow r = (VCustomScrollTableRow) renderedRows
+                        .get(ix);
                 r.setIndex(r.getIndex() - count);
             }
             setContainerHeight();
@@ -4445,17 +4359,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
 
         private void unlinkRowAtActualIndex(int index) {
-            final VScrollTableRow toBeRemoved = (VScrollTableRow) renderedRows
+            final VCustomScrollTableRow toBeRemoved = (VCustomScrollTableRow) renderedRows
                     .get(index);
-            // Unregister row tooltip
-            client.registerTooltip(VCustomScrollTable.this,
-                    toBeRemoved.getElement(), null);
-            for (int i = 0; i < toBeRemoved.getElement().getChildCount(); i++) {
-                // Unregister cell tooltips
-                Element td = toBeRemoved.getElement().getChild(i).cast();
-                client.registerTooltip(VCustomScrollTable.this, td, null);
-            }
-            lazyUnregistryBag.add(toBeRemoved);
             tBodyElement.removeChild(toBeRemoved.getElement());
             orphan(toBeRemoved);
             renderedRows.remove(index);
@@ -4464,12 +4369,6 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         @Override
         public boolean remove(Widget w) {
             throw new UnsupportedOperationException();
-        }
-
-        @Override
-        protected void onAttach() {
-            super.onAttach();
-            setContainerHeight();
         }
 
         /**
@@ -4526,7 +4425,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         rowHeight = lastKnownRowHeight;
                     } else if (isAttached()) {
                         // measure row height by adding a dummy row
-                        VScrollTableRow scrollTableRow = new VScrollTableRow();
+                        VCustomScrollTableRow scrollTableRow = new VCustomScrollTableRow();
                         tBodyElement.appendChild(scrollTableRow.getElement());
                         getRowHeight(forceUpdate);
                         tBodyElement.removeChild(scrollTableRow.getElement());
@@ -4558,7 +4457,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     return 0;
                 }
                 for (Widget row : renderedRows) {
-                    if (!(row instanceof VScrollTableGeneratedRow)) {
+                    if (!(row instanceof VCustomScrollTableGeneratedRow)) {
                         TableRowElement tr = row.getElement().cast();
                         Element wrapperdiv = tr.getCells().getItem(columnIndex)
                                 .getFirstChildElement().cast();
@@ -4586,7 +4485,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          */
         public void setColWidth(int colIndex, int w) {
             for (Widget row : renderedRows) {
-                ((VScrollTableRow) row).setCellWidth(colIndex, w);
+                ((VCustomScrollTableRow) row).setCellWidth(colIndex, w);
             }
         }
 
@@ -4606,7 +4505,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             NodeList<TableRowElement> rows = tBodyElement.getRows();
             if (rows.getLength() == 0) {
                 /* need to temporary add empty row and detect */
-                VScrollTableRow scrollTableRow = new VScrollTableRow();
+                VCustomScrollTableRow scrollTableRow = new VCustomScrollTableRow();
+                scrollTableRow.updateStyleNames(VCustomScrollTable.this
+                        .getStylePrimaryName());
                 tBodyElement.appendChild(scrollTableRow.getElement());
                 detectExtrawidth();
                 tBodyElement.removeChild(scrollTableRow.getElement());
@@ -4618,7 +4519,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     // content is currently empty, we need to add a fake cell
                     // for measuring
                     noCells = true;
-                    VScrollTableRow next = (VScrollTableRow) iterator().next();
+                    VCustomScrollTableRow next = (VCustomScrollTableRow) iterator()
+                            .next();
                     boolean sorted = tHead.getHeaderCell(0) != null ? tHead
                             .getHeaderCell(0).isSorted() : false;
                     next.addCell(null, "", ALIGN_LEFT, "", true, sorted);
@@ -4630,15 +4532,6 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         - wrapper.getOffsetWidth();
                 if (noCells) {
                     firstTD.getParentElement().removeChild(firstTD);
-                }
-            }
-        }
-
-        private void reLayoutComponents() {
-            for (Widget w : this) {
-                VScrollTableRow r = (VScrollTableRow) w;
-                for (Widget widget : r) {
-                    client.handleComponentRelativeSize(widget);
                 }
             }
         }
@@ -4656,7 +4549,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             // loop all rows and move given index to its new place
             final Iterator<?> rows = iterator();
             while (rows.hasNext()) {
-                final VScrollTableRow row = (VScrollTableRow) rows.next();
+                final VCustomScrollTableRow row = (VCustomScrollTableRow) rows
+                        .next();
 
                 final Element td = DOM.getChild(row.getElement(), oldIndex);
                 if (td != null) {
@@ -4678,31 +4572,30 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             }
         }
 
-        public class VScrollTableRow extends Panel implements ActionOwner,
-                Container {
+        public class VCustomScrollTableRow extends Panel implements ActionOwner {
 
             private static final int TOUCHSCROLL_TIMEOUT = 100;
             private static final int DRAGMODE_MULTIROW = 2;
             protected ArrayList<Widget> childWidgets = new ArrayList<Widget>();
             private boolean selected = false;
             protected final int rowKey;
-            private List<UIDL> pendingComponentPaints;
 
             private String[] actionKeys = null;
             private final TableRowElement rowElement;
             private int index;
             private Event touchStart;
-            private static final String ROW_CLASSNAME_EVEN = CLASSNAME + "-row";
-            private static final String ROW_CLASSNAME_ODD = CLASSNAME
-                    + "-row-odd";
+
             private static final int TOUCH_CONTEXT_MENU_TIMEOUT = 500;
             private Timer contextTouchTimeout;
             private Timer dragTouchTimeout;
             private int touchStartY;
             private int touchStartX;
+            private TooltipInfo tooltipInfo = null;
+            private Map<TableCellElement, TooltipInfo> cellToolTips = new HashMap<TableCellElement, TooltipInfo>();
             private boolean isDragging = false;
+            private String rowStyle = null;
 
-            private VScrollTableRow(int rowKey) {
+            private VCustomScrollTableRow(int rowKey) {
                 this.rowKey = rowKey;
                 rowElement = Document.get().createTRElement();
                 setElement(rowElement);
@@ -4711,7 +4604,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         | Event.ONCONTEXTMENU | VTooltip.TOOLTIP_EVENTS);
             }
 
-            public VScrollTableRow(UIDL uidl, char[] aligns) {
+            public VCustomScrollTableRow(UIDL uidl, char[] aligns) {
                 this(uidl.getIntAttribute("key"));
 
                 /*
@@ -4720,20 +4613,14 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                  */
                 getElement().getStyle().setProperty("visibility", "hidden");
 
-                String rowStyle = uidl.getStringAttribute("rowstyle");
-                if (rowStyle != null) {
-                    addStyleName(CLASSNAME + "-row-" + rowStyle);
-                }
+                rowStyle = uidl.getStringAttribute("rowstyle");
+                updateStyleNames(VCustomScrollTable.this.getStylePrimaryName());
 
                 String rowDescription = uidl.getStringAttribute("rowdescr");
                 if (rowDescription != null && !rowDescription.equals("")) {
-                    TooltipInfo info = new TooltipInfo(rowDescription);
-                    client.registerTooltip(VCustomScrollTable.this, rowElement,
-                            info);
+                    tooltipInfo = new TooltipInfo(rowDescription);
                 } else {
-                    // Remove possibly previously set tooltip
-                    client.registerTooltip(VCustomScrollTable.this, rowElement,
-                            null);
+                    tooltipInfo = null;
                 }
 
                 tHead.getColumnAlignments();
@@ -4759,12 +4646,34 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 }
             }
 
+            protected void updateStyleNames(String primaryStyleName) {
+
+                if (getStylePrimaryName().contains("odd")) {
+                    setStyleName(primaryStyleName + "-row-odd");
+                } else {
+                    setStyleName(primaryStyleName + "-row");
+                }
+
+                if (rowStyle != null) {
+                    addStyleName(primaryStyleName + "-row-" + rowStyle);
+                }
+
+                for (int i = 0; i < rowElement.getChildCount(); i++) {
+                    TableCellElement cell = (TableCellElement) rowElement
+                            .getChild(i);
+                    updateCellStyleNames(cell, primaryStyleName);
+                }
+            }
+
+            public TooltipInfo getTooltipInfo() {
+                return tooltipInfo;
+            }
+
             /**
              * Add a dummy row, used for measurements if Table is empty.
              */
-            public VScrollTableRow() {
+            public VCustomScrollTableRow() {
                 this(0);
-                addStyleName(CLASSNAME + "-row");
                 addCell(null, "_", 'b', "", true, false);
             }
 
@@ -4812,12 +4721,11 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         addCell(uidl, cell.toString(), aligns[col++], style,
                                 isRenderHtmlInCells(), sorted, description);
                     } else {
-                        final Paintable cellContent = client
+                        final ComponentConnector cellContent = client
                                 .getPaintable((UIDL) cell);
 
-                        addCell(uidl, (Widget) cellContent, aligns[col++],
-                                style, sorted);
-                        paintComponent(cellContent, (UIDL) cell);
+                        addCell(uidl, cellContent.getWidget(), aligns[col++],
+                                style, sorted, description);
                     }
                 }
             }
@@ -4839,7 +4747,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
              */
             public boolean isInViewPort() {
                 int absoluteTop = getAbsoluteTop();
-                int scrollPosition = scrollBodyPanel.getScrollPosition();
+                int scrollPosition = scrollBodyPanel.getAbsoluteTop()
+                        + scrollBodyPanel.getScrollPosition();
                 if (absoluteTop < scrollPosition) {
                     return false;
                 }
@@ -4858,7 +4767,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
              * @param row1
              * @return true if this rows index is smaller than in the row1
              */
-            public boolean isBefore(VScrollTableRow row1) {
+            public boolean isBefore(VCustomScrollTableRow row1) {
                 return getIndex() < row1.getIndex();
             }
 
@@ -4877,40 +4786,21 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 //
                 // First remove any old styles so that both styles aren't
                 // applied when indexes are updated.
-                removeStyleName(ROW_CLASSNAME_ODD);
-                removeStyleName(ROW_CLASSNAME_EVEN);
+                String primaryStyleName = getStylePrimaryName();
+                if (primaryStyleName != null && !primaryStyleName.equals("")) {
+                    removeStyleName(getStylePrimaryName());
+                }
                 if (!isOdd) {
-                    addStyleName(ROW_CLASSNAME_ODD);
+                    addStyleName(VCustomScrollTable.this.getStylePrimaryName()
+                            + "-row-odd");
                 } else {
-                    addStyleName(ROW_CLASSNAME_EVEN);
+                    addStyleName(VCustomScrollTable.this.getStylePrimaryName()
+                            + "-row");
                 }
             }
 
             public int getIndex() {
                 return index;
-            }
-
-            protected void paintComponent(Paintable p, UIDL uidl) {
-                if (isAttached()) {
-                    p.updateFromUIDL(uidl, client);
-                } else {
-                    if (pendingComponentPaints == null) {
-                        pendingComponentPaints = new LinkedList<UIDL>();
-                    }
-                    pendingComponentPaints.add(uidl);
-                }
-            }
-
-            @Override
-            protected void onAttach() {
-                super.onAttach();
-                if (pendingComponentPaints != null) {
-                    for (UIDL uidl : pendingComponentPaints) {
-                        Paintable paintable = client.getPaintable(uidl);
-                        paintable.updateFromUIDL(uidl, client);
-                    }
-                    pendingComponentPaints.clear();
-                }
             }
 
             @Override
@@ -4941,15 +4831,22 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     String style, boolean textIsHTML, boolean sorted,
                     String description, final TableCellElement td) {
                 final Element container = DOM.createDiv();
-                String className = CLASSNAME + "-cell-content";
+                container.setClassName(VCustomScrollTable.this
+                        .getStylePrimaryName() + "-cell-wrapper");
+
+                td.setClassName(VCustomScrollTable.this.getStylePrimaryName()
+                        + "-cell-content");
+
                 if (style != null && !style.equals("")) {
-                    className += " " + CLASSNAME + "-cell-content-" + style;
+                    td.addClassName(VCustomScrollTable.this
+                            .getStylePrimaryName() + "-cell-content-" + style);
                 }
+
                 if (sorted) {
-                    className += " " + CLASSNAME + "-cell-content-sorted";
+                    td.addClassName(VCustomScrollTable.this
+                            .getStylePrimaryName() + "-cell-content-sorted");
                 }
-                td.setClassName(className);
-                container.setClassName(CLASSNAME + "-cell-wrapper");
+
                 if (textIsHTML) {
                     container.setInnerHTML(text);
                 } else {
@@ -4966,37 +4863,61 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         break;
                     }
                 }
-
-                if (description != null && !description.equals("")) {
-                    TooltipInfo info = new TooltipInfo(description);
-                    client.registerTooltip(VCustomScrollTable.this, td, info);
-                } else {
-                    // Remove possibly previously set tooltip
-                    client.registerTooltip(VCustomScrollTable.this, td, null);
-                }
+                setTooltip(td, description);
 
                 td.appendChild(container);
                 getElement().appendChild(td);
             }
 
+            protected void updateCellStyleNames(TableCellElement td,
+                    String primaryStyleName) {
+                Element container = td.getFirstChild().cast();
+                container.setClassName(primaryStyleName + "-cell-wrapper");
+
+                /*
+                 * Replace old primary style name with new one
+                 */
+                String className = td.getClassName();
+                String oldPrimaryName = className.split("-cell-content")[0];
+                td.setClassName(className.replaceAll(oldPrimaryName,
+                        primaryStyleName));
+            }
+
             public void addCell(UIDL rowUidl, Widget w, char align,
-                    String style, boolean sorted) {
+                    String style, boolean sorted, String description) {
                 final TableCellElement td = DOM.createTD().cast();
                 initCellWithWidget(w, align, style, sorted, td);
+                setTooltip(td, description);
+            }
+
+            private void setTooltip(TableCellElement td, String description) {
+                if (description != null && !description.equals("")) {
+                    TooltipInfo info = new TooltipInfo(description);
+                    cellToolTips.put(td, info);
+                } else {
+                    cellToolTips.remove(td);
+                }
+
             }
 
             protected void initCellWithWidget(Widget w, char align,
                     String style, boolean sorted, final TableCellElement td) {
                 final Element container = DOM.createDiv();
-                String className = CLASSNAME + "-cell-content";
+                String className = VCustomScrollTable.this
+                        .getStylePrimaryName() + "-cell-content";
                 if (style != null && !style.equals("")) {
-                    className += " " + CLASSNAME + "-cell-content-" + style;
+                    className += " "
+                            + VCustomScrollTable.this.getStylePrimaryName()
+                            + "-cell-content-" + style;
                 }
                 if (sorted) {
-                    className += " " + CLASSNAME + "-cell-content-sorted";
+                    className += " "
+                            + VCustomScrollTable.this.getStylePrimaryName()
+                            + "-cell-content-sorted";
                 }
                 td.setClassName(className);
-                container.setClassName(CLASSNAME + "-cell-wrapper");
+                container.setClassName(VCustomScrollTable.this
+                        .getStylePrimaryName() + "-cell-wrapper");
                 // TODO most components work with this, but not all (e.g.
                 // Select)
                 // Old comment: make widget cells respect align.
@@ -5022,6 +4943,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 childWidgets.add(w);
             }
 
+            @Override
             public Iterator<Widget> iterator() {
                 return childWidgets.iterator();
             }
@@ -5052,7 +4974,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             private boolean handleClickEvent(Event event, Element targetTdOrTr,
                     boolean immediate) {
                 if (!client.hasEventListeners(VCustomScrollTable.this,
-                        ITEM_CLICK_EVENT_ID)) {
+                        TableConstants.ITEM_CLICK_EVENT_ID)) {
                     // Don't send an event if nobody is listening
                     return false;
                 }
@@ -5071,7 +4993,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                             false);
                 }
 
-                MouseEventDetails details = new MouseEventDetails(event);
+                MouseEventDetails details = MouseEventDetailsBuilder
+                        .buildMouseEventDetails(event);
 
                 client.updateVariable(paintableId, "clickEvent",
                         details.toString(), immediate);
@@ -5079,41 +5002,39 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 return true;
             }
 
-            private void handleTooltips(final Event event, Element target) {
-                if (target.hasTagName("TD")) {
-                    // Table cell (td)
-                    Element container = target.getFirstChildElement().cast();
-                    Element widget = container.getFirstChildElement().cast();
+            public TooltipInfo getTooltip(
+                    com.google.gwt.dom.client.Element target) {
 
-                    boolean containsWidget = false;
-                    for (Widget w : childWidgets) {
-                        if (widget == w.getElement()) {
-                            containsWidget = true;
-                            break;
-                        }
-                    }
-
-                    if (!containsWidget) {
-                        // Only text nodes has tooltips
-                        if (client.getTooltipTitleInfo(VCustomScrollTable.this,
-                                target) != null) {
-                            // Cell has description, use it
-                            client.handleTooltipEvent(event,
-                                    VCustomScrollTable.this, target);
-                        } else {
-                            // Cell might have row description, use row
-                            // description
-                            client.handleTooltipEvent(event,
-                                    VCustomScrollTable.this,
-                                    target.getParentElement());
-                        }
-                    }
-
-                } else {
-                    // Table row (tr)
-                    client.handleTooltipEvent(event, VCustomScrollTable.this,
-                            target);
+                TooltipInfo info = null;
+                final Element targetTdOrTr = getTdOrTr((Element) target.cast());
+                if (targetTdOrTr != null
+                        && "td".equals(targetTdOrTr.getTagName().toLowerCase())) {
+                    TableCellElement td = (TableCellElement) targetTdOrTr
+                            .cast();
+                    info = cellToolTips.get(td);
                 }
+
+                if (info == null) {
+                    info = tooltipInfo;
+                }
+
+                return info;
+            }
+
+            private Element getTdOrTr(Element target) {
+                Element thisTrElement = getElement();
+                if (target == thisTrElement) {
+                    // This was a on the TR element
+                    return target;
+                }
+
+                // Iterate upwards until we find the TR element
+                Element element = target;
+                while (element != null
+                        && element.getParentElement().cast() != thisTrElement) {
+                    element = element.getParentElement().cast();
+                }
+                return element;
             }
 
             /**
@@ -5143,6 +5064,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         if (dragmode != 0) {
                             if (dragTouchTimeout == null) {
                                 dragTouchTimeout = new Timer() {
+
                                     @Override
                                     public void run() {
                                         if (touchStart != null) {
@@ -5159,6 +5081,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         if (actionKeys != null) {
                             if (contextTouchTimeout == null) {
                                 contextTouchTimeout = new Timer() {
+
                                     @Override
                                     public void run() {
                                         if (touchStart != null) {
@@ -5211,9 +5134,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                             dragTouchTimeout.cancel();
                         }
                         if (touchStart != null) {
-                            event.preventDefault();
-                            event.stopPropagation();
                             if (!BrowserInfo.get().isAndroid()) {
+                                event.preventDefault();
+                                event.stopPropagation();
                                 Util.simulateClickFromTouchEvent(touchStart,
                                         this);
                             }
@@ -5229,6 +5152,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             /*
              * React on click that occur on content cells only
              */
+
             @Override
             public void onBrowserEvent(final Event event) {
 
@@ -5243,7 +5167,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                                 && (actionKeys != null || client
                                         .hasEventListeners(
                                                 VCustomScrollTable.this,
-                                                ITEM_CLICK_EVENT_ID))) {
+                                                TableConstants.ITEM_CLICK_EVENT_ID))) {
                             /*
                              * Prevent browser context menu only if there are
                              * action handlers or item click listeners
@@ -5256,9 +5180,6 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     }
 
                     boolean targetCellOrRowFound = targetTdOrTr != null;
-                    if (targetCellOrRowFound) {
-                        handleTooltips(event, targetTdOrTr);
-                    }
 
                     switch (type) {
                     case Event.ONDBLCLICK:
@@ -5427,6 +5348,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         touchStart.preventDefault();
                         if (dragmode != 0 || actionKeys != null) {
                             new Timer() {
+
                                 @Override
                                 public void run() {
                                     TouchScrollDelegate activeScrollDelegate = TouchScrollDelegate
@@ -5465,6 +5387,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                             if (contextTouchTimeout == null
                                     && actionKeys != null) {
                                 contextTouchTimeout = new Timer() {
+
                                     @Override
                                     public void run() {
                                         if (touchStart != null) {
@@ -5561,7 +5484,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             protected void startRowDrag(Event event, final int type,
                     Element targetTdOrTr) {
                 VTransferable transferable = new VTransferable();
-                transferable.setDragSource(VCustomScrollTable.this);
+                transferable.setDragSource(ConnectorMap.get(client)
+                        .getConnector(VCustomScrollTable.this));
                 transferable.setData("itemId", "" + rowKey);
                 NodeList<TableCellElement> cells = rowElement.getCells();
                 for (int i = 0; i < cells.getLength(); i++) {
@@ -5577,31 +5501,19 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 if (dragmode == DRAGMODE_MULTIROW && isMultiSelectModeAny()
                         && rowKeyIsSelected(rowKey)) {
 
-                    // Create a drag image of ALL rows (ie6,7 has a different
-                    // DOM structure)
-                    if (BrowserInfo.get().isIE6() || BrowserInfo.get().isIE7()) {
-                        ev.createDragImage(scrollBody.getElement(), true);
-                    } else {
-                        ev.createDragImage(
-                                (Element) scrollBody.tBodyElement.cast(), true);
-                    }
+                    // Create a drag image of ALL rows
+                    ev.createDragImage(
+                            (Element) scrollBody.tBodyElement.cast(), true);
 
                     // Hide rows which are not selected
                     Element dragImage = ev.getDragImage();
                     int i = 0;
                     for (Iterator<Widget> iterator = scrollBody.iterator(); iterator
                             .hasNext();) {
-                        VScrollTableRow next = (VScrollTableRow) iterator
+                        VCustomScrollTableRow next = (VCustomScrollTableRow) iterator
                                 .next();
 
-                        Element child;
-                        if (BrowserInfo.get().isIE6()
-                                || BrowserInfo.get().isIE7()) {
-                            child = (Element) dragImage.getChild(1).getChild(0)
-                                    .getChild(i++);
-                        } else {
-                            child = (Element) dragImage.getChild(i++);
-                        }
+                        Element child = (Element) dragImage.getChild(i++);
 
                         if (!rowKeyIsSelected(next.rowKey)) {
                             child.getStyle().setVisibility(Visibility.HIDDEN);
@@ -5649,18 +5561,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         return null;
                     }
                 }
-                if (eventTarget == thisTrElement) {
-                    // This was a click on the TR element
-                    return thisTrElement;
-                }
-
-                // Iterate upwards until we find the TR element
-                Element element = eventTarget;
-                while (element != null
-                        && element.getParentElement().cast() != thisTrElement) {
-                    element = element.getParentElement().cast();
-                }
-                return element;
+                return getTdOrTr(eventTarget);
             }
 
             public void showContextMenu(Event event) {
@@ -5720,16 +5621,16 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 }
 
                 // Set the selectable range
-                VScrollTableRow endRow = this;
-                VScrollTableRow startRow = selectionRangeStart;
+                VCustomScrollTableRow endRow = this;
+                VCustomScrollTableRow startRow = selectionRangeStart;
                 if (startRow == null) {
                     startRow = focusedRow;
                     // If start row is null then we have a multipage selection
                     // from
                     // above
                     if (startRow == null) {
-                        startRow = (VScrollTableRow) scrollBody.iterator()
-                                .next();
+                        startRow = (VCustomScrollTableRow) scrollBody
+                                .iterator().next();
                         setRowFocus(endRow);
                     }
                 }
@@ -5741,14 +5642,14 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 // we'll ensure GUI state from top down even though selection
                 // was the opposite way
                 if (!startRow.isBefore(endRow)) {
-                    VScrollTableRow tmp = startRow;
+                    VCustomScrollTableRow tmp = startRow;
                     startRow = endRow;
                     endRow = tmp;
                 }
                 SelectionRange range = new SelectionRange(startRow, endRow);
 
                 for (Widget w : scrollBody) {
-                    VScrollTableRow row = (VScrollTableRow) w;
+                    VCustomScrollTableRow row = (VCustomScrollTableRow) w;
                     if (range.inRange(row)) {
                         if (!row.isSelected()) {
                             row.toggleSelection();
@@ -5766,8 +5667,10 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             /*
              * (non-Javadoc)
              * 
-             * @see com.vaadin.terminal.gwt.client.ui.IActionOwner#getActions ()
+             * @see com.vaadin.client.ui.IActionOwner#getActions ()
              */
+
+            @Override
             public Action[] getActions() {
                 if (actionKeys == null) {
                     return new Action[] {};
@@ -5777,10 +5680,11 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     final String actionKey = actionKeys[i];
                     final TreeAction a = new TreeAction(this,
                             String.valueOf(rowKey), actionKey) {
+
                         @Override
                         public void execute() {
                             super.execute();
-                            lazyRevertFocusToRow(VScrollTableRow.this);
+                            lazyRevertFocusToRow(VCustomScrollTableRow.this);
                         }
                     };
                     a.setCaption(getActionCaption(actionKey));
@@ -5790,35 +5694,14 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 return actions;
             }
 
+            @Override
             public ApplicationConnection getClient() {
                 return client;
             }
 
+            @Override
             public String getPaintableId() {
                 return paintableId;
-            }
-
-            public RenderSpace getAllocatedSpace(Widget child) {
-                int w = 0;
-                int i = getColIndexOf(child);
-                HeaderCell headerCell = tHead.getHeaderCell(i);
-                if (headerCell != null) {
-                    if (initializedAndAttached) {
-                        w = headerCell.getWidth();
-                    } else {
-                        // header offset width is not absolutely correct value,
-                        // but a best guess (expecting similar content in all
-                        // columns ->
-                        // if one component is relative width so are others)
-                        w = headerCell.getOffsetWidth() - getCellExtraWidth();
-                    }
-                }
-                return new RenderSpace(w, 0) {
-                    @Override
-                    public int getHeight() {
-                        return (int) getRowHeight();
-                    }
-                };
             }
 
             private int getColIndexOf(Widget child) {
@@ -5833,46 +5716,18 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 return -1;
             }
 
-            public boolean hasChildComponent(Widget component) {
-                return childWidgets.contains(component);
-            }
-
-            public void replaceChildComponent(Widget oldComponent,
-                    Widget newComponent) {
-                com.google.gwt.dom.client.Element parentElement = oldComponent
-                        .getElement().getParentElement();
-                int index = childWidgets.indexOf(oldComponent);
-                oldComponent.removeFromParent();
-
-                parentElement.appendChild(newComponent.getElement());
-                childWidgets.add(index, newComponent);
-                adopt(newComponent);
-
-            }
-
-            public boolean requestLayout(Set<Paintable> children) {
-                // row size should never change and system wouldn't event
-                // survive as this is a kind of fake paitable
-                return true;
-            }
-
-            public void updateCaption(Paintable component, UIDL uidl) {
-                // NOP, not rendered
-            }
-
-            public void updateFromUIDL(UIDL uidl, ApplicationConnection client) {
-                // Should never be called,
-                // Component container interface faked here to get layouts
-                // render properly
+            public Widget getWidgetForPaintable() {
+                return this;
             }
         }
 
-        protected class VScrollTableGeneratedRow extends VScrollTableRow {
+        protected class VCustomScrollTableGeneratedRow extends
+                VCustomScrollTableRow {
 
             private boolean spanColumns;
             private boolean htmlContentAllowed;
 
-            public VScrollTableGeneratedRow(UIDL uidl, char[] aligns) {
+            public VCustomScrollTableGeneratedRow(UIDL uidl, char[] aligns) {
                 super(uidl, aligns);
                 addStyleName("v-table-generated-row");
             }
@@ -5896,6 +5751,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 // widths.
                 Scheduler.get().scheduleDeferred(new ScheduledCommand() {
 
+                    @Override
                     public void execute() {
                         if (showRowHeaders) {
                             setCellWidth(0, tHead.getHeaderCell(0).getWidth());
@@ -5998,7 +5854,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             if (!hasFocus) {
                 scrollBodyPanel.setFocus(true);
             }
+
         }
+
     }
 
     /**
@@ -6006,7 +5864,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      */
     public void deselectAll() {
         for (Widget w : scrollBody) {
-            VScrollTableRow row = (VScrollTableRow) w;
+            VCustomScrollTableRow row = (VCustomScrollTableRow) w;
             if (row.isSelected()) {
                 row.toggleSelection();
             }
@@ -6040,7 +5898,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             return;
         }
 
-        if (height == null || height.equals("")) {
+        if (isDynamicHeight()) {
             return;
         }
 
@@ -6064,16 +5922,15 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                     scrollBodyPanel.setScrollPosition(scrollTop + 1);
                     scrollBodyPanel.setScrollPosition(scrollTop - 1);
                 }
+
+                sizeNeedsInit = true;
             }
         }
 
     }
 
-    @Override
-    public void setWidth(String width) {
-        if (this.width.equals(width)) {
-            return;
-        }
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateWidth() {
         if (!isVisible()) {
             /*
              * Do not update size when the table is hidden as all column widths
@@ -6083,9 +5940,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             return;
         }
 
-        this.width = width;
-        if (width != null && !"".equals(width)) {
-            super.setWidth(width);
+        if (!isDynamicWidth()) {
             int innerPixels = getOffsetWidth() - getBorderWidth();
             if (innerPixels < 0) {
                 innerPixels = 0;
@@ -6097,11 +5952,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
         } else {
 
-            // Undefined width
-            super.setWidth("");
-
-            // Readjust size of table
-            sizeInit();
+            sizeNeedsInit = true;
 
             // readjust undefined width columns
             triggerLazyColumnAdjustment(false);
@@ -6122,6 +5973,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          * column widths "optimally". Doing this lazily to avoid expensive
          * calculation when resizing is not yet finished.
          */
+
         @Override
         public void run() {
             if (scrollBody == null) {
@@ -6238,11 +6090,10 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 }
             }
 
-            if ((height == null || "".equals(height))
-                    && totalRows == pageLength) {
+            if (isDynamicHeight() && totalRows == pageLength) {
                 // fix body height (may vary if lazy loading is offhorizontal
                 // scrollbar appears/disappears)
-                int bodyHeight = Util.getRequiredHeight(scrollBody);
+                int bodyHeight = scrollBody.getRequiredHeight();
                 boolean needsSpaceForHorizontalScrollbar = (availW < usedMinimumWidth);
                 if (needsSpaceForHorizontalScrollbar) {
                     bodyHeight += Util.getNativeScrollbarSize();
@@ -6254,8 +6105,9 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                             false);
                 }
             }
-            scrollBody.reLayoutComponents();
             Scheduler.get().scheduleDeferred(new Command() {
+
+                @Override
                 public void execute() {
                     Util.runWebkitOverflowAutoFix(scrollBodyPanel.getElement());
                 }
@@ -6312,7 +6164,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     protected int containerHeight;
 
     protected void setContainerHeight() {
-        if (height != null && !"".equals(height)) {
+        if (!isDynamicHeight()) {
             containerHeight = getOffsetHeight();
             containerHeight -= showColHeaders ? tHead.getOffsetHeight() : 0;
             containerHeight -= tFoot.getOffsetHeight();
@@ -6325,41 +6177,50 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     }
 
     private int contentAreaBorderHeight = -1;
-    protected int scrollLeft;
+    public int scrollLeft;
     private int scrollTop;
-    private VScrollTableDropHandler dropHandler;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public VCustomScrollTableDropHandler dropHandler;
+
     private boolean navKeyDown;
-    private boolean multiselectPending;
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public boolean multiselectPending;
 
     /**
      * @return border top + border bottom of the scrollable area of table
      */
     private int getContentAreaBorderHeight() {
         if (contentAreaBorderHeight < 0) {
-            if (BrowserInfo.get().isIE7() || BrowserInfo.get().isIE6()) {
-                contentAreaBorderHeight = Util
-                        .measureVerticalBorder(scrollBodyPanel.getElement());
-            } else {
-                DOM.setStyleAttribute(scrollBodyPanel.getElement(), "overflow",
-                        "hidden");
-                int oh = scrollBodyPanel.getOffsetHeight();
-                int ch = scrollBodyPanel.getElement().getPropertyInt(
-                        "clientHeight");
-                contentAreaBorderHeight = oh - ch;
-                DOM.setStyleAttribute(scrollBodyPanel.getElement(), "overflow",
-                        "auto");
-            }
+
+            DOM.setStyleAttribute(scrollBodyPanel.getElement(), "overflow",
+                    "hidden");
+            int oh = scrollBodyPanel.getOffsetHeight();
+            int ch = scrollBodyPanel.getElement()
+                    .getPropertyInt("clientHeight");
+            contentAreaBorderHeight = oh - ch;
+            DOM.setStyleAttribute(scrollBodyPanel.getElement(), "overflow",
+                    "auto");
         }
         return contentAreaBorderHeight;
     }
 
     @Override
     public void setHeight(String height) {
-        if (height.equals(this.height)) {
-            return;
+        if (height.length() == 0
+                && getElement().getStyle().getHeight().length() != 0) {
+            /*
+             * Changing from defined to undefined size -> should do a size init
+             * to take page length into account again
+             */
+            sizeNeedsInit = true;
         }
-        this.height = height;
         super.setHeight(height);
+    }
+
+    /** For internal use only. May be removed or replaced in the future. */
+    public void updateHeight() {
         setContainerHeight();
 
         if (initializedAndAttached) {
@@ -6373,6 +6234,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             // overwriting the scroll position with an outdated value, see
             // #7607.
             Scheduler.get().scheduleDeferred(new Command() {
+
+                @Override
                 public void execute() {
                     Util.runWebkitOverflowAutoFix(scrollBodyPanel.getElement());
                 }
@@ -6394,6 +6257,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * lost). Example ITabPanel just set contained components invisible and back
      * when changing tabs.
      */
+
     @Override
     public void setVisible(boolean visible) {
         if (isVisible() != visible) {
@@ -6401,6 +6265,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             if (initializedAndAttached) {
                 if (visible) {
                     Scheduler.get().scheduleDeferred(new Command() {
+
+                        @Override
                         public void execute() {
                             scrollBodyPanel
                                     .setScrollPosition(measureRowHeightOffset(firstRowInViewPort));
@@ -6434,6 +6300,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * This method has logic which rows needs to be requested from server when
      * user scrolls
      */
+
+    @Override
     public void onScroll(ScrollEvent event) {
         scrollLeft = scrollBodyPanel.getElement().getScrollLeft();
         scrollTop = scrollBodyPanel.getScrollPosition();
@@ -6462,6 +6330,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             // correct
             // value available soon.
             Scheduler.get().scheduleDeferred(new Command() {
+
+                @Override
                 public void execute() {
                     onScroll(null);
                 }
@@ -6542,7 +6412,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         return (int) Math.ceil(scrollTop / scrollBody.getRowHeight());
     }
 
-    public VScrollTableDropHandler getDropHandler() {
+    @Override
+    public VCustomScrollTableDropHandler getDropHandler() {
         return dropHandler;
     }
 
@@ -6562,13 +6433,13 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             return false;
         }
 
-        // @Override
+        //
         // public int hashCode() {
         // return overkey;
         // }
     }
 
-    public class VScrollTableDropHandler extends VAbstractDropHandler {
+    public class VCustomScrollTableDropHandler extends VAbstractDropHandler {
 
         private static final String ROWSTYLEBASE = "v-table-row-drag-";
         private TableDDDetails dropDetails;
@@ -6584,7 +6455,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             dropDetails = new TableDDDetails();
             Element elementOver = drag.getElementOver();
 
-            VScrollTableRow row = Util.findWidget(elementOver, getRowClass());
+            VCustomScrollTableRow row = Util.findWidget(elementOver,
+                    getRowClass());
             if (row != null) {
                 dropDetails.overkey = row.rowKey;
                 Element tr = row.getElement();
@@ -6621,6 +6493,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 deEmphasis();
                 final TableDDDetails newDetails = dropDetails;
                 VAcceptCallback cb = new VAcceptCallback() {
+
+                    @Override
                     public void accepted(VDragEvent event) {
                         if (newDetails.equals(dropDetails)) {
                             dragAccepted(event);
@@ -6647,19 +6521,21 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
 
         private void deEmphasis() {
-            UIObject.setStyleName(getElement(), CLASSNAME + "-drag", false);
+            UIObject.setStyleName(getElement(),
+                    VCustomScrollTable.this.getStylePrimaryName() + "-drag",
+                    false);
             if (lastEmphasized == null) {
                 return;
             }
             for (Widget w : scrollBody.renderedRows) {
-                VScrollTableRow row = (VScrollTableRow) w;
+                VCustomScrollTableRow row = (VCustomScrollTableRow) w;
                 if (lastEmphasized != null
                         && row.rowKey == lastEmphasized.overkey) {
                     String stylename = ROWSTYLEBASE
                             + lastEmphasized.dropLocation.toString()
                                     .toLowerCase();
-                    VScrollTableRow.setStyleName(row.getElement(), stylename,
-                            false);
+                    VCustomScrollTableRow.setStyleName(row.getElement(),
+                            stylename, false);
                     lastEmphasized = null;
                     return;
                 }
@@ -6672,15 +6548,17 @@ public class VCustomScrollTable extends FlowPanel implements Table,
          */
         private void emphasis(TableDDDetails details) {
             deEmphasis();
-            UIObject.setStyleName(getElement(), CLASSNAME + "-drag", true);
+            UIObject.setStyleName(getElement(),
+                    VCustomScrollTable.this.getStylePrimaryName() + "-drag",
+                    true);
             // iterate old and new emphasized row
             for (Widget w : scrollBody.renderedRows) {
-                VScrollTableRow row = (VScrollTableRow) w;
+                VCustomScrollTableRow row = (VCustomScrollTableRow) w;
                 if (details != null && details.overkey == row.rowKey) {
                     String stylename = ROWSTYLEBASE
                             + details.dropLocation.toString().toLowerCase();
-                    VScrollTableRow.setStyleName(row.getElement(), stylename,
-                            true);
+                    VCustomScrollTableRow.setStyleName(row.getElement(),
+                            stylename, true);
                     lastEmphasized = details;
                     return;
                 }
@@ -6693,17 +6571,19 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
 
         @Override
-        public Paintable getPaintable() {
-            return VCustomScrollTable.this;
+        public ComponentConnector getConnector() {
+            return ConnectorMap.get(client).getConnector(
+                    VCustomScrollTable.this);
         }
 
+        @Override
         public ApplicationConnection getApplicationConnection() {
             return client;
         }
 
     }
 
-    protected VScrollTableRow getFocusedRow() {
+    protected VCustomScrollTableRow getFocusedRow() {
         return focusedRow;
     }
 
@@ -6714,7 +6594,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      *            The row to where the selection head should move
      * @return Returns true if focus was moved successfully, else false
      */
-    protected boolean setRowFocus(VScrollTableRow row) {
+    public boolean setRowFocus(VCustomScrollTableRow row) {
 
         if (!isSelectable()) {
             return false;
@@ -6722,13 +6602,13 @@ public class VCustomScrollTable extends FlowPanel implements Table,
 
         // Remove previous selection
         if (focusedRow != null && focusedRow != row) {
-            focusedRow.removeStyleName(CLASSNAME_SELECTION_FOCUS);
+            focusedRow.removeStyleName(getStylePrimaryName() + "-focus");
         }
 
         if (row != null) {
 
             // Apply focus style to new selection
-            row.addStyleName(CLASSNAME_SELECTION_FOCUS);
+            row.addStyleName(getStylePrimaryName() + "-focus");
 
             /*
              * Trying to set focus on already focused row
@@ -6754,7 +6634,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * @param row
      *            The row to ensure is visible
      */
-    private void ensureRowIsVisible(VScrollTableRow row) {
+    private void ensureRowIsVisible(VCustomScrollTableRow row) {
         if (BrowserInfo.get().isTouchDevice()) {
             // Skip due to android devices that have broken scrolltop will may
             // get odd scrolling here.
@@ -6845,7 +6725,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                  * visible area.
                  */
                 if (!isFocusAtTheEndOfTable()) {
-                    VScrollTableRow lastVisibleRowInViewPort = scrollBody
+                    VCustomScrollTableRow lastVisibleRowInViewPort = scrollBody
                             .getRowByRowIndex(firstRowInViewPort
                                     + getFullyVisibleRowCount() - 1);
                     if (lastVisibleRowInViewPort != null
@@ -6861,7 +6741,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         if (indexOfToBeFocused >= totalRows) {
                             indexOfToBeFocused = totalRows - 1;
                         }
-                        VScrollTableRow toBeFocusedRow = scrollBody
+                        VCustomScrollTableRow toBeFocusedRow = scrollBody
                                 .getRowByRowIndex(indexOfToBeFocused);
 
                         if (toBeFocusedRow != null) {
@@ -6899,7 +6779,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                  * visible area.
                  */
                 if (!isFocusAtTheBeginningOfTable()) {
-                    VScrollTableRow firstVisibleRowInViewPort = scrollBody
+                    VCustomScrollTableRow firstVisibleRowInViewPort = scrollBody
                             .getRowByRowIndex(firstRowInViewPort);
                     if (firstVisibleRowInViewPort != null
                             && firstVisibleRowInViewPort != focusedRow) {
@@ -6914,7 +6794,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                         if (indexOfToBeFocused < 0) {
                             indexOfToBeFocused = 0;
                         }
-                        VScrollTableRow toBeFocusedRow = scrollBody
+                        VCustomScrollTableRow toBeFocusedRow = scrollBody
                                 .getRowByRowIndex(indexOfToBeFocused);
 
                         if (toBeFocusedRow != null) { // if the next focused row
@@ -6949,7 +6829,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 if (focusedRow != null && focusedRow.getIndex() == 0) {
                     return false;
                 } else {
-                    VScrollTableRow rowByRowIndex = (VScrollTableRow) scrollBody
+                    VCustomScrollTableRow rowByRowIndex = (VCustomScrollTableRow) scrollBody
                             .iterator().next();
                     if (rowByRowIndex.getIndex() == 0) {
                         setRowFocus(rowByRowIndex);
@@ -6975,7 +6855,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             if (isSelectable()) {
                 final int lastRendered = scrollBody.getLastRendered();
                 if (lastRendered + 1 == totalRows) {
-                    VScrollTableRow rowByRowIndex = scrollBody
+                    VCustomScrollTableRow rowByRowIndex = scrollBody
                             .getRowByRowIndex(lastRendered);
                     if (focusedRow != rowByRowIndex) {
                         setRowFocus(rowByRowIndex);
@@ -7027,6 +6907,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * com.google.gwt.event.dom.client.FocusHandler#onFocus(com.google.gwt.event
      * .dom.client.FocusEvent)
      */
+
+    @Override
     public void onFocus(FocusEvent event) {
         if (isFocusable()) {
             hasFocus = true;
@@ -7047,6 +6929,8 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * com.google.gwt.event.dom.client.BlurHandler#onBlur(com.google.gwt.event
      * .dom.client.BlurEvent)
      */
+
+    @Override
     public void onBlur(BlurEvent event) {
         hasFocus = false;
         navKeyDown = false;
@@ -7054,7 +6938,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         if (BrowserInfo.get().isIE()) {
             // IE sometimes moves focus to a clicked table cell...
             Element focusedElement = Util.getIEFocusedElement();
-            if (Util.getPaintableForElement(client, getParent(), focusedElement) == this) {
+            if (Util.getConnectorForElement(client, getParent(), focusedElement) == this) {
                 // ..in that case, steal the focus back to the focus handler
                 // but not if focus is in a child component instead (#7965)
                 focus();
@@ -7074,7 +6958,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
      * @param key
      *            The key to remove
      */
-    private void removeRowFromUnsentSelectionRanges(VScrollTableRow row) {
+    private void removeRowFromUnsentSelectionRanges(VCustomScrollTableRow row) {
         Collection<SelectionRange> newRanges = null;
         for (Iterator<SelectionRange> iterator = selectedRowRanges.iterator(); iterator
                 .hasNext();) {
@@ -7117,8 +7001,10 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     /*
      * (non-Javadoc)
      * 
-     * @see com.vaadin.terminal.gwt.client.Focusable#focus()
+     * @see com.vaadin.client.Focusable#focus()
      */
+
+    @Override
     public void focus() {
         if (isFocusable()) {
             scrollBodyPanel.focus();
@@ -7128,15 +7014,16 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     /**
      * Sets the proper tabIndex for scrollBodyPanel (the focusable elemen in the
      * component).
-     * 
+     * <p>
      * If the component has no explicit tabIndex a zero is given (default
      * tabbing order based on dom hierarchy) or -1 if the component does not
      * need to gain focus. The component needs no focus if it has no scrollabars
      * (not scrollable) and not selectable. Note that in the future shortcut
      * actions may need focus.
-     * 
+     * <p>
+     * For internal use only. May be removed or replaced in the future.
      */
-    private void setProperTabIndex() {
+    public void setProperTabIndex() {
         int storedScrollTop = 0;
         int storedScrollLeft = 0;
 
@@ -7162,6 +7049,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
     public void startScrollingVelocityTimer() {
         if (scrollingVelocityTimer == null) {
             scrollingVelocityTimer = new Timer() {
+
                 @Override
                 public void run() {
                     scrollingVelocity++;
@@ -7196,8 +7084,11 @@ public class VCustomScrollTable extends FlowPanel implements Table,
                 || keyCode == getNavigationStartKey();
     }
 
-    public void lazyRevertFocusToRow(final VScrollTableRow currentlyFocusedRow) {
+    public void lazyRevertFocusToRow(
+            final VCustomScrollTableRow currentlyFocusedRow) {
         Scheduler.get().scheduleFinally(new ScheduledCommand() {
+
+            @Override
             public void execute() {
                 if (currentlyFocusedRow != null) {
                     setRowFocus(currentlyFocusedRow);
@@ -7210,6 +7101,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         });
     }
 
+    @Override
     public Action[] getActions() {
         if (bodyActionKeys == null) {
             return new Action[] {};
@@ -7225,10 +7117,12 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         return actions;
     }
 
+    @Override
     public ApplicationConnection getClient() {
         return client;
     }
 
+    @Override
     public String getPaintableId() {
         return paintableId;
     }
@@ -7245,7 +7139,7 @@ public class VCustomScrollTable extends FlowPanel implements Table,
             return function(){ return false; };
     }-*/;
 
-    protected void triggerLazyColumnAdjustment(boolean now) {
+    public void triggerLazyColumnAdjustment(boolean now) {
         lazyAdjustColumnWidths.cancel();
         if (now) {
             lazyAdjustColumnWidths.run();
@@ -7254,9 +7148,31 @@ public class VCustomScrollTable extends FlowPanel implements Table,
         }
     }
 
+    private boolean isDynamicWidth() {
+        ComponentConnector paintable = ConnectorMap.get(client).getConnector(
+                this);
+        return paintable.isUndefinedWidth();
+    }
+
+    protected boolean isDynamicHeight() {
+        ComponentConnector paintable = ConnectorMap.get(client).getConnector(
+                this);
+        if (paintable == null) {
+            // This should be refactored. As isDynamicHeight can be called from
+            // a timer it is possible that the connector has been unregistered
+            // when this method is called, causing getConnector to return null.
+            return false;
+        }
+        return paintable.isUndefinedHeight();
+    }
+
     private void debug(String msg) {
         if (enableDebug) {
             VConsole.error(msg);
         }
+    }
+
+    public Widget getWidgetForPaintable() {
+        return this;
     }
 }

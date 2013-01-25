@@ -2,25 +2,21 @@ package org.tepi.filtertable;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
-import org.tepi.filtertable.datefilter.DateFilterPopup;
-import org.tepi.filtertable.datefilter.DateInterval;
-import org.tepi.filtertable.gwt.client.ui.VFilterTable;
-import org.tepi.filtertable.numberfilter.NumberFilterPopup;
-import org.tepi.filtertable.numberfilter.NumberInterval;
 
+import com.ibm.icu.util.DateInterval;
 import com.vaadin.data.Container;
-import com.vaadin.terminal.PaintException;
-import com.vaadin.terminal.PaintTarget;
+import com.vaadin.data.util.converter.Converter.ConversionException;
+import com.vaadin.server.LegacyPaint;
+import com.vaadin.server.PaintException;
+import com.vaadin.server.PaintTarget;
 import com.vaadin.ui.AbstractField;
-import com.vaadin.ui.ClientWidget;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomTable;
-import com.vaadin.ui.Field;
-import com.vaadin.ui.Label;
 import com.vaadin.ui.TextField;
 
 /**
@@ -30,7 +26,6 @@ import com.vaadin.ui.TextField;
  * @author Teppo Kurki
  * 
  */
-@ClientWidget(VFilterTable.class)
 public class FilterTable extends CustomTable implements IFilterTable {
     /* Maps property id's to column filter components */
     private Map<Object, Component> columnIdToFilterMap = new HashMap<Object, Component>();
@@ -43,8 +38,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
     /* Filter Generator and Decorator */
     private FilterGenerator filterGenerator;
     private FilterDecorator decorator;
-    /* Temporary reference to to-be-focused filter field */
-    private Object filterToFocus;
     /* FilterFieldGenerator instance */
     private FilterFieldGenerator generator;
     /* Is initialization done */
@@ -78,33 +71,23 @@ public class FilterTable extends CustomTable implements IFilterTable {
         if (filtersVisible) {
             for (Object key : getColumnIdToFilterMap().keySet()) {
                 /* Do not paint filters for collapsed columns */
-                if (collapsedColumnIds.contains(key)) {
+                /* Do not filters for columns that do not exist in container */
+                /* Do not paint hidden filters */
+                if (collapsedColumnIds.contains(key)
+                        || !getContainerDataSource().getContainerPropertyIds()
+                                .contains(key)
+                        || columnIdsOfHiddenFilters.contains(key)) {
                     continue;
                 }
-                target.startTag("filtercomponent");
+                /* Paint the filter field */
+                target.startTag("filtercomponent-" + columnIdMap.key(key));
                 target.addAttribute("columnid", columnIdMap.key(key));
                 Component c = getColumnIdToFilterMap().get(key);
-                // Paint labels instead of fields for generated columns and
-                // hidden filters
-                if (!getContainerDataSource().getContainerPropertyIds()
-                        .contains(key)
-                        || columnIdsOfHiddenFilters.contains(key)) {
-                    c = new Label();
-                    c.setSizeUndefined();
-                }
-                c.paint(target);
-                target.endTag("filtercomponent");
+                LegacyPaint.paint(c, target);
+                target.endTag("filtercomponent-" + columnIdMap.key(key));
             }
         }
         target.endTag("filters");
-        /* Focus the previously focused filter component */
-        if (filterToFocus != null) {
-            Component filter = getColumnIdToFilterMap().get(filterToFocus);
-            if (filter instanceof Focusable) {
-                focusFilterComponent((Focusable) filter);
-            }
-            filterToFocus = null;
-        }
     }
 
     @Override
@@ -117,34 +100,21 @@ public class FilterTable extends CustomTable implements IFilterTable {
             if (c != null) {
                 if (c instanceof TextField) {
                     ((TextField) c).setValue("");
-                } else if (c instanceof DateFilterPopup) {
-                    ((DateFilterPopup) c).setInternalValue(null, null);
-                } else if (c instanceof NumberFilterPopup) {
-                    ((NumberFilterPopup) c).setInternalValue(null, null, null);
-                } else if (c instanceof Field) {
-                    ((Field) c).setValue(null);
+                    /*
+                     * } else if (c instanceof DateFilterPopup) {
+                     * ((DateFilterPopup) c).setInternalValue(null, null); }
+                     * else if (c instanceof NumberFilterPopup) {
+                     * ((NumberFilterPopup) c).setInternalValue(null, null,
+                     * null);
+                     */
+                } else if (c instanceof AbstractField<?>) {
+                    ((AbstractField<?>) c).setValue(null);
                 }
             }
         } else {
             collapsedColumnIds.remove(propertyId);
         }
-        requestRepaint();
-    }
-
-    @Override
-    public void detach() {
-        for (Component c : getColumnIdToFilterMap().values()) {
-            c.detach();
-        }
-        super.detach();
-    }
-
-    @Override
-    public void attach() {
-        for (Component c : getColumnIdToFilterMap().values()) {
-            c.attach();
-        }
-        super.attach();
+        markAsDirty();
     }
 
     @Override
@@ -160,6 +130,9 @@ public class FilterTable extends CustomTable implements IFilterTable {
      */
     public void resetFilters() {
         if (initDone) {
+            for (Component c : columnIdToFilterMap.values()) {
+                c.setParent(null);
+            }
             collapsedColumnIds.clear();
             columnIdToFilterMap.clear();
             columnIdsOfHiddenFilters.clear();
@@ -204,7 +177,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
      */
     public void setFilterBarVisible(boolean filtersVisible) {
         this.filtersVisible = filtersVisible;
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -233,7 +206,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
             columnIdsOfHiddenFilters.add(columnId);
         }
         if (columnIdsOfHiddenFilters.size() != previousSize) {
-            requestRepaint();
+            markAsDirty();
         }
     }
 
@@ -267,24 +240,22 @@ public class FilterTable extends CustomTable implements IFilterTable {
      */
     public boolean setFilterFieldValue(Object propertyId, Object value)
             throws ConversionException {
-        AbstractField field = (AbstractField) getColumnIdToFilterMap().get(
-                propertyId);
+        Component field = getColumnIdToFilterMap().get(propertyId);
         boolean retVal = field != null;
         if (field != null) {
-            if (field instanceof DateFilterPopup
-                    && value instanceof DateInterval) {
-                ((DateFilterPopup) field).setInternalValue(
-                        ((DateInterval) value).getFrom(),
-                        ((DateInterval) value).getTo());
-            } else if (field instanceof NumberFilterPopup
-                    && value instanceof NumberInterval) {
-                ((NumberFilterPopup) field).setInternalValue(
-                        ((NumberInterval) value).getLessThanValue(),
-                        ((NumberInterval) value).getGreaterThanValue(),
-                        ((NumberInterval) value).getEqualsValue());
-            } else {
-                field.setValue(value);
-            }
+            /*
+             * if (field instanceof DateFilterPopup && value instanceof
+             * DateInterval) { ((DateFilterPopup) field).setInternalValue(
+             * ((DateInterval) value).getFrom(), ((DateInterval)
+             * value).getTo()); } else if (field instanceof NumberFilterPopup &&
+             * value instanceof NumberInterval) { ((NumberFilterPopup)
+             * field).setInternalValue( ((NumberInterval)
+             * value).getLessThanValue(), ((NumberInterval)
+             * value).getGreaterThanValue(), ((NumberInterval)
+             * value).getEqualsValue()); } else {
+             */
+            ((AbstractField<?>) field).setConvertedValue(value);
+            // }
         }
         return retVal;
     }
@@ -297,16 +268,16 @@ public class FilterTable extends CustomTable implements IFilterTable {
      * @return Current value
      */
     public Object getFilterFieldValue(Object propertyId) {
-        AbstractField field = (AbstractField) getColumnIdToFilterMap().get(
-                propertyId);
+        Component field = getColumnIdToFilterMap().get(propertyId);
         if (field != null) {
-            if (field instanceof DateFilterPopup) {
-                return ((DateFilterPopup) field).getDateValue();
-            } else if (field instanceof NumberFilterPopup) {
-                return ((NumberFilterPopup) field).getInterval();
-            } else {
-                return field.getValue();
-            }
+            /*
+             * if (field instanceof DateFilterPopup) { return ((DateFilterPopup)
+             * field).getDateValue(); } else if (field instanceof
+             * NumberFilterPopup) { return ((NumberFilterPopup)
+             * field).getInterval(); } else {
+             */
+            return ((AbstractField<?>) field).getValue();
+            // }
         } else {
             return null;
         }
@@ -325,14 +296,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
         return decorator;
     }
 
-    public void focusFilter(Focusable toFocus) {
-        super.focusFilterComponent(toFocus);
-    }
-
-    public void setFilterToFocus(Object propertyId) {
-        filterToFocus = propertyId;
-    }
-
     public Map<Object, Component> getColumnIdToFilterMap() {
         return columnIdToFilterMap;
     }
@@ -345,4 +308,21 @@ public class FilterTable extends CustomTable implements IFilterTable {
     public Component getAsComponent() {
         return this;
     }
+
+    @Override
+    public Iterator<Component> iterator() {
+        Set<Component> children = new HashSet<Component>();
+        if (visibleComponents != null) {
+            children.addAll(visibleComponents);
+        }
+        if (initDone) {
+            for (Object key : columnIdToFilterMap.keySet()) {
+                if (!columnIdsOfHiddenFilters.contains(key)) {
+                    children.add(columnIdToFilterMap.get(key));
+                }
+            }
+        }
+        return children.iterator();
+    }
+
 }

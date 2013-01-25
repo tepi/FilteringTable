@@ -38,7 +38,7 @@ public interface FilterGenerator {
      * @return a custom filtering field OR null if you want to use the generated
      *         default field.
      */
-    public AbstractField getCustomFilterComponent(Object propertyId);
+    public AbstractField<?> getCustomFilterComponent(Object propertyId);
 
     /**
      * This method is called when a filter has been removed from the container

@@ -1,18 +1,11 @@
 package org.tepi.filtertable;
 
 import java.io.Serializable;
-import java.lang.reflect.Method;
-import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.tepi.filtertable.datefilter.DateFilterPopup;
-import org.tepi.filtertable.datefilter.DateInterval;
-import org.tepi.filtertable.numberfilter.NumberFilterPopup;
-import org.tepi.filtertable.numberfilter.NumberInterval;
 import org.tepi.filtertable.paged.PagedFilterTable;
 
 import com.vaadin.data.Container;
@@ -20,17 +13,13 @@ import com.vaadin.data.Container.Filter;
 import com.vaadin.data.Container.Filterable;
 import com.vaadin.data.Property;
 import com.vaadin.data.Property.ValueChangeListener;
-import com.vaadin.data.util.filter.And;
-import com.vaadin.data.util.filter.Between;
-import com.vaadin.data.util.filter.Compare;
 import com.vaadin.data.util.filter.SimpleStringFilter;
 import com.vaadin.event.FieldEvents.TextChangeEvent;
 import com.vaadin.event.FieldEvents.TextChangeListener;
-import com.vaadin.terminal.Resource;
+import com.vaadin.server.Resource;
 import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.ComboBox;
 import com.vaadin.ui.Component;
-import com.vaadin.ui.Component.Focusable;
 import com.vaadin.ui.TextField;
 
 class FilterFieldGenerator implements Serializable {
@@ -38,12 +27,14 @@ class FilterFieldGenerator implements Serializable {
 
     /* Mapping for property IDs, filters and components */
     private Map<Object, Filter> filters = new HashMap<Object, Container.Filter>();
-    private Map<AbstractField, Object> customFields = new HashMap<AbstractField, Object>();
-    private Map<NumberFilterPopup, Object> numbers = new HashMap<NumberFilterPopup, Object>();;
+    private Map<AbstractField<?>, Object> customFields = new HashMap<AbstractField<?>, Object>();
+    // private Map<NumberFilterPopup, Object> numbers = new
+    // HashMap<NumberFilterPopup, Object>();;
     private Map<TextField, Object> texts = new HashMap<TextField, Object>();
     private Map<ComboBox, Object> enums = new HashMap<ComboBox, Object>();
     private Map<ComboBox, Object> booleans = new HashMap<ComboBox, Object>();
-    private Map<DateFilterPopup, Object> dates = new HashMap<DateFilterPopup, Object>();
+    // private Map<DateFilterPopup, Object> dates = new HashMap<DateFilterPopup,
+    // Object>();
 
     /* ValueChangeListener for filter components */
     private ValueChangeListener listener = initializeListener();
@@ -61,13 +52,33 @@ class FilterFieldGenerator implements Serializable {
                 owner.getFilterGenerator().filterRemoved(propertyId);
             }
         }
+        /* Remove listeners */
+        for (AbstractField<?> af : customFields.keySet()) {
+            af.removeValueChangeListener(listener);
+        }
+        // for (NumberFilterPopup nfp : numbers.keySet()) {
+        // nfp.removeValueChangeListener(listener);
+        // }
+        for (TextField tf : texts.keySet()) {
+            tf.removeValueChangeListener(listener);
+        }
+        for (ComboBox cb : enums.keySet()) {
+            cb.removeValueChangeListener(listener);
+        }
+        for (ComboBox cb : booleans.keySet()) {
+            cb.removeValueChangeListener(listener);
+        }
+        // for (DateFilterPopup dfp : dates.keySet()) {
+        // dfp.removeValueChangeListener(listener);
+        // }
         /* Clear the data related to filters */
         customFields.clear();
         filters.clear();
         texts.clear();
         enums.clear();
         booleans.clear();
-        dates.clear();
+        // dates.clear();
+        // numbers.clear();
     }
 
     void initializeFilterFields() {
@@ -75,7 +86,7 @@ class FilterFieldGenerator implements Serializable {
         if (owner.getFilterable() != null) {
             for (Object property : owner.getVisibleColumns()) {
                 if (owner.getContainerPropertyIds().contains(property)) {
-                    AbstractField filter = createField(property, owner
+                    Component filter = createField(property, owner
                             .getContainerDataSource().getType(property));
                     addFilterColumn(property, filter);
                 } else {
@@ -85,19 +96,20 @@ class FilterFieldGenerator implements Serializable {
         }
     }
 
-    private Filter generateFilter(Property field, Object propertyId,
+    private Filter generateFilter(Property<?> field, Object propertyId,
             Object value) {
-        if (field instanceof DateFilterPopup) {
-            return generateDateFilter(field, propertyId, value);
-        } else if (field instanceof NumberFilterPopup) {
-            return generateNumberFilter(field, propertyId, value);
-        } else if (value != null && !value.equals("")) {
+        /*
+         * if (field instanceof DateFilterPopup) { return
+         * generateDateFilter(field, propertyId, value); } else if (field
+         * instanceof NumberFilterPopup) { return generateNumberFilter(field,
+         * propertyId, value); } else
+         */if (value != null && !value.equals("")) {
             return generateGenericFilter(field, propertyId, value);
         }
         return null;
     }
 
-    private Filter generateGenericFilter(Property field, Object propertyId,
+    private Filter generateGenericFilter(Property<?> field, Object propertyId,
             Object value) {
         /* Handle filtering for other data */
         if (owner.getFilterGenerator() != null) {
@@ -111,109 +123,109 @@ class FilterFieldGenerator implements Serializable {
                 false);
     }
 
-    private Filter generateNumberFilter(Property field, Object propertyId,
-            Object value) {
-        /* Handle number filtering */
-        NumberInterval interval = ((NumberFilterPopup) field).getInterval();
-        if (interval == null) {
-            /* Number interval is empty -> no filter */
-            return null;
-        }
-        if (owner.getFilterGenerator() != null) {
-            Filter newFilter = owner.getFilterGenerator().generateFilter(
-                    propertyId, interval);
-            if (newFilter != null) {
-                return newFilter;
-            }
-        }
-        String ltValue = interval.getLessThanValue();
-        String gtValue = interval.getGreaterThanValue();
-        String eqValue = interval.getEqualsValue();
-        Class<?> clazz = getProperNumericClass(propertyId);
+    // private Filter generateNumberFilter(Property<?> field, Object propertyId,
+    // Object value) {
+    // /* Handle number filtering */
+    // NumberInterval interval = ((NumberFilterPopup) field).getInterval();
+    // if (interval == null) {
+    // /* Number interval is empty -> no filter */
+    // return null;
+    // }
+    // if (owner.getFilterGenerator() != null) {
+    // Filter newFilter = owner.getFilterGenerator().generateFilter(
+    // propertyId, interval);
+    // if (newFilter != null) {
+    // return newFilter;
+    // }
+    // }
+    // String ltValue = interval.getLessThanValue();
+    // String gtValue = interval.getGreaterThanValue();
+    // String eqValue = interval.getEqualsValue();
+    // Class<?> clazz = getProperNumericClass(propertyId);
+    //
+    // Method valueOf;
+    //
+    // // We use reflection to get the vaueOf method of the container
+    // // datatype
+    // try {
+    // valueOf = clazz.getMethod("valueOf", String.class);
+    // if (eqValue != null) {
+    // return new Compare.Equal(propertyId, valueOf.invoke(clazz,
+    // eqValue));
+    // } else if (ltValue != null && gtValue != null) {
+    // return new And(new Compare.Less(propertyId, valueOf.invoke(
+    // clazz, ltValue)), new Compare.Greater(propertyId,
+    // valueOf.invoke(clazz, gtValue)));
+    // } else if (ltValue != null) {
+    // return new Compare.Less(propertyId, valueOf.invoke(clazz,
+    // ltValue));
+    // } else if (gtValue != null) {
+    // return new Compare.Greater(propertyId, valueOf.invoke(clazz,
+    // gtValue));
+    // } else {
+    // return null;
+    // }
+    // } catch (Exception e) {
+    // throw new RuntimeException("Creating number filter has failed.", e);
+    // }
+    // }
+    //
+    // private Filter generateDateFilter(Property<?> field, Object propertyId,
+    // Object value) {
+    // /* Handle date filtering */
+    // DateInterval interval = ((DateFilterPopup) field).getDateValue();
+    // if (interval == null) {
+    // /* Date interval is empty -> no filter */
+    // return null;
+    // }
+    // /* Try to get a custom filter from a provided filter generator */
+    // if (owner.getFilterGenerator() != null) {
+    // Filter newFilter = owner.getFilterGenerator().generateFilter(
+    // propertyId, interval);
+    // if (newFilter != null) {
+    // return newFilter;
+    // }
+    // }
+    // /* On failure we generate the default filter */
+    // Comparable<?> actualFrom = interval.getFrom(), actualTo = interval
+    // .getTo();
+    // Class<?> type = owner.getType(propertyId);
+    // if (java.sql.Date.class.equals(type)) {
+    // actualFrom = actualFrom == null ? null : new java.sql.Date(interval
+    // .getFrom().getTime());
+    // actualTo = actualTo == null ? null : new java.sql.Date(interval
+    // .getTo().getTime());
+    // } else if (Timestamp.class.equals(type)) {
+    // actualFrom = actualFrom == null ? null : new Timestamp(interval
+    // .getFrom().getTime());
+    // actualTo = actualTo == null ? null : new Timestamp(interval.getTo()
+    // .getTime());
+    // }
+    // if (actualFrom != null && actualTo != null) {
+    // return new Between(propertyId, actualFrom, actualTo);
+    // } else if (actualFrom != null) {
+    // return new Compare.GreaterOrEqual(propertyId, actualFrom);
+    // } else {
+    // return new Compare.LessOrEqual(propertyId, actualTo);
+    // }
+    // }
 
-        Method valueOf;
-
-        // We use reflection to get the vaueOf method of the container
-        // datatype
-        try {
-            valueOf = clazz.getMethod("valueOf", String.class);
-            if (eqValue != null) {
-                return new Compare.Equal(propertyId, valueOf.invoke(clazz,
-                        eqValue));
-            } else if (ltValue != null && gtValue != null) {
-                return new And(new Compare.Less(propertyId, valueOf.invoke(
-                        clazz, ltValue)), new Compare.Greater(propertyId,
-                        valueOf.invoke(clazz, gtValue)));
-            } else if (ltValue != null) {
-                return new Compare.Less(propertyId, valueOf.invoke(clazz,
-                        ltValue));
-            } else if (gtValue != null) {
-                return new Compare.Greater(propertyId, valueOf.invoke(clazz,
-                        gtValue));
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Creating number filter has failed.", e);
-        }
-    }
-
-    private Filter generateDateFilter(Property field, Object propertyId,
-            Object value) {
-        /* Handle date filtering */
-        DateInterval interval = ((DateFilterPopup) field).getDateValue();
-        if (interval == null) {
-            /* Date interval is empty -> no filter */
-            return null;
-        }
-        /* Try to get a custom filter from a provided filter generator */
-        if (owner.getFilterGenerator() != null) {
-            Filter newFilter = owner.getFilterGenerator().generateFilter(
-                    propertyId, interval);
-            if (newFilter != null) {
-                return newFilter;
-            }
-        }
-        /* On failure we generate the default filter */
-        Comparable<?> actualFrom = interval.getFrom(), actualTo = interval
-                .getTo();
-        Class<?> type = owner.getType(propertyId);
-        if (java.sql.Date.class.equals(type)) {
-            actualFrom = actualFrom == null ? null : new java.sql.Date(interval
-                    .getFrom().getTime());
-            actualTo = actualTo == null ? null : new java.sql.Date(interval
-                    .getTo().getTime());
-        } else if (Timestamp.class.equals(type)) {
-            actualFrom = actualFrom == null ? null : new Timestamp(interval
-                    .getFrom().getTime());
-            actualTo = actualTo == null ? null : new Timestamp(interval.getTo()
-                    .getTime());
-        }
-        if (actualFrom != null && actualTo != null) {
-            return new Between(propertyId, actualFrom, actualTo);
-        } else if (actualFrom != null) {
-            return new Compare.GreaterOrEqual(propertyId, actualFrom);
-        } else {
-            return new Compare.LessOrEqual(propertyId, actualTo);
-        }
-    }
-
-    private Class<?> getProperNumericClass(Object propertyId) {
-        Class<?> clazz = owner.getContainerDataSource().getType(propertyId);
-        if (clazz.equals(int.class)) {
-            return Integer.class;
-        }
-        if (clazz.equals(long.class)) {
-            return Long.class;
-        }
-        if (clazz.equals(float.class)) {
-            return Float.class;
-        }
-        if (clazz.equals(double.class)) {
-            return Double.class;
-        }
-        return clazz;
-    }
+    // private Class<?> getProperNumericClass(Object propertyId) {
+    // Class<?> clazz = owner.getContainerDataSource().getType(propertyId);
+    // if (clazz.equals(int.class)) {
+    // return Integer.class;
+    // }
+    // if (clazz.equals(long.class)) {
+    // return Long.class;
+    // }
+    // if (clazz.equals(float.class)) {
+    // return Float.class;
+    // }
+    // if (clazz.equals(double.class)) {
+    // return Double.class;
+    // }
+    // return clazz;
+    // }
 
     private void addFilterColumn(Object propertyId, Component filter) {
         owner.getColumnIdToFilterMap().put(propertyId, filter);
@@ -234,8 +246,8 @@ class FilterFieldGenerator implements Serializable {
         filters.put(propertyId, filter);
     }
 
-    private AbstractField createField(Object property, Class<?> type) {
-        AbstractField component = null;
+    private Component createField(Object property, Class<?> type) {
+        AbstractField<?> component = null;
         if (owner.getFilterGenerator() != null) {
             component = owner.getFilterGenerator().getCustomFilterComponent(
                     property);
@@ -248,36 +260,39 @@ class FilterFieldGenerator implements Serializable {
             return component;
         } else if (type == boolean.class || type == Boolean.class) {
             component = createBooleanField(property);
-        } else if (type == Integer.class || type == Long.class
-                || type == Float.class || type == Double.class
-                || type == int.class || type == long.class
-                || type == float.class || type == double.class) {
-            if (owner.getFilterDecorator() != null
-                    && owner.getFilterDecorator().usePopupForNumericProperty(
-                            property)) {
-                component = createNumericField(type, property);
-            } else {
-                component = createTextField(property);
-            }
-        } else if (type.isEnum()) {
+        } /*
+           * else if (type == Integer.class || type == Long.class || type ==
+           * Float.class || type == Double.class || type == int.class || type ==
+           * long.class || type == float.class || type == double.class) { if
+           * (owner.getFilterDecorator() != null &&
+           * owner.getFilterDecorator().usePopupForNumericProperty( property)) {
+           * NumberFilterPopup nfp = createNumericField(type, property);
+           * nfp.setWidth("100%"); nfp.setImmediate(true);
+           * nfp.addValueChangeListener(listener); return nfp; } else {
+           * component = createTextField(property); } } else
+           */
+        if (type.isEnum()) {
             component = createEnumField(type, property);
-        } else if (type == Date.class || type == Timestamp.class
-                || type == java.sql.Date.class) {
-            component = createDateField(property);
-        } else {
+        } /*
+           * else if (type == Date.class || type == Timestamp.class || type ==
+           * java.sql.Date.class) { DateFilterPopup dfp =
+           * createDateField(property); dfp.setWidth("100%");
+           * dfp.setImmediate(true); dfp.addValueChangeListener(listener);
+           * return dfp; }
+           */else {
             component = createTextField(property);
         }
         component.setWidth("100%");
         component.setImmediate(true);
-        component.addListener(listener);
+        component.addValueChangeListener(listener);
         return component;
     }
 
-    private AbstractField createTextField(Object propertyId) {
+    private AbstractField<?> createTextField(Object propertyId) {
         final TextField textField = new TextField();
         if (owner.getFilterDecorator() != null) {
             if (owner.getFilterDecorator().isTextFilterImmediate(propertyId)) {
-                textField.addListener(new TextChangeListener() {
+                textField.addTextChangeListener(new TextChangeListener() {
 
                     public void textChange(TextChangeEvent event) {
                         textField.setValue(event.getText());
@@ -327,7 +342,7 @@ class FilterFieldGenerator implements Serializable {
         return enumSelect;
     }
 
-    private AbstractField createBooleanField(Object propertyId) {
+    private AbstractField<?> createBooleanField(Object propertyId) {
         ComboBox booleanSelect = new ComboBox();
         booleanSelect.addItem(true);
         booleanSelect.addItem(false);
@@ -365,19 +380,20 @@ class FilterFieldGenerator implements Serializable {
         return booleanSelect;
     }
 
-    private AbstractField createDateField(Object propertyId) {
-        DateFilterPopup dateFilterPopup = new DateFilterPopup(
-                owner.getFilterDecorator(), propertyId);
-        dates.put(dateFilterPopup, propertyId);
-        return dateFilterPopup;
-    }
-
-    private AbstractField createNumericField(Class<?> type, Object propertyId) {
-        NumberFilterPopup numberFilterPopup = new NumberFilterPopup(
-                owner.getFilterDecorator(), null);
-        numbers.put(numberFilterPopup, propertyId);
-        return numberFilterPopup;
-    }
+    // private DateFilterPopup createDateField(Object propertyId) {
+    // DateFilterPopup dateFilterPopup = new DateFilterPopup(
+    // owner.getFilterDecorator(), propertyId);
+    // dates.put(dateFilterPopup, propertyId);
+    // return dateFilterPopup;
+    // }
+    //
+    // private NumberFilterPopup createNumericField(Class<?> type,
+    // Object propertyId) {
+    // NumberFilterPopup numberFilterPopup = new NumberFilterPopup(
+    // owner.getFilterDecorator(), null);
+    // numbers.put(numberFilterPopup, propertyId);
+    // return numberFilterPopup;
+    // }
 
     private ValueChangeListener initializeListener() {
         return new Property.ValueChangeListener() {
@@ -385,17 +401,21 @@ class FilterFieldGenerator implements Serializable {
                 if (owner.getFilterable() == null) {
                     return;
                 }
-                Property field = event.getProperty();
+                Property<?> field = event.getProperty();
                 Object value = field.getValue();
                 Object propertyId = null;
                 if (customFields.containsKey(field)) {
                     propertyId = customFields.get(field);
-                } else if (numbers.containsKey(field)) {
-                    propertyId = numbers.get(field);
+                    /*
+                     * } else if (numbers.containsKey(field)) { propertyId =
+                     * numbers.get(field);
+                     */
                 } else if (texts.containsKey(field)) {
                     propertyId = texts.get(field);
-                } else if (dates.containsKey(field)) {
-                    propertyId = dates.get(field);
+                    /*
+                     * } else if (dates.containsKey(field)) { propertyId =
+                     * dates.get(field);
+                     */
                 } else if (enums.containsKey(field)) {
                     propertyId = enums.get(field);
                 } else if (booleans.containsKey(field)) {
@@ -418,22 +438,6 @@ class FilterFieldGenerator implements Serializable {
                 /* If the owner is a PagedFilteringTable, move to the first page */
                 if (owner instanceof PagedFilterTable<?>) {
                     ((PagedFilterTable<?>) owner).setCurrentPage(1);
-                }
-
-                /*
-                 * Handle focusing. Note: The size comparison is an ugly hack
-                 * due to some focusing behavior within the VScrollTable which I
-                 * could not understand :).
-                 */
-                if (owner.getPageLength() <= owner.getContainerDataSource()
-                        .size()) {
-                    owner.setFilterToFocus(propertyId);
-                } else {
-                    Component filter = owner.getColumnIdToFilterMap().get(
-                            propertyId);
-                    if (filter instanceof Focusable) {
-                        owner.focusFilter((Focusable) filter);
-                    }
                 }
             }
         };
@@ -460,10 +464,6 @@ class FilterFieldGenerator implements Serializable {
         public FilterDecorator getFilterDecorator();
 
         public int getPageLength();
-
-        public void setFilterToFocus(Object propertyId);
-
-        public void focusFilter(Focusable filter);
 
         public Component getAsComponent();
 

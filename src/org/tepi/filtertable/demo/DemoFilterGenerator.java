@@ -1,22 +1,18 @@
 package org.tepi.filtertable.demo;
 
+import java.io.Serializable;
+
 import org.tepi.filtertable.FilterGenerator;
 
 import com.vaadin.data.Container.Filter;
 import com.vaadin.data.util.filter.Compare;
 import com.vaadin.data.util.filter.Or;
+import com.vaadin.server.Page;
 import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.CheckBox;
-import com.vaadin.ui.Window;
-import com.vaadin.ui.Window.Notification;
+import com.vaadin.ui.Notification;
 
-class DemoFilterGenerator implements FilterGenerator {
-
-    private final Window window;
-
-    public DemoFilterGenerator(Window window) {
-        this.window = window;
-    }
+class DemoFilterGenerator implements FilterGenerator, Serializable {
 
     public Filter generateFilter(Object propertyId, Object value) {
         if ("id".equals(propertyId)) {
@@ -43,7 +39,7 @@ class DemoFilterGenerator implements FilterGenerator {
         return null;
     }
 
-    public AbstractField getCustomFilterComponent(Object propertyId) {
+    public AbstractField<?> getCustomFilterComponent(Object propertyId) {
         // removed custom filter component for id
         if ("checked".equals(propertyId)) {
             CheckBox box = new CheckBox();
@@ -53,17 +49,17 @@ class DemoFilterGenerator implements FilterGenerator {
     }
 
     public void filterRemoved(Object propertyId) {
-        Notification n = new Window.Notification("Filter removed from: "
-                + propertyId, Notification.TYPE_TRAY_NOTIFICATION);
+        Notification n = new Notification("Filter removed from: " + propertyId,
+                Notification.Type.TRAY_NOTIFICATION);
         n.setDelayMsec(800);
-        window.showNotification(n);
+        n.show(Page.getCurrent());
     }
 
     public void filterAdded(Object propertyId,
             Class<? extends Filter> filterType, Object value) {
-        Notification n = new Window.Notification("Filter added to: "
-                + propertyId, Notification.TYPE_TRAY_NOTIFICATION);
+        Notification n = new Notification("Filter added to: " + propertyId,
+                Notification.Type.TRAY_NOTIFICATION);
         n.setDelayMsec(800);
-        window.showNotification(n);
+        n.show(Page.getCurrent());
     }
 }

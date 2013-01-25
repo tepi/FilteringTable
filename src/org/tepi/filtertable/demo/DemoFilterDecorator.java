@@ -1,17 +1,17 @@
 package org.tepi.filtertable.demo;
 
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.Locale;
 
 import org.tepi.filtertable.FilterDecorator;
-import org.tepi.filtertable.demo.FiltertabledemoApplication.State;
-import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
+import org.tepi.filtertable.demo.FilterTableDemoUI.State;
 
-import com.vaadin.terminal.Resource;
-import com.vaadin.terminal.ThemeResource;
-import com.vaadin.ui.DateField;
+import com.vaadin.server.Resource;
+import com.vaadin.server.ThemeResource;
+import com.vaadin.shared.ui.datefield.Resolution;
 
-class DemoFilterDecorator implements FilterDecorator {
+class DemoFilterDecorator implements FilterDecorator, Serializable {
 
     public String getEnumFilterDisplayName(Object propertyId, Object value) {
         if ("state".equals(propertyId)) {
@@ -96,18 +96,13 @@ class DemoFilterDecorator implements FilterDecorator {
         return "Show all";
     }
 
-    public int getDateFieldResolution(Object propertyId) {
-        return DateField.RESOLUTION_DAY;
+    public Resolution getDateFieldResolution(Object propertyId) {
+        return Resolution.DAY;
     }
 
     public DateFormat getDateFormat(Object propertyId) {
         return DateFormat.getDateInstance(DateFormat.SHORT, new Locale("fi",
                 "FI"));
-    }
-
-    public NumberFilterPopupConfig getNumberFilterPopupConfig() {
-        // work with default config
-        return null;
     }
 
     public boolean usePopupForNumericProperty(Object propertyId) {

@@ -6,20 +6,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
-import org.tepi.filtertable.datefilter.DateFilterPopup;
-import org.tepi.filtertable.datefilter.DateInterval;
-import org.tepi.filtertable.gwt.client.ui.VFilterTreeTable;
-import org.tepi.filtertable.numberfilter.NumberFilterPopup;
-import org.tepi.filtertable.numberfilter.NumberInterval;
 
+import com.ibm.icu.util.DateInterval;
 import com.vaadin.data.Container;
-import com.vaadin.terminal.PaintException;
-import com.vaadin.terminal.PaintTarget;
+import com.vaadin.data.util.converter.Converter.ConversionException;
+import com.vaadin.server.LegacyPaint;
+import com.vaadin.server.PaintException;
+import com.vaadin.server.PaintTarget;
 import com.vaadin.ui.AbstractField;
-import com.vaadin.ui.ClientWidget;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomTreeTable;
-import com.vaadin.ui.Field;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.TextField;
 
@@ -30,7 +26,6 @@ import com.vaadin.ui.TextField;
  * @author Teppo Kurki
  * 
  */
-@ClientWidget(VFilterTreeTable.class)
 public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
     /* Maps property id's to column filter components */
     private Map<Object, Component> columnIdToFilterMap = new HashMap<Object, Component>();
@@ -43,8 +38,6 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
     /* Filter Generator and Decorator */
     private FilterGenerator filterGenerator;
     private FilterDecorator decorator;
-    /* Temporary reference to to-be-focused filter field */
-    private Object filterToFocus;
     /* FilterFieldGenerator instance */
     private FilterFieldGenerator generator;
     /* Is initialization done */
@@ -92,19 +85,11 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
                     c = new Label();
                     c.setSizeUndefined();
                 }
-                c.paint(target);
+                LegacyPaint.paint(c, target);
                 target.endTag("filtercomponent");
             }
         }
         target.endTag("filters");
-        /* Focus the previously focused filter component */
-        if (filterToFocus != null) {
-            Component filter = getColumnIdToFilterMap().get(filterToFocus);
-            if (filter instanceof Focusable) {
-                focusFilterComponent((Focusable) filter);
-            }
-            filterToFocus = null;
-        }
     }
 
     @Override
@@ -117,18 +102,21 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
             if (c != null) {
                 if (c instanceof TextField) {
                     ((TextField) c).setValue("");
-                } else if (c instanceof DateFilterPopup) {
-                    ((DateFilterPopup) c).setInternalValue(null, null);
-                } else if (c instanceof NumberFilterPopup) {
-                    ((NumberFilterPopup) c).setInternalValue(null, null, null);
-                } else if (c instanceof Field) {
-                    ((Field) c).setValue(null);
+                    /*
+                     * } else if (c instanceof DateFilterPopup) {
+                     * ((DateFilterPopup) c).setInternalValue(null, null); }
+                     * else if (c instanceof NumberFilterPopup) {
+                     * ((NumberFilterPopup) c).setInternalValue(null, null,
+                     * null);
+                     */
+                } else if (c instanceof AbstractField<?>) {
+                    ((AbstractField<?>) c).setValue(null);
                 }
             }
         } else {
             collapsedColumnIds.remove(propertyId);
         }
-        requestRepaint();
+        markAsDirty();
     }
 
     @Override
@@ -204,7 +192,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
      */
     public void setFilterBarVisible(boolean filtersVisible) {
         this.filtersVisible = filtersVisible;
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -233,7 +221,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
             columnIdsOfHiddenFilters.add(columnId);
         }
         if (columnIdsOfHiddenFilters.size() != previousSize) {
-            requestRepaint();
+            markAsDirty();
         }
     }
 
@@ -267,24 +255,22 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
      */
     public boolean setFilterFieldValue(Object propertyId, Object value)
             throws ConversionException {
-        AbstractField field = (AbstractField) getColumnIdToFilterMap().get(
-                propertyId);
+        Component field = getColumnIdToFilterMap().get(propertyId);
         boolean retVal = field != null;
         if (field != null) {
-            if (field instanceof DateFilterPopup
-                    && value instanceof DateInterval) {
-                ((DateFilterPopup) field).setInternalValue(
-                        ((DateInterval) value).getFrom(),
-                        ((DateInterval) value).getTo());
-            } else if (field instanceof NumberFilterPopup
-                    && value instanceof NumberInterval) {
-                ((NumberFilterPopup) field).setInternalValue(
-                        ((NumberInterval) value).getLessThanValue(),
-                        ((NumberInterval) value).getGreaterThanValue(),
-                        ((NumberInterval) value).getEqualsValue());
-            } else {
-                field.setValue(value);
-            }
+            /*
+             * if (field instanceof DateFilterPopup && value instanceof
+             * DateInterval) { ((DateFilterPopup) field).setInternalValue(
+             * ((DateInterval) value).getFrom(), ((DateInterval)
+             * value).getTo()); } else if (field instanceof NumberFilterPopup &&
+             * value instanceof NumberInterval) { ((NumberFilterPopup)
+             * field).setInternalValue( ((NumberInterval)
+             * value).getLessThanValue(), ((NumberInterval)
+             * value).getGreaterThanValue(), ((NumberInterval)
+             * value).getEqualsValue()); } else {
+             */
+            ((AbstractField<?>) field).setConvertedValue(value);
+            // }
         }
         return retVal;
     }
@@ -297,16 +283,16 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
      * @return Current value
      */
     public Object getFilterFieldValue(Object propertyId) {
-        AbstractField field = (AbstractField) getColumnIdToFilterMap().get(
-                propertyId);
+        Component field = getColumnIdToFilterMap().get(propertyId);
         if (field != null) {
-            if (field instanceof DateFilterPopup) {
-                return ((DateFilterPopup) field).getDateValue();
-            } else if (field instanceof NumberFilterPopup) {
-                return ((NumberFilterPopup) field).getInterval();
-            } else {
-                return field.getValue();
-            }
+            /*
+             * if (field instanceof DateFilterPopup) { return ((DateFilterPopup)
+             * field).getDateValue(); } else if (field instanceof
+             * NumberFilterPopup) { return ((NumberFilterPopup)
+             * field).getInterval(); } else {
+             */
+            return ((AbstractField<?>) field).getValue();
+            // }
         } else {
             return null;
         }
@@ -323,14 +309,6 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 
     public FilterDecorator getFilterDecorator() {
         return decorator;
-    }
-
-    public void focusFilter(Focusable toFocus) {
-        super.focusFilterComponent(toFocus);
-    }
-
-    public void setFilterToFocus(Object propertyId) {
-        filterToFocus = propertyId;
     }
 
     public Map<Object, Component> getColumnIdToFilterMap() {

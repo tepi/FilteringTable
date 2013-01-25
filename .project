@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>FilteringTable6Final</name>
+	<name>FilteringTable7</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -38,5 +38,6 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>com.vaadin.integration.eclipse.widgetsetNature</nature>
 		<nature>org.eclipse.wst.jsdt.core.jsNature</nature>
+		<nature>org.apache.ivyde.eclipse.ivynature</nature>
 	</natures>
 </projectDescription>

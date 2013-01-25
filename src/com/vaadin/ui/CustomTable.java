@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Vaadin Ltd.
+ * Copyright 2000-2013 Vaadin Ltd.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -20,12 +20,14 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -37,28 +39,28 @@ import com.vaadin.data.Item;
 import com.vaadin.data.Property;
 import com.vaadin.data.util.ContainerOrderedWrapper;
 import com.vaadin.data.util.IndexedContainer;
+import com.vaadin.data.util.converter.Converter;
+import com.vaadin.data.util.converter.ConverterUtil;
 import com.vaadin.event.Action;
 import com.vaadin.event.Action.Handler;
 import com.vaadin.event.DataBoundTransferable;
 import com.vaadin.event.ItemClickEvent;
 import com.vaadin.event.ItemClickEvent.ItemClickListener;
 import com.vaadin.event.ItemClickEvent.ItemClickNotifier;
-import com.vaadin.event.ItemClickEvent.ItemClickSource;
 import com.vaadin.event.MouseEvents.ClickEvent;
 import com.vaadin.event.dd.DragAndDropEvent;
 import com.vaadin.event.dd.DragSource;
 import com.vaadin.event.dd.DropHandler;
 import com.vaadin.event.dd.DropTarget;
-import com.vaadin.event.dd.acceptcriteria.ClientCriterion;
 import com.vaadin.event.dd.acceptcriteria.ServerSideCriterion;
-import com.vaadin.terminal.KeyMapper;
-import com.vaadin.terminal.PaintException;
-import com.vaadin.terminal.PaintTarget;
-import com.vaadin.terminal.Resource;
-import com.vaadin.terminal.gwt.client.MouseEventDetails;
-import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable;
-import com.vaadin.terminal.gwt.client.ui.VScrollTable;
-import com.vaadin.terminal.gwt.client.ui.dd.VLazyInitItemIdentifiers;
+import com.vaadin.server.KeyMapper;
+import com.vaadin.server.LegacyPaint;
+import com.vaadin.server.PaintException;
+import com.vaadin.server.PaintTarget;
+import com.vaadin.server.Resource;
+import com.vaadin.shared.MouseEventDetails;
+import com.vaadin.shared.ui.MultiSelectMode;
+import com.vaadin.shared.ui.table.TableConstants;
 
 /**
  * <p>
@@ -79,14 +81,12 @@ import com.vaadin.terminal.gwt.client.ui.dd.VLazyInitItemIdentifiers;
  * </p>
  * 
  * @author Vaadin Ltd.
- * @version 6.8.5
  * @since 3.0
  */
-@SuppressWarnings({ "serial", "deprecation" })
-@ClientWidget(VCustomScrollTable.class)
+@SuppressWarnings({ "deprecation" })
 public class CustomTable extends AbstractSelect implements Action.Container,
-        Container.Ordered, Container.Sortable, ItemClickSource,
-        ItemClickNotifier, DragSource, DropTarget {
+        Container.Ordered, Container.Sortable, ItemClickNotifier, DragSource,
+        DropTarget, HasComponents {
 
     private transient Logger logger = null;
 
@@ -124,91 +124,215 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
     protected static final int CELL_FIRSTCOL = 5;
 
-    /**
-     * Left column alignment. <b>This is the default behaviour. </b>
-     */
-    public static final String ALIGN_LEFT = "b";
+    public enum Align {
+        /**
+         * Left column alignment. <b>This is the default behaviour. </b>
+         */
+        LEFT("b"),
+
+        /**
+         * Center column alignment.
+         */
+        CENTER("c"),
+
+        /**
+         * Right column alignment.
+         */
+        RIGHT("e");
+
+        private String alignment;
+
+        private Align(String alignment) {
+            this.alignment = alignment;
+        }
+
+        @Override
+        public String toString() {
+            return alignment;
+        }
+
+        public Align convertStringToAlign(String string) {
+            if (string == null) {
+                return null;
+            }
+            if (string.equals("b")) {
+                return Align.LEFT;
+            } else if (string.equals("c")) {
+                return Align.CENTER;
+            } else if (string.equals("e")) {
+                return Align.RIGHT;
+            } else {
+                return null;
+            }
+        }
+    }
 
     /**
-     * Center column alignment.
+     * @deprecated As of 7.0, use {@link Align#LEFT} instead
      */
-    public static final String ALIGN_CENTER = "c";
+    @Deprecated
+    public static final Align ALIGN_LEFT = Align.LEFT;
 
     /**
-     * Right column alignment.
+     * @deprecated As of 7.0, use {@link Align#CENTER} instead
      */
-    public static final String ALIGN_RIGHT = "e";
+    @Deprecated
+    public static final Align ALIGN_CENTER = Align.CENTER;
 
     /**
-     * Column header mode: Column headers are hidden.
+     * @deprecated As of 7.0, use {@link Align#RIGHT} instead
      */
-    public static final int COLUMN_HEADER_MODE_HIDDEN = -1;
+    @Deprecated
+    public static final Align ALIGN_RIGHT = Align.RIGHT;
+
+    public enum ColumnHeaderMode {
+        /**
+         * Column headers are hidden.
+         */
+        HIDDEN,
+        /**
+         * Property ID:s are used as column headers.
+         */
+        ID,
+        /**
+         * Column headers are explicitly specified with
+         * {@link #setColumnHeaders(String[])}.
+         */
+        EXPLICIT,
+        /**
+         * Column headers are explicitly specified with
+         * {@link #setColumnHeaders(String[])}. If a header is not specified for
+         * a given property, its property id is used instead.
+         * <p>
+         * <b>This is the default behavior. </b>
+         */
+        EXPLICIT_DEFAULTS_ID
+    }
 
     /**
-     * Column header mode: Property ID:s are used as column headers.
+     * @deprecated As of 7.0, use {@link ColumnHeaderMode#HIDDEN} instead
      */
-    public static final int COLUMN_HEADER_MODE_ID = 0;
+    @Deprecated
+    public static final ColumnHeaderMode COLUMN_HEADER_MODE_HIDDEN = ColumnHeaderMode.HIDDEN;
 
     /**
-     * Column header mode: Column headers are explicitly specified with
-     * {@link #setColumnHeaders(String[])}.
+     * @deprecated As of 7.0, use {@link ColumnHeaderMode#ID} instead
      */
-    public static final int COLUMN_HEADER_MODE_EXPLICIT = 1;
+    @Deprecated
+    public static final ColumnHeaderMode COLUMN_HEADER_MODE_ID = ColumnHeaderMode.ID;
 
     /**
-     * Column header mode: Column headers are explicitly specified with
-     * {@link #setColumnHeaders(String[])}. If a header is not specified for a
-     * given property, its property id is used instead.
-     * <p>
-     * <b>This is the default behavior. </b>
+     * @deprecated As of 7.0, use {@link ColumnHeaderMode#EXPLICIT} instead
      */
-    public static final int COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID = 2;
+    @Deprecated
+    public static final ColumnHeaderMode COLUMN_HEADER_MODE_EXPLICIT = ColumnHeaderMode.EXPLICIT;
 
     /**
-     * Row caption mode: The row headers are hidden. <b>This is the default
-     * mode. </b>
+     * @deprecated As of 7.0, use {@link ColumnHeaderMode#EXPLICIT_DEFAULTS_ID}
+     *             instead
      */
-    public static final int ROW_HEADER_MODE_HIDDEN = -1;
+    @Deprecated
+    public static final ColumnHeaderMode COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID = ColumnHeaderMode.EXPLICIT_DEFAULTS_ID;
+
+    public enum RowHeaderMode {
+        /**
+         * Row caption mode: The row headers are hidden. <b>This is the default
+         * mode. </b>
+         */
+        HIDDEN(null),
+        /**
+         * Row caption mode: Items Id-objects toString is used as row caption.
+         */
+        ID(ItemCaptionMode.ID),
+        /**
+         * Row caption mode: Item-objects toString is used as row caption.
+         */
+        ITEM(ItemCaptionMode.ITEM),
+        /**
+         * Row caption mode: Index of the item is used as item caption. The
+         * index mode can only be used with the containers implementing the
+         * {@link com.vaadin.data.Container.Indexed} interface.
+         */
+        INDEX(ItemCaptionMode.INDEX),
+        /**
+         * Row caption mode: Item captions are explicitly specified, but if the
+         * caption is missing, the item id objects <code>toString()</code> is
+         * used instead.
+         */
+        EXPLICIT_DEFAULTS_ID(ItemCaptionMode.EXPLICIT_DEFAULTS_ID),
+        /**
+         * Row caption mode: Item captions are explicitly specified.
+         */
+        EXPLICIT(ItemCaptionMode.EXPLICIT),
+        /**
+         * Row caption mode: Only icons are shown, the captions are hidden.
+         */
+        ICON_ONLY(ItemCaptionMode.ICON_ONLY),
+        /**
+         * Row caption mode: Item captions are read from property specified with
+         * {@link #setItemCaptionPropertyId(Object)}.
+         */
+        PROPERTY(ItemCaptionMode.PROPERTY);
+
+        ItemCaptionMode mode;
+
+        private RowHeaderMode(ItemCaptionMode mode) {
+            this.mode = mode;
+        }
+
+        public ItemCaptionMode getItemCaptionMode() {
+            return mode;
+        }
+    }
 
     /**
-     * Row caption mode: Items Id-objects toString is used as row caption.
+     * @deprecated As of 7.0, use {@link RowHeaderMode#HIDDEN} instead
      */
-    public static final int ROW_HEADER_MODE_ID = AbstractSelect.ITEM_CAPTION_MODE_ID;
+    @Deprecated
+    public static final RowHeaderMode ROW_HEADER_MODE_HIDDEN = RowHeaderMode.HIDDEN;
 
     /**
-     * Row caption mode: Item-objects toString is used as row caption.
+     * @deprecated As of 7.0, use {@link RowHeaderMode#ID} instead
      */
-    public static final int ROW_HEADER_MODE_ITEM = AbstractSelect.ITEM_CAPTION_MODE_ITEM;
+    @Deprecated
+    public static final RowHeaderMode ROW_HEADER_MODE_ID = RowHeaderMode.ID;
 
     /**
-     * Row caption mode: Index of the item is used as item caption. The index
-     * mode can only be used with the containers implementing Container.Indexed
-     * interface.
+     * @deprecated As of 7.0, use {@link RowHeaderMode#ITEM} instead
      */
-    public static final int ROW_HEADER_MODE_INDEX = AbstractSelect.ITEM_CAPTION_MODE_INDEX;
+    @Deprecated
+    public static final RowHeaderMode ROW_HEADER_MODE_ITEM = RowHeaderMode.ITEM;
 
     /**
-     * Row caption mode: Item captions are explicitly specified.
+     * @deprecated As of 7.0, use {@link RowHeaderMode#INDEX} instead
      */
-    public static final int ROW_HEADER_MODE_EXPLICIT = AbstractSelect.ITEM_CAPTION_MODE_EXPLICIT;
+    @Deprecated
+    public static final RowHeaderMode ROW_HEADER_MODE_INDEX = RowHeaderMode.INDEX;
 
     /**
-     * Row caption mode: Item captions are read from property specified with
-     * {@link #setItemCaptionPropertyId(Object)}.
+     * @deprecated As of 7.0, use {@link RowHeaderMode#EXPLICIT_DEFAULTS_ID}
+     *             instead
      */
-    public static final int ROW_HEADER_MODE_PROPERTY = AbstractSelect.ITEM_CAPTION_MODE_PROPERTY;
+    @Deprecated
+    public static final RowHeaderMode ROW_HEADER_MODE_EXPLICIT_DEFAULTS_ID = RowHeaderMode.EXPLICIT_DEFAULTS_ID;
 
     /**
-     * Row caption mode: Only icons are shown, the captions are hidden.
+     * @deprecated As of 7.0, use {@link RowHeaderMode#EXPLICIT} instead
      */
-    public static final int ROW_HEADER_MODE_ICON_ONLY = AbstractSelect.ITEM_CAPTION_MODE_ICON_ONLY;
+    @Deprecated
+    public static final RowHeaderMode ROW_HEADER_MODE_EXPLICIT = RowHeaderMode.EXPLICIT;
 
     /**
-     * Row caption mode: Item captions are explicitly specified, but if the
-     * caption is missing, the item id objects <code>toString()</code> is used
-     * instead.
+     * @deprecated As of 7.0, use {@link RowHeaderMode#ICON_ONLY} instead
      */
-    public static final int ROW_HEADER_MODE_EXPLICIT_DEFAULTS_ID = AbstractSelect.ITEM_CAPTION_MODE_EXPLICIT_DEFAULTS_ID;
+    @Deprecated
+    public static final RowHeaderMode ROW_HEADER_MODE_ICON_ONLY = RowHeaderMode.ICON_ONLY;
+
+    /**
+     * @deprecated As of 7.0, use {@link RowHeaderMode#PROPERTY} instead
+     */
+    @Deprecated
+    public static final RowHeaderMode ROW_HEADER_MODE_PROPERTY = RowHeaderMode.PROPERTY;
 
     /**
      * The default rate that table caches rows for smooth scrolling.
@@ -234,7 +358,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     /**
      * Keymapper for column ids.
      */
-    protected final KeyMapper columnIdMap = new KeyMapper();
+    protected final KeyMapper<Object> columnIdMap = new KeyMapper<Object>();
 
     /**
      * Holds visible column propertyIds - in order.
@@ -269,7 +393,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     /**
      * Holds alignments for visible columns (by propertyId).
      */
-    private HashMap<Object, String> columnAlignments = new HashMap<Object, String>();
+    private HashMap<Object, Align> columnAlignments = new HashMap<Object, Align>();
 
     /**
      * Holds column widths in pixels (Integer) or expand ratios (Float) for
@@ -305,17 +429,17 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     /**
      * Holds value of property columnHeaderMode.
      */
-    private int columnHeaderMode = COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID;
+    private ColumnHeaderMode columnHeaderMode = ColumnHeaderMode.EXPLICIT_DEFAULTS_ID;
+
+    /**
+     * Holds value of property rowHeaderMode.
+     */
+    private RowHeaderMode rowHeaderMode = RowHeaderMode.EXPLICIT_DEFAULTS_ID;
 
     /**
      * Should the Table footer be visible?
      */
     private boolean columnFootersVisible = false;
-
-    /**
-     * True iff the row captions are hidden.
-     */
-    private boolean rowCaptionsAreHidden = true;
 
     /**
      * Page contents buffer used in buffered mode.
@@ -326,12 +450,12 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * Set of properties listened - the list is kept to release the listeners
      * later.
      */
-    private HashSet<Property> listenedProperties = null;
+    private HashSet<Property<?>> listenedProperties = null;
 
     /**
      * Set of visible components - the is used for needsRepaint calculation.
      */
-    private HashSet<Component> visibleComponents = null;
+    protected HashSet<Component> visibleComponents = null;
 
     /**
      * List of action handlers.
@@ -341,7 +465,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     /**
      * Action mapper.
      */
-    private KeyMapper actionMapper = null;
+    private KeyMapper<Action> actionMapper = null;
 
     /**
      * Table cell editor factory.
@@ -364,10 +488,9 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     private Object sortContainerPropertyId = null;
 
     /**
-     * Is table sorting disabled alltogether; even if some of the properties
-     * would be sortable.
+     * Is table sorting by the user enabled.
      */
-    private boolean sortDisabled = false;
+    private boolean sortEnabled = true;
 
     /**
      * Number of rows explicitly requested by the client to be painted on next
@@ -421,9 +544,11 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
     private RowGenerator rowGenerator = null;
 
-    private final Map<Field, Property> associatedProperties = new HashMap<Field, Property>();
+    private final Map<Field<?>, Property<?>> associatedProperties = new HashMap<Field<?>, Property<?>>();
 
     private boolean painted = false;
+
+    private HashMap<Object, Converter<String, Object>> propertyValueConverters = new HashMap<Object, Converter<String, Object>>();
 
     /**
      * Set to true if the client-side should be informed that the key mapper has
@@ -531,7 +656,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                     final Object col = i.next();
                     if (!newVC.contains(col)) {
                         setColumnHeader(col, null);
-                        setColumnAlignment(col, null);
+                        setColumnAlignment(col, (Align) null);
                         setColumnIcon(col, null);
                     }
                 }
@@ -605,7 +730,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             this.columnHeaders.put(it.next(), columnHeaders[i]);
         }
 
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -664,7 +789,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             this.columnIcons.put(it.next(), columnIcons[i]);
         }
 
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -675,21 +800,21 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * {@link #getVisibleColumns()}. The possible values for the alignments
      * include:
      * <ul>
-     * <li>{@link #ALIGN_LEFT}: Left alignment</li>
-     * <li>{@link #ALIGN_CENTER}: Centered</li>
-     * <li>{@link #ALIGN_RIGHT}: Right alignment</li>
+     * <li>{@link Align#LEFT}: Left alignment</li>
+     * <li>{@link Align#CENTER}: Centered</li>
+     * <li>{@link Align#RIGHT}: Right alignment</li>
      * </ul>
-     * The alignments default to {@link #ALIGN_LEFT}: any null values are
+     * The alignments default to {@link Align#LEFT}: any null values are
      * rendered as align lefts.
      * </p>
      * 
      * @return the Column alignments array.
      */
-    public String[] getColumnAlignments() {
+    public Align[] getColumnAlignments() {
         if (columnAlignments == null) {
             return null;
         }
-        final String[] alignments = new String[visibleColumns.size()];
+        final Align[] alignments = new Align[visibleColumns.size()];
         int i = 0;
         for (final Iterator<Object> it = visibleColumns.iterator(); it
                 .hasNext(); i++) {
@@ -703,39 +828,29 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * Sets the column alignments.
      * 
      * <p>
-     * The items in the array must match the properties identified by
-     * {@link #getVisibleColumns()}. The possible values for the alignments
-     * include:
+     * The amount of items in the array must match the amount of properties
+     * identified by {@link #getVisibleColumns()}. The possible values for the
+     * alignments include:
      * <ul>
-     * <li>{@link #ALIGN_LEFT}: Left alignment</li>
-     * <li>{@link #ALIGN_CENTER}: Centered</li>
-     * <li>{@link #ALIGN_RIGHT}: Right alignment</li>
+     * <li>{@link Align#LEFT}: Left alignment</li>
+     * <li>{@link Align#CENTER}: Centered</li>
+     * <li>{@link Align#RIGHT}: Right alignment</li>
      * </ul>
-     * The alignments default to {@link #ALIGN_LEFT}
+     * The alignments default to {@link Align#LEFT}
      * </p>
      * 
      * @param columnAlignments
      *            the Column alignments array.
      */
-    public void setColumnAlignments(String[] columnAlignments) {
+    public void setColumnAlignments(Align... columnAlignments) {
 
         if (columnAlignments.length != visibleColumns.size()) {
             throw new IllegalArgumentException(
                     "The length of the alignments array must match the number of visible columns");
         }
 
-        // Checks all alignments
-        for (int i = 0; i < columnAlignments.length; i++) {
-            final String a = columnAlignments[i];
-            if (a != null && !a.equals(ALIGN_LEFT) && !a.equals(ALIGN_CENTER)
-                    && !a.equals(ALIGN_RIGHT)) {
-                throw new IllegalArgumentException("Column " + i
-                        + " aligment '" + a + "' is invalid");
-            }
-        }
-
         // Resets the alignments
-        final HashMap<Object, String> newCA = new HashMap<Object, String>();
+        final HashMap<Object, Align> newCA = new HashMap<Object, Align>();
         int i = 0;
         for (final Iterator<Object> it = visibleColumns.iterator(); it
                 .hasNext() && i < columnAlignments.length; i++) {
@@ -774,7 +889,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         } else {
             columnWidths.put(propertyId, Integer.valueOf(width));
         }
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -912,7 +1027,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         }
         if (this.cacheRate != cacheRate) {
             this.cacheRate = cacheRate;
-            requestRepaint();
+            markAsDirty();
         }
     }
 
@@ -952,6 +1067,23 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         return currentPageFirstItemId;
     }
 
+    /**
+     * Returns the item ID for the item represented by the index given. Assumes
+     * that the current container implements {@link Container.Indexed}.
+     * 
+     * See {@link Container.Indexed#getIdByIndex(int)} for more information
+     * about the exceptions that can be thrown.
+     * 
+     * @param index
+     *            the index for which the item ID should be fetched
+     * @return the item ID for the given index
+     * 
+     * @throws ClassCastException
+     *             if container does not implement {@link Container.Indexed}
+     * @throws IndexOutOfBoundsException
+     *             thrown by {@link Container.Indexed#getIdByIndex(int)} if the
+     *             index is invalid
+     */
     protected Object getIdByIndex(int index) {
         return ((Container.Indexed) items).getIdByIndex(index);
     }
@@ -1044,7 +1176,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             columnIcons.put(propertyId, icon);
         }
 
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -1055,13 +1187,13 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @return the header for the specified column if it has one.
      */
     public String getColumnHeader(Object propertyId) {
-        if (getColumnHeaderMode() == COLUMN_HEADER_MODE_HIDDEN) {
+        if (getColumnHeaderMode() == ColumnHeaderMode.HIDDEN) {
             return null;
         }
 
         String header = columnHeaders.get(propertyId);
-        if ((header == null && getColumnHeaderMode() == COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID)
-                || getColumnHeaderMode() == COLUMN_HEADER_MODE_ID) {
+        if ((header == null && getColumnHeaderMode() == ColumnHeaderMode.EXPLICIT_DEFAULTS_ID)
+                || getColumnHeaderMode() == ColumnHeaderMode.ID) {
             header = propertyId.toString();
         }
 
@@ -1084,7 +1216,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             columnHeaders.put(propertyId, header);
         }
 
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -1094,9 +1226,9 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      *            the propertyID identifying the column.
      * @return the specified column's alignment if it as one; null otherwise.
      */
-    public String getColumnAlignment(Object propertyId) {
-        final String a = columnAlignments.get(propertyId);
-        return a == null ? ALIGN_LEFT : a;
+    public Align getColumnAlignment(Object propertyId) {
+        final Align a = columnAlignments.get(propertyId);
+        return a == null ? Align.LEFT : a;
     }
 
     /**
@@ -1104,8 +1236,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * <p>
      * Throws IllegalArgumentException if the alignment is not one of the
-     * following: {@link #ALIGN_LEFT}, {@link #ALIGN_CENTER} or
-     * {@link #ALIGN_RIGHT}
+     * following: {@link Align#LEFT}, {@link Align#CENTER} or
+     * {@link Align#RIGHT}
      * </p>
      * 
      * @param propertyId
@@ -1113,17 +1245,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param alignment
      *            the desired alignment.
      */
-    public void setColumnAlignment(Object propertyId, String alignment) {
-
-        // Checks for valid alignments
-        if (alignment != null && !alignment.equals(ALIGN_LEFT)
-                && !alignment.equals(ALIGN_CENTER)
-                && !alignment.equals(ALIGN_RIGHT)) {
-            throw new IllegalArgumentException("Column alignment '" + alignment
-                    + "' is not supported.");
-        }
-
-        if (alignment == null || alignment.equals(ALIGN_LEFT)) {
+    public void setColumnAlignment(Object propertyId, Align alignment) {
+        if (alignment == null || alignment == Align.LEFT) {
             columnAlignments.remove(propertyId);
         } else {
             columnAlignments.put(propertyId, alignment);
@@ -1256,7 +1379,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     public void setColumnReorderingAllowed(boolean columnReorderingAllowed) {
         if (columnReorderingAllowed != this.columnReorderingAllowed) {
             this.columnReorderingAllowed = columnReorderingAllowed;
-            requestRepaint();
+            markAsDirty();
         }
     }
 
@@ -1402,31 +1525,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     }
 
     /**
-     * Getter for property pageBuffering.
-     * 
-     * @deprecated functionality is not needed in ajax rendering model
-     * 
-     * @return the Value of property pageBuffering.
-     */
-    @Deprecated
-    public boolean isPageBufferingEnabled() {
-        return true;
-    }
-
-    /**
-     * Setter for property pageBuffering.
-     * 
-     * @deprecated functionality is not needed in ajax rendering model
-     * 
-     * @param pageBuffering
-     *            the New value of property pageBuffering.
-     */
-    @Deprecated
-    public void setPageBufferingEnabled(boolean pageBuffering) {
-
-    }
-
-    /**
      * Getter for property selectable.
      * 
      * <p>
@@ -1452,7 +1550,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     public void setSelectable(boolean selectable) {
         if (this.selectable != selectable) {
             this.selectable = selectable;
-            requestRepaint();
+            markAsDirty();
         }
     }
 
@@ -1461,7 +1559,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @return the Value of property columnHeaderMode.
      */
-    public int getColumnHeaderMode() {
+    public ColumnHeaderMode getColumnHeaderMode() {
         return columnHeaderMode;
     }
 
@@ -1471,12 +1569,14 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param columnHeaderMode
      *            the New value of property columnHeaderMode.
      */
-    public void setColumnHeaderMode(int columnHeaderMode) {
-        if (columnHeaderMode != this.columnHeaderMode
-                && columnHeaderMode >= COLUMN_HEADER_MODE_HIDDEN
-                && columnHeaderMode <= COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID) {
+    public void setColumnHeaderMode(ColumnHeaderMode columnHeaderMode) {
+        if (columnHeaderMode == null) {
+            throw new IllegalArgumentException(
+                    "Column header mode can not be null");
+        }
+        if (columnHeaderMode != this.columnHeaderMode) {
             this.columnHeaderMode = columnHeaderMode;
-            requestRepaint();
+            markAsDirty();
         }
 
     }
@@ -1545,7 +1645,23 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         }
 
         setRowCacheInvalidated(true);
-        requestRepaint();
+        markAsDirty();
+    }
+
+    /**
+     * Requests that the Table should be repainted as soon as possible.
+     * 
+     * Note that a {@code Table} does not necessarily repaint its contents when
+     * this method has been called. See {@link #refreshRowCache()} for forcing
+     * an update of the contents.
+     * 
+     * @deprecated As of 7.0, use {@link #markAsDirty()} instead
+     */
+
+    @Deprecated
+    @Override
+    public void requestRepaint() {
+        markAsDirty();
     }
 
     /**
@@ -1555,10 +1671,19 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * this method has been called. See {@link #refreshRowCache()} for forcing
      * an update of the contents.
      */
+
     @Override
-    public void requestRepaint() {
+    public void markAsDirty() {
         // Overridden only for javadoc
-        super.requestRepaint();
+        super.markAsDirty();
+    }
+
+    @Override
+    public void markAsDirtyRecursive() {
+        super.markAsDirtyRecursive();
+
+        // Avoid sending a partial repaint (#8714)
+        refreshRowCache();
     }
 
     private void removeRowsFromCacheAndFillBottom(int firstIndex, int rows) {
@@ -1799,13 +1924,13 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         final Object[] colids = getVisibleColumns();
         final int cols = colids.length;
 
-        HashSet<Property> oldListenedProperties = listenedProperties;
+        HashSet<Property<?>> oldListenedProperties = listenedProperties;
         HashSet<Component> oldVisibleComponents = visibleComponents;
 
         if (replaceListeners) {
             // initialize the listener collections, this should only be done if
             // the entire cache is refreshed (through refreshRenderedCells)
-            listenedProperties = new HashSet<Property>();
+            listenedProperties = new HashSet<Property<?>>();
             visibleComponents = new HashSet<Component>();
         }
 
@@ -1816,18 +1941,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             return cells;
         }
 
-        // Gets the first item id
-        Object id;
-        if (items instanceof Container.Indexed) {
-            id = getIdByIndex(firstIndex);
-        } else {
-            id = firstItemId();
-            for (int i = 0; i < firstIndex; i++) {
-                id = nextItemId(id);
-            }
-        }
-
-        final int headmode = getRowHeaderMode();
+        final RowHeaderMode headmode = getRowHeaderMode();
         final boolean[] iscomponent = new boolean[cols];
         for (int i = 0; i < cols; i++) {
             iscomponent[i] = columnGenerators.containsKey(colids[i])
@@ -1843,120 +1957,41 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
         // Creates the page contents
         int filledRows = 0;
-        for (int i = 0; i < rows && id != null; i++) {
-            cells[CELL_ITEMID][i] = id;
-            cells[CELL_KEY][i] = itemIdMapper.key(id);
-            if (headmode != ROW_HEADER_MODE_HIDDEN) {
-                switch (headmode) {
-                case ROW_HEADER_MODE_INDEX:
-                    cells[CELL_HEADER][i] = String.valueOf(i + firstIndex + 1);
-                    break;
-                default:
-                    cells[CELL_HEADER][i] = getItemCaption(id);
-                }
-                cells[CELL_ICON][i] = getItemIcon(id);
+        if (items instanceof Container.Indexed) {
+            // more efficient implementation for containers supporting access by
+            // index
+
+            Container.Indexed indexed = ((Container.Indexed) items);
+            List<?> itemIds = getItemIds(firstIndex, rows);
+            for (int i = 0; i < rows && i < itemIds.size(); i++) {
+                Object id = itemIds.get(i);
+                // Start by parsing the values, id should already be set
+                parseItemIdToCells(cells, id, i, firstIndex, headmode, cols,
+                        colids, firstIndexNotInCache, iscomponent,
+                        oldListenedProperties);
+
+                filledRows++;
             }
+        } else {
+            // slow back-up implementation for cases where the container does
+            // not support access by index
 
-            GeneratedRow generatedRow = rowGenerator != null ? rowGenerator
-                    .generateRow(this, id) : null;
-            cells[CELL_GENERATED_ROW][i] = generatedRow;
-
-            for (int j = 0; j < cols; j++) {
-                if (isColumnCollapsed(colids[j])) {
-                    continue;
-                }
-                Property p = null;
-                Object value = "";
-                boolean isGeneratedRow = generatedRow != null;
-                boolean isGeneratedColumn = columnGenerators
-                        .containsKey(colids[j]);
-                boolean isGenerated = isGeneratedRow || isGeneratedColumn;
-
-                if (!isGenerated) {
-                    p = getContainerProperty(id, colids[j]);
-                }
-
-                if (isGeneratedRow) {
-                    if (generatedRow.isSpanColumns() && j > 0) {
-                        value = null;
-                    } else if (generatedRow.isSpanColumns() && j == 0
-                            && generatedRow.getValue() instanceof Component) {
-                        value = generatedRow.getValue();
-                    } else if (generatedRow.getText().length > j) {
-                        value = generatedRow.getText()[j];
-                    }
-                } else {
-                    // check in current pageBuffer already has row
-                    int index = firstIndex + i;
-                    if (p != null || isGenerated) {
-                        int indexInOldBuffer = index - pageBufferFirstIndex;
-                        if (index < firstIndexNotInCache
-                                && index >= pageBufferFirstIndex
-                                && pageBuffer[CELL_GENERATED_ROW][indexInOldBuffer] == null
-                                && id.equals(pageBuffer[CELL_ITEMID][indexInOldBuffer])) {
-                            // we already have data in our cache,
-                            // recycle it instead of fetching it via
-                            // getValue/getPropertyValue
-                            value = pageBuffer[CELL_FIRSTCOL + j][indexInOldBuffer];
-                            if (!isGeneratedColumn && iscomponent[j]
-                                    || !(value instanceof Component)) {
-                                listenProperty(p, oldListenedProperties);
-                            }
-                        } else {
-                            if (isGeneratedColumn) {
-                                ColumnGenerator cg = columnGenerators
-                                        .get(colids[j]);
-                                value = cg.generateCell(this, id, colids[j]);
-                                if (value != null
-                                        && !(value instanceof Component)
-                                        && !(value instanceof String)) {
-                                    // Avoid errors if a generator returns
-                                    // something
-                                    // other than a Component or a String
-                                    value = value.toString();
-                                }
-                            } else if (iscomponent[j]) {
-                                value = p.getValue();
-                                listenProperty(p, oldListenedProperties);
-                            } else if (p != null) {
-                                value = getPropertyValue(id, colids[j], p);
-                                /*
-                                 * If returned value is Component (via
-                                 * fieldfactory or overridden getPropertyValue)
-                                 * we excpect it to listen property value
-                                 * changes. Otherwise if property emits value
-                                 * change events, table will start to listen
-                                 * them and refresh content when needed.
-                                 */
-                                if (!(value instanceof Component)) {
-                                    listenProperty(p, oldListenedProperties);
-                                }
-                            } else {
-                                value = getPropertyValue(id, colids[j], null);
-                            }
-                        }
-                    }
-                }
-
-                if (value instanceof Component) {
-                    registerComponent((Component) value);
-                }
-                cells[CELL_FIRSTCOL + j][i] = value;
-            }
-
-            // Gets the next item id
-            if (items instanceof Container.Indexed) {
-                int index = firstIndex + i + 1;
-                if (index < size()) {
-                    id = getIdByIndex(index);
-                } else {
-                    id = null;
-                }
-            } else {
+            // Gets the first item id
+            Object id = firstItemId();
+            for (int i = 0; i < firstIndex; i++) {
                 id = nextItemId(id);
             }
+            for (int i = 0; i < rows && id != null; i++) {
+                // Start by parsing the values, id should already be set
+                parseItemIdToCells(cells, id, i, firstIndex, headmode, cols,
+                        colids, firstIndexNotInCache, iscomponent,
+                        oldListenedProperties);
 
-            filledRows++;
+                // Gets the next item id for non indexed container
+                id = nextItemId(id);
+
+                filledRows++;
+            }
         }
 
         // Assures that all the rows of the cell-buffer are valid
@@ -1976,6 +2011,122 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         return cells;
     }
 
+    protected List<Object> getItemIds(int firstIndex, int rows) {
+        return (List<Object>) ((Container.Indexed) items).getItemIds(
+                firstIndex, rows);
+    }
+
+    /**
+     * Update a cache array for a row, register any relevant listeners etc.
+     * 
+     * This is an internal method extracted from
+     * {@link #getVisibleCellsNoCache(int, int, boolean)} and should be removed
+     * when the Table is rewritten.
+     */
+    private void parseItemIdToCells(Object[][] cells, Object id, int i,
+            int firstIndex, RowHeaderMode headmode, int cols, Object[] colids,
+            int firstIndexNotInCache, boolean[] iscomponent,
+            HashSet<Property<?>> oldListenedProperties) {
+
+        cells[CELL_ITEMID][i] = id;
+        cells[CELL_KEY][i] = itemIdMapper.key(id);
+        if (headmode != ROW_HEADER_MODE_HIDDEN) {
+            switch (headmode) {
+            case INDEX:
+                cells[CELL_HEADER][i] = String.valueOf(i + firstIndex + 1);
+                break;
+            default:
+                cells[CELL_HEADER][i] = getItemCaption(id);
+            }
+            cells[CELL_ICON][i] = getItemIcon(id);
+        }
+
+        GeneratedRow generatedRow = rowGenerator != null ? rowGenerator
+                .generateRow(this, id) : null;
+        cells[CELL_GENERATED_ROW][i] = generatedRow;
+
+        for (int j = 0; j < cols; j++) {
+            if (isColumnCollapsed(colids[j])) {
+                continue;
+            }
+            Property<?> p = null;
+            Object value = "";
+            boolean isGeneratedRow = generatedRow != null;
+            boolean isGeneratedColumn = columnGenerators.containsKey(colids[j]);
+            boolean isGenerated = isGeneratedRow || isGeneratedColumn;
+
+            if (!isGenerated) {
+                p = getContainerProperty(id, colids[j]);
+            }
+
+            if (isGeneratedRow) {
+                if (generatedRow.isSpanColumns() && j > 0) {
+                    value = null;
+                } else if (generatedRow.isSpanColumns() && j == 0
+                        && generatedRow.getValue() instanceof Component) {
+                    value = generatedRow.getValue();
+                } else if (generatedRow.getText().length > j) {
+                    value = generatedRow.getText()[j];
+                }
+            } else {
+                // check if current pageBuffer already has row
+                int index = firstIndex + i;
+                if (p != null || isGenerated) {
+                    int indexInOldBuffer = index - pageBufferFirstIndex;
+                    if (index < firstIndexNotInCache
+                            && index >= pageBufferFirstIndex
+                            && pageBuffer[CELL_GENERATED_ROW][indexInOldBuffer] == null
+                            && id.equals(pageBuffer[CELL_ITEMID][indexInOldBuffer])) {
+                        // we already have data in our cache,
+                        // recycle it instead of fetching it via
+                        // getValue/getPropertyValue
+                        value = pageBuffer[CELL_FIRSTCOL + j][indexInOldBuffer];
+                        if (!isGeneratedColumn && iscomponent[j]
+                                || !(value instanceof Component)) {
+                            listenProperty(p, oldListenedProperties);
+                        }
+                    } else {
+                        if (isGeneratedColumn) {
+                            ColumnGenerator cg = columnGenerators
+                                    .get(colids[j]);
+                            value = cg.generateCell(this, id, colids[j]);
+                            if (value != null && !(value instanceof Component)
+                                    && !(value instanceof String)) {
+                                // Avoid errors if a generator returns
+                                // something
+                                // other than a Component or a String
+                                value = value.toString();
+                            }
+                        } else if (iscomponent[j]) {
+                            value = p.getValue();
+                            listenProperty(p, oldListenedProperties);
+                        } else if (p != null) {
+                            value = getPropertyValue(id, colids[j], p);
+                            /*
+                             * If returned value is Component (via fieldfactory
+                             * or overridden getPropertyValue) we expect it to
+                             * listen property value changes. Otherwise if
+                             * property emits value change events, table will
+                             * start to listen them and refresh content when
+                             * needed.
+                             */
+                            if (!(value instanceof Component)) {
+                                listenProperty(p, oldListenedProperties);
+                            }
+                        } else {
+                            value = getPropertyValue(id, colids[j], null);
+                        }
+                    }
+                }
+            }
+
+            if (value instanceof Component) {
+                registerComponent((Component) value);
+            }
+            cells[CELL_FIRSTCOL + j][i] = value;
+        }
+    }
+
     protected void registerComponent(Component component) {
         getLogger().finest(
                 "Registered " + component.getClass().getSimpleName() + ": "
@@ -1986,8 +2137,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         visibleComponents.add(component);
     }
 
-    private void listenProperty(Property p,
-            HashSet<Property> oldListenedProperties) {
+    private void listenProperty(Property<?> p,
+            HashSet<Property<?>> oldListenedProperties) {
         if (p instanceof Property.ValueChangeNotifier) {
             if (oldListenedProperties == null
                     || !oldListenedProperties.contains(p)) {
@@ -2028,7 +2179,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                             visibleComponents.remove(cellVal);
                             unregisterComponent((Component) cellVal);
                         } else {
-                            Property p = getContainerProperty(
+                            Property<?> p = getContainerProperty(
                                     pageBuffer[CELL_ITEMID][i + ix], colids[c]);
                             if (p instanceof ValueChangeNotifier
                                     && listenedProperties.contains(p)) {
@@ -2053,7 +2204,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      *            set of components that where attached in last render
      */
     private void unregisterPropertiesAndComponents(
-            HashSet<Property> oldListenedProperties,
+            HashSet<Property<?>> oldListenedProperties,
             HashSet<Component> oldVisibleComponents) {
         if (oldVisibleComponents != null) {
             for (final Iterator<Component> i = oldVisibleComponents.iterator(); i
@@ -2066,8 +2217,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         }
 
         if (oldListenedProperties != null) {
-            for (final Iterator<Property> i = oldListenedProperties.iterator(); i
-                    .hasNext();) {
+            for (final Iterator<Property<?>> i = oldListenedProperties
+                    .iterator(); i.hasNext();) {
                 Property.ValueChangeNotifier o = (ValueChangeNotifier) i.next();
                 if (!listenedProperties.contains(o)) {
                     o.removeListener(this);
@@ -2101,8 +2252,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          * fields in memory.
          */
         if (component instanceof Field) {
-            Field field = (Field) component;
-            Property associatedProperty = associatedProperties
+            Field<?> field = (Field<?>) component;
+            Property<?> associatedProperty = associatedProperties
                     .remove(component);
             if (associatedProperty != null
                     && field.getPropertyDataSource() == associatedProperty) {
@@ -2111,16 +2262,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                 field.setPropertyDataSource(null);
             }
         }
-    }
-
-    /**
-     * Refreshes the current page contents.
-     * 
-     * @deprecated should not need to be used
-     */
-    @Deprecated
-    public void refreshCurrentPage() {
-
     }
 
     /**
@@ -2150,17 +2291,17 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param mode
      *            the One of the modes listed above.
      */
-    public void setRowHeaderMode(int mode) {
-        if (ROW_HEADER_MODE_HIDDEN == mode) {
-            rowCaptionsAreHidden = true;
-        } else {
-            rowCaptionsAreHidden = false;
-            setItemCaptionMode(mode);
+    public void setRowHeaderMode(RowHeaderMode mode) {
+        if (mode != null) {
+            rowHeaderMode = mode;
+            if (mode != RowHeaderMode.HIDDEN) {
+                setItemCaptionMode(mode.getItemCaptionMode());
+            }
+            // Assures the visual refresh. No need to reset the page buffer
+            // before
+            // as the content has not changed, only the alignments.
+            refreshRenderedCells();
         }
-
-        // Assures the visual refresh. No need to reset the page buffer before
-        // as the content has not changed, only the alignments.
-        refreshRenderedCells();
     }
 
     /**
@@ -2169,9 +2310,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @return the Row header mode.
      * @see #setRowHeaderMode(int)
      */
-    public int getRowHeaderMode() {
-        return rowCaptionsAreHidden ? ROW_HEADER_MODE_HIDDEN
-                : getItemCaptionMode();
+    public RowHeaderMode getRowHeaderMode() {
+        return rowHeaderMode;
     }
 
     /**
@@ -2254,13 +2394,68 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         refreshRenderedCells();
     }
 
+    /**
+     * Sets the Container that serves as the data source of the viewer. As a
+     * side-effect the table's selection value is set to null as the old
+     * selection might not exist in new Container.<br>
+     * <br>
+     * All rows and columns are generated as visible using this method. If the
+     * new container contains properties that are not meant to be shown you
+     * should use {@link Table#setContainerDataSource(Container, Collection)}
+     * instead, especially if the table is editable.
+     * 
+     * @param newDataSource
+     *            the new data source.
+     */
     @Override
     public void setContainerDataSource(Container newDataSource) {
+        if (newDataSource == null) {
+            newDataSource = new IndexedContainer();
+        }
+        Collection<Object> generated;
+        if (columnGenerators != null) {
+            generated = columnGenerators.keySet();
+        } else {
+            generated = Collections.emptyList();
+        }
+        List<Object> visibleIds = new ArrayList<Object>();
+        if (generated.isEmpty()) {
+            visibleIds.addAll(newDataSource.getContainerPropertyIds());
+        } else {
+            for (Object id : newDataSource.getContainerPropertyIds()) {
+                // don't add duplicates
+                if (!generated.contains(id)) {
+                    visibleIds.add(id);
+                }
+            }
+            // generated columns to the end
+            visibleIds.addAll(generated);
+        }
+        setContainerDataSource(newDataSource, visibleIds);
+    }
+
+    /**
+     * Sets the container data source and the columns that will be visible.
+     * Columns are shown in the collection's iteration order.
+     * 
+     * @see Table#setContainerDataSource(Container)
+     * @see Table#setVisibleColumns(Object[])
+     * 
+     * @param newDataSource
+     *            the new data source.
+     * @param visibleIds
+     *            IDs of the visible columns
+     */
+    public void setContainerDataSource(Container newDataSource,
+            Collection<?> visibleIds) {
 
         disableContentRefreshing();
 
         if (newDataSource == null) {
             newDataSource = new IndexedContainer();
+        }
+        if (visibleIds == null) {
+            visibleIds = new ArrayList<Object>();
         }
 
         // Assures that the data source is ordered by making unordered
@@ -2281,18 +2476,13 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             collapsedColumns.clear();
         }
 
-        // columnGenerators 'override' properties, don't add the same id twice
+        // don't add the same id twice
         Collection<Object> col = new LinkedList<Object>();
-        for (Iterator<?> it = getContainerPropertyIds().iterator(); it
-                .hasNext();) {
+        for (Iterator<?> it = visibleIds.iterator(); it.hasNext();) {
             Object id = it.next();
-            if (columnGenerators == null || !columnGenerators.containsKey(id)) {
+            if (!col.contains(id)) {
                 col.add(id);
             }
-        }
-        // generators added last
-        if (columnGenerators != null && columnGenerators.size() > 0) {
-            col.addAll(columnGenerators.keySet());
         }
 
         setVisibleColumns(col.toArray());
@@ -2356,7 +2546,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             if (!isNullSelectionAllowed()
                     && (id == null || id == getNullSelectionItemId())) {
                 // skip empty selection if nullselection is not allowed
-                requestRepaint();
+                markAsDirty();
             } else if (id != null && containsId(id)) {
                 newValue.add(id);
                 renderedButNotSelectedItemIds.remove(id);
@@ -2383,7 +2573,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
         if (!isNullSelectionAllowed() && newValue.isEmpty()) {
             // empty selection not allowed, keep old value
-            requestRepaint();
+            markAsDirty();
             return;
         }
 
@@ -2409,6 +2599,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @see com.vaadin.ui.Select#changeVariables(java.lang.Object,
      *      java.util.Map)
      */
+
     @Override
     public void changeVariables(Object source, Map<String, Object> variables) {
 
@@ -2494,7 +2685,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             clientNeedsContentRefresh = true;
         }
 
-        if (!sortDisabled) {
+        if (isSortEnabled()) {
             // Sorting
             boolean doSort = false;
             if (variables.containsKey("sortcolumn")) {
@@ -2526,13 +2717,20 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                 try {
                     final Object[] ids = (Object[]) variables
                             .get("collapsedcolumns");
+                    Set<Object> idSet = new HashSet<Object>();
+                    for (Object id : ids) {
+                        idSet.add(columnIdMap.get(id.toString()));
+                    }
                     for (final Iterator<Object> it = visibleColumns.iterator(); it
                             .hasNext();) {
-                        setColumnCollapsed(it.next(), false);
-                    }
-                    for (int i = 0; i < ids.length; i++) {
-                        setColumnCollapsed(columnIdMap.get(ids[i].toString()),
-                                true);
+                        Object propertyId = it.next();
+                        if (isColumnCollapsed(propertyId)) {
+                            if (!idSet.contains(propertyId)) {
+                                setColumnCollapsed(propertyId, false);
+                            }
+                        } else if (idSet.contains(propertyId)) {
+                            setColumnCollapsed(propertyId, true);
+                        }
                     }
                 } catch (final Exception e) {
                     // FIXME: Handle exception
@@ -2573,7 +2771,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                     (String) variables.get("action"), ",");
             if (st.countTokens() == 2) {
                 final Object itemId = itemIdMapper.get(st.nextToken());
-                final Action action = (Action) actionMapper.get(st.nextToken());
+                final Action action = actionMapper.get(st.nextToken());
 
                 if (action != null && (itemId == null || containsId(itemId))
                         && actionHandlers != null) {
@@ -2721,8 +2919,17 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (refreshContent) {
             refreshRenderedCells();
             // Ensure that client gets a response
-            requestRepaint();
+            markAsDirty();
         }
+    }
+
+    @Override
+    public void beforeClientResponse(boolean initial) {
+        super.beforeClientResponse(initial);
+
+        // Ensure pageBuffer is filled before sending the response to avoid
+        // calls to markAsDirty during paint
+        getVisibleCells();
     }
 
     /*
@@ -2731,6 +2938,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @see com.vaadin.ui.AbstractSelect#paintContent(com.vaadin.
      * terminal.PaintTarget)
      */
+
     @Override
     public void paintContent(PaintTarget target) throws PaintException {
         /*
@@ -2767,9 +2975,9 @@ public class CustomTable extends AbstractSelect implements Action.Container,
              */
             int pageBufferLastIndex = pageBufferFirstIndex
                     + pageBuffer[CELL_ITEMID].length - 1;
-            target.addAttribute(VScrollTable.ATTRIBUTE_PAGEBUFFER_FIRST,
+            target.addAttribute(TableConstants.ATTRIBUTE_PAGEBUFFER_FIRST,
                     pageBufferFirstIndex);
-            target.addAttribute(VScrollTable.ATTRIBUTE_PAGEBUFFER_LAST,
+            target.addAttribute(TableConstants.ATTRIBUTE_PAGEBUFFER_LAST,
                     pageBufferLastIndex);
         } else if (target.isFullRepaint() || isRowCacheInvalidated()) {
             paintRows(target, cells, actionSet);
@@ -2792,7 +3000,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
         if (keyMapperReset) {
             keyMapperReset = false;
-            target.addAttribute(VScrollTable.ATTRIBUTE_KEY_MAPPER_RESET, true);
+            target.addAttribute(TableConstants.ATTRIBUTE_KEY_MAPPER_RESET, true);
         }
 
         if (dropHandler != null) {
@@ -3020,7 +3228,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     }
 
     private boolean areColumnHeadersEnabled() {
-        return getColumnHeaderMode() != COLUMN_HEADER_MODE_HIDDEN;
+        return getColumnHeaderMode() != ColumnHeaderMode.HIDDEN;
     }
 
     private void paintVisibleColumns(PaintTarget target) throws PaintException {
@@ -3051,8 +3259,9 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                         target.addAttribute("sortable", true);
                     }
                 }
-                if (!ALIGN_LEFT.equals(getColumnAlignment(colId))) {
-                    target.addAttribute("align", getColumnAlignment(colId));
+                if (!Align.LEFT.equals(getColumnAlignment(colId))) {
+                    target.addAttribute("align", getColumnAlignment(colId)
+                            .toString());
                 }
                 paintColumnWidth(target, colId);
                 target.endTag("column");
@@ -3335,8 +3544,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
              * target.
              */
             if (cellStyleGenerator != null) {
-                String cellStyle = cellStyleGenerator
-                        .getStyle(itemId, columnId);
+                String cellStyle = cellStyleGenerator.getStyle(this, itemId,
+                        columnId);
                 if (cellStyle != null && !cellStyle.equals("")) {
                     target.addAttribute("style-" + columnIdMap.key(columnId),
                             cellStyle);
@@ -3350,14 +3559,13 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                         + currentColumn][indexInRowbuffer];
                 if (c == null) {
                     target.addText("");
-                    paintCellTooltips(target, itemId, columnId);
                 } else {
-                    c.paint(target);
+                    LegacyPaint.paint(c, target);
                 }
             } else {
                 target.addText((String) cells[CELL_FIRSTCOL + currentColumn][indexInRowbuffer]);
-                paintCellTooltips(target, itemId, columnId);
             }
+            paintCellTooltips(target, itemId, columnId);
         }
 
         target.endTag("tr");
@@ -3423,7 +3631,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          * to the target.
          */
         if (cellStyleGenerator != null) {
-            String rowStyle = cellStyleGenerator.getStyle(itemId, null);
+            String rowStyle = cellStyleGenerator.getStyle(this, itemId, null);
             if (rowStyle != null && !rowStyle.equals("")) {
                 target.addAttribute("rowstyle", rowStyle);
             }
@@ -3508,8 +3716,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     protected Object getPropertyValue(Object rowId, Object colId,
             Property property) {
         if (isEditable() && fieldFactory != null) {
-            final Field f = fieldFactory.createField(getContainerDataSource(),
-                    rowId, colId, this);
+            final Field<?> f = fieldFactory.createField(
+                    getContainerDataSource(), rowId, colId, this);
             if (f != null) {
                 // Remember that we have made this association so we can remove
                 // it when the component is removed
@@ -3563,11 +3771,23 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @since 3.1
      */
     protected String formatPropertyValue(Object rowId, Object colId,
-            Property property) {
+            Property<?> property) {
         if (property == null) {
             return "";
         }
-        return property.toString();
+        Converter<String, Object> converter = null;
+
+        if (hasConverter(colId)) {
+            converter = getConverter(colId);
+        } else {
+            converter = (Converter) ConverterUtil.getConverter(String.class,
+                    property.getType(), getSession());
+        }
+        Object value = property.getValue();
+        if (converter != null) {
+            return converter.convertToPresentation(value, getLocale());
+        }
+        return (null != value) ? value.toString() : "";
     }
 
     /* Action container */
@@ -3577,13 +3797,15 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.event.Action.Container#addActionHandler(Action.Handler)
      */
+
+    @Override
     public void addActionHandler(Action.Handler actionHandler) {
 
         if (actionHandler != null) {
 
             if (actionHandlers == null) {
                 actionHandlers = new LinkedList<Handler>();
-                actionMapper = new KeyMapper();
+                actionMapper = new KeyMapper<Action>();
             }
 
             if (!actionHandlers.contains(actionHandler)) {
@@ -3603,6 +3825,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.event.Action.Container#removeActionHandler(Action.Handler)
      */
+
+    @Override
     public void removeActionHandler(Action.Handler actionHandler) {
 
         if (actionHandlers != null && actionHandlers.contains(actionHandler)) {
@@ -3642,6 +3866,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Property.ValueChangeListener#valueChange(Property.ValueChangeEvent)
      */
+
     @Override
     public void valueChange(Property.ValueChangeEvent event) {
         if (event.getProperty() == this
@@ -3651,7 +3876,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             refreshRowCache();
             containerChangeToBeRendered = true;
         }
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -3672,18 +3897,12 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.ui.Component#attach()
      */
+
     @Override
     public void attach() {
         super.attach();
 
         refreshRenderedCells();
-
-        if (visibleComponents != null) {
-            for (final Iterator<Component> i = visibleComponents.iterator(); i
-                    .hasNext();) {
-                i.next().attach();
-            }
-        }
     }
 
     /**
@@ -3691,16 +3910,10 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.ui.Component#detach()
      */
+
     @Override
     public void detach() {
         super.detach();
-
-        if (visibleComponents != null) {
-            for (final Iterator<Component> i = visibleComponents.iterator(); i
-                    .hasNext();) {
-                i.next().detach();
-            }
-        }
     }
 
     /**
@@ -3708,6 +3921,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container#removeAllItems()
      */
+
     @Override
     public boolean removeAllItems() {
         currentPageFirstItemId = null;
@@ -3720,6 +3934,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container#removeItem(Object)
      */
+
     @Override
     public boolean removeItem(Object itemId) {
         final Object nextItemId = nextItemId(itemId);
@@ -3738,6 +3953,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container#removeContainerProperty(Object)
      */
+
     @Override
     public boolean removeContainerProperty(Object propertyId)
             throws UnsupportedOperationException {
@@ -3764,6 +3980,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @see com.vaadin.data.Container#addContainerProperty(Object, Class,
      *      Object)
      */
+
     @Override
     public boolean addContainerProperty(Object propertyId, Class<?> type,
             Object defaultValue) throws UnsupportedOperationException {
@@ -3810,7 +4027,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      */
     public boolean addContainerProperty(Object propertyId, Class<?> type,
             Object defaultValue, String columnHeader, Resource columnIcon,
-            String columnAlignment) throws UnsupportedOperationException {
+            Align columnAlignment) throws UnsupportedOperationException {
         if (!this.addContainerProperty(propertyId, type, defaultValue)) {
             return false;
         }
@@ -3919,6 +4136,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.ui.Select#getVisibleItemIds()
      */
+
     @Override
     public Collection<?> getVisibleItemIds() {
 
@@ -3942,6 +4160,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.ItemSetChangeListener#containerItemSetChange(com.vaadin.data.Container.ItemSetChangeEvent)
      */
+
     @Override
     public void containerItemSetChange(Container.ItemSetChangeEvent event) {
         super.containerItemSetChange(event);
@@ -3962,6 +4181,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.PropertySetChangeListener#containerPropertySetChange(com.vaadin.data.Container.PropertySetChangeEvent)
      */
+
     @Override
     public void containerPropertySetChange(
             Container.PropertySetChangeEvent event) {
@@ -4005,6 +4225,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      *             if set to true.
      * @see com.vaadin.ui.Select#setNewItemsAllowed(boolean)
      */
+
     @Override
     public void setNewItemsAllowed(boolean allowNewOptions)
             throws UnsupportedOperationException {
@@ -4018,6 +4239,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.Ordered#nextItemId(java.lang.Object)
      */
+
+    @Override
     public Object nextItemId(Object itemId) {
         return ((Container.Ordered) items).nextItemId(itemId);
     }
@@ -4028,6 +4251,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.Ordered#prevItemId(java.lang.Object)
      */
+
+    @Override
     public Object prevItemId(Object itemId) {
         return ((Container.Ordered) items).prevItemId(itemId);
     }
@@ -4037,6 +4262,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.Ordered#firstItemId()
      */
+
+    @Override
     public Object firstItemId() {
         return ((Container.Ordered) items).firstItemId();
     }
@@ -4046,6 +4273,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.Ordered#lastItemId()
      */
+
+    @Override
     public Object lastItemId() {
         return ((Container.Ordered) items).lastItemId();
     }
@@ -4056,6 +4285,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.Ordered#isFirstId(java.lang.Object)
      */
+
+    @Override
     public boolean isFirstId(Object itemId) {
         return ((Container.Ordered) items).isFirstId(itemId);
     }
@@ -4066,6 +4297,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.Ordered#isLastId(java.lang.Object)
      */
+
+    @Override
     public boolean isLastId(Object itemId) {
         return ((Container.Ordered) items).isLastId(itemId);
     }
@@ -4075,6 +4308,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      * @see com.vaadin.data.Container.Ordered#addItemAfter(java.lang.Object)
      */
+
+    @Override
     public Object addItemAfter(Object previousItemId)
             throws UnsupportedOperationException {
         Object itemId = ((Container.Ordered) items)
@@ -4091,6 +4326,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @see com.vaadin.data.Container.Ordered#addItemAfter(java.lang.Object,
      *      java.lang.Object)
      */
+
+    @Override
     public Item addItemAfter(Object previousItemId, Object newItemId)
             throws UnsupportedOperationException {
         Item item = ((Container.Ordered) items).addItemAfter(previousItemId,
@@ -4129,44 +4366,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      */
     public TableFieldFactory getTableFieldFactory() {
         return fieldFactory;
-    }
-
-    /**
-     * Gets the FieldFactory that is used to create editor for table cells.
-     * 
-     * The FieldFactory is only used if the Table is editable.
-     * 
-     * @return FieldFactory used to create the Field instances.
-     * @see #isEditable
-     * @deprecated use {@link #getTableFieldFactory()} instead
-     */
-    @Deprecated
-    public FieldFactory getFieldFactory() {
-        if (fieldFactory instanceof FieldFactory) {
-            return (FieldFactory) fieldFactory;
-
-        }
-        return null;
-    }
-
-    /**
-     * Sets the FieldFactory that is used to create editor for table cells.
-     * 
-     * The FieldFactory is only used if the Table is editable. By default the
-     * BaseFieldFactory is used.
-     * 
-     * @param fieldFactory
-     *            the field factory to set.
-     * @see #isEditable
-     * @see BaseFieldFactory
-     * @deprecated use {@link #setTableFieldFactory(TableFieldFactory)} instead
-     */
-    @Deprecated
-    public void setFieldFactory(FieldFactory fieldFactory) {
-        this.fieldFactory = fieldFactory;
-
-        // Assure visual refresh
-        refreshRowCache();
     }
 
     /**
@@ -4221,14 +4420,19 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      *      boolean[])
      * 
      */
+
+    @Override
     public void sort(Object[] propertyId, boolean[] ascending)
             throws UnsupportedOperationException {
         final Container c = getContainerDataSource();
         if (c instanceof Container.Sortable) {
             final int pageIndex = getCurrentPageFirstItemIndex();
+            boolean refreshingPreviouslyEnabled = disableContentRefreshing();
             ((Container.Sortable) c).sort(propertyId, ascending);
             setCurrentPageFirstItemIndex(pageIndex);
-            refreshRowCache();
+            if (refreshingPreviouslyEnabled) {
+                enableContentRefreshing(true);
+            }
 
         } else if (c != null) {
             throw new UnsupportedOperationException(
@@ -4253,15 +4457,22 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
     /**
      * Gets the container property IDs, which can be used to sort the item.
+     * <p>
+     * Note that the {@link #isSortEnabled()} state affects what this method
+     * returns. Disabling sorting causes this method to always return an empty
+     * collection.
+     * </p>
      * 
      * @see com.vaadin.data.Container.Sortable#getSortableContainerPropertyIds()
      */
+
+    @Override
     public Collection<?> getSortableContainerPropertyIds() {
         final Container c = getContainerDataSource();
-        if (c instanceof Container.Sortable && !isSortDisabled()) {
+        if (c instanceof Container.Sortable && isSortEnabled()) {
             return ((Container.Sortable) c).getSortableContainerPropertyIds();
         } else {
-            return new LinkedList<Object>();
+            return Collections.EMPTY_LIST;
         }
     }
 
@@ -4352,37 +4563,48 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * would support this.
      * 
      * @return True iff sorting is disabled.
+     * @deprecated As of 7.0, use {@link #isSortEnabled()} instead
      */
+    @Deprecated
     public boolean isSortDisabled() {
-        return sortDisabled;
+        return !isSortEnabled();
     }
 
     /**
-     * Disables the sorting altogether.
+     * Checks if sorting is enabled.
      * 
-     * To disable sorting altogether, set to true. In this case no sortable
-     * columns are given even in the case where datasource would support this.
+     * @return true if sorting by the user is allowed, false otherwise
+     */
+    public boolean isSortEnabled() {
+        return sortEnabled;
+    }
+
+    /**
+     * Disables the sorting by the user altogether.
      * 
      * @param sortDisabled
      *            True iff sorting is disabled.
+     * @deprecated As of 7.0, use {@link #setSortEnabled(boolean)} instead
      */
+    @Deprecated
     public void setSortDisabled(boolean sortDisabled) {
-        if (this.sortDisabled != sortDisabled) {
-            this.sortDisabled = sortDisabled;
-            requestRepaint();
-        }
+        setSortEnabled(!sortDisabled);
     }
 
     /**
-     * Table does not support lazy options loading mode. Setting this true will
-     * throw UnsupportedOperationException.
+     * Enables or disables sorting.
+     * <p>
+     * Setting this to false disallows sorting by the user. It is still possible
+     * to call {@link #sort()}.
+     * </p>
      * 
-     * @see com.vaadin.ui.Select#setLazyLoading(boolean)
+     * @param sortEnabled
+     *            true to allow the user to sort the table, false to disallow it
      */
-    public void setLazyLoading(boolean useLazyLoading) {
-        if (useLazyLoading) {
-            throw new UnsupportedOperationException(
-                    "Lazy options loading is not supported by Table.");
+    public void setSortEnabled(boolean sortEnabled) {
+        if (this.sortEnabled != sortEnabled) {
+            this.sortEnabled = sortEnabled;
+            markAsDirty();
         }
     }
 
@@ -4447,6 +4669,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         /**
          * Called by Table when a cell (and row) is painted.
          * 
+         * @param source
+         *            the source Table
          * @param itemId
          *            The itemId of the painted cell
          * @param propertyId
@@ -4455,20 +4679,44 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          *         name will be v-table-cell-content-[style name], or
          *         v-table-row-[style name] for rows)
          */
-        public abstract String getStyle(Object itemId, Object propertyId);
+        public abstract String getStyle(CustomTable source, Object itemId,
+                Object propertyId);
     }
 
-    public void addListener(ItemClickListener listener) {
-        addListener(VScrollTable.ITEM_CLICK_EVENT_ID, ItemClickEvent.class,
+    @Override
+    public void addItemClickListener(ItemClickListener listener) {
+        addListener(TableConstants.ITEM_CLICK_EVENT_ID, ItemClickEvent.class,
                 listener, ItemClickEvent.ITEM_CLICK_METHOD);
     }
 
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #addItemClickListener(ItemClickListener)}
+     **/
+    @Override
+    @Deprecated
+    public void addListener(ItemClickListener listener) {
+        addItemClickListener(listener);
+    }
+
+    @Override
+    public void removeItemClickListener(ItemClickListener listener) {
+        removeListener(TableConstants.ITEM_CLICK_EVENT_ID,
+                ItemClickEvent.class, listener);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #removeItemClickListener(ItemClickListener)}
+     **/
+    @Override
+    @Deprecated
     public void removeListener(ItemClickListener listener) {
-        removeListener(VScrollTable.ITEM_CLICK_EVENT_ID, ItemClickEvent.class,
-                listener);
+        removeItemClickListener(listener);
     }
 
     // Identical to AbstractCompoenentContainer.setEnabled();
+
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);
@@ -4476,30 +4724,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             // some ancestor still disabled, don't update children
             return;
         } else {
-            requestRepaintAll();
-        }
-    }
-
-    // Virtually identical to AbstractCompoenentContainer.setEnabled();
-    public void requestRepaintAll() {
-        requestRepaint();
-        if (visibleComponents != null) {
-            for (Iterator<Component> childIterator = visibleComponents
-                    .iterator(); childIterator.hasNext();) {
-                Component c = childIterator.next();
-                if (c instanceof Form) {
-                    // Form has children in layout, but is not
-                    // ComponentContainer
-                    c.requestRepaint();
-                    ((Form) c).getLayout().requestRepaintAll();
-                } else if (c instanceof CustomTable) {
-                    ((CustomTable) c).requestRepaintAll();
-                } else if (c instanceof ComponentContainer) {
-                    ((ComponentContainer) c).requestRepaintAll();
-                } else {
-                    c.requestRepaint();
-                }
-            }
+            markAsDirtyRecursive();
         }
     }
 
@@ -4511,7 +4736,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      */
     public void setDragMode(TableDragMode newDragMode) {
         dragMode = newDragMode;
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -4561,11 +4786,13 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
     }
 
+    @Override
     public TableTransferable getTransferable(Map<String, Object> rawVariables) {
         TableTransferable transferable = new TableTransferable(rawVariables);
         return transferable;
     }
 
+    @Override
     public DropHandler getDropHandler() {
         return dropHandler;
     }
@@ -4574,6 +4801,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         this.dropHandler = dropHandler;
     }
 
+    @Override
     public AbstractSelectTargetDetails translateDropTargetDetails(
             Map<String, Object> clientVariables) {
         return new AbstractSelectTargetDetails(clientVariables);
@@ -4592,7 +4820,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      */
     public void setMultiSelectMode(MultiSelectMode mode) {
         multiSelectMode = mode;
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -4616,10 +4844,9 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * initialized from server and no subsequent requests requests are needed
      * during that drag and drop operation.
      */
-    @ClientCriterion(VLazyInitItemIdentifiers.class)
     public static abstract class TableDropCriterion extends ServerSideCriterion {
 
-        private CustomTable table;
+        private Table table;
 
         private Set<Object> allowedItemIds;
 
@@ -4630,6 +4857,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          * com.vaadin.event.dd.acceptcriteria.ServerSideCriterion#getIdentifier
          * ()
          */
+
         @Override
         protected String getIdentifier() {
             return TableDropCriterion.class.getCanonicalName();
@@ -4642,11 +4870,12 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          * com.vaadin.event.dd.acceptcriteria.AcceptCriterion#accepts(com.vaadin
          * .event.dd.DragAndDropEvent)
          */
+        @Override
         @SuppressWarnings("unchecked")
         public boolean accept(DragAndDropEvent dragEvent) {
             AbstractSelectTargetDetails dropTargetData = (AbstractSelectTargetDetails) dragEvent
                     .getTargetDetails();
-            table = (CustomTable) dragEvent.getTargetDetails().getTarget();
+            table = (Table) dragEvent.getTargetDetails().getTarget();
             Collection<?> visibleItemIds = table.getVisibleItemIds();
             allowedItemIds = getAllowedItemIds(dragEvent, table,
                     (Collection<Object>) visibleItemIds);
@@ -4659,8 +4888,9 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          * 
          * @see
          * com.vaadin.event.dd.acceptcriteria.AcceptCriterion#paintResponse(
-         * com.vaadin.terminal.PaintTarget)
+         * com.vaadin.server.PaintTarget)
          */
+
         @Override
         public void paintResponse(PaintTarget target) throws PaintException {
             /*
@@ -4687,7 +4917,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          *         be accepted
          */
         protected abstract Set<Object> getAllowedItemIds(
-                DragAndDropEvent dragEvent, CustomTable table,
+                DragAndDropEvent dragEvent, Table table,
                 Collection<Object> visibleItemIds);
 
     }
@@ -4825,9 +5055,19 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param listener
      *            The handler which should handle the header click events.
      */
+    public void addHeaderClickListener(HeaderClickListener listener) {
+        addListener(TableConstants.HEADER_CLICK_EVENT_ID,
+                HeaderClickEvent.class, listener,
+                HeaderClickEvent.HEADER_CLICK_METHOD);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #addHeaderClickListener(HeaderClickListener)}
+     **/
+    @Deprecated
     public void addListener(HeaderClickListener listener) {
-        addListener(VScrollTable.HEADER_CLICK_EVENT_ID, HeaderClickEvent.class,
-                listener, HeaderClickEvent.HEADER_CLICK_METHOD);
+        addHeaderClickListener(listener);
     }
 
     /**
@@ -4836,9 +5076,18 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param listener
      *            The listener to remove.
      */
-    public void removeListener(HeaderClickListener listener) {
-        removeListener(VScrollTable.HEADER_CLICK_EVENT_ID,
+    public void removeHeaderClickListener(HeaderClickListener listener) {
+        removeListener(TableConstants.HEADER_CLICK_EVENT_ID,
                 HeaderClickEvent.class, listener);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #removeHeaderClickListener(HeaderClickListener)}
+     **/
+    @Deprecated
+    public void removeListener(HeaderClickListener listener) {
+        removeHeaderClickListener(listener);
     }
 
     /**
@@ -4852,9 +5101,19 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param listener
      *            The handler which should handle the footer click events.
      */
+    public void addFooterClickListener(FooterClickListener listener) {
+        addListener(TableConstants.FOOTER_CLICK_EVENT_ID,
+                FooterClickEvent.class, listener,
+                FooterClickEvent.FOOTER_CLICK_METHOD);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #addFooterClickListener(FooterClickListener)}
+     **/
+    @Deprecated
     public void addListener(FooterClickListener listener) {
-        addListener(VScrollTable.FOOTER_CLICK_EVENT_ID, FooterClickEvent.class,
-                listener, FooterClickEvent.FOOTER_CLICK_METHOD);
+        addFooterClickListener(listener);
     }
 
     /**
@@ -4863,9 +5122,18 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param listener
      *            The listener to remove.
      */
-    public void removeListener(FooterClickListener listener) {
-        removeListener(VScrollTable.FOOTER_CLICK_EVENT_ID,
+    public void removeFooterClickListener(FooterClickListener listener) {
+        removeListener(TableConstants.FOOTER_CLICK_EVENT_ID,
                 FooterClickEvent.class, listener);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #removeFooterClickListener(FooterClickListener)}
+     **/
+    @Deprecated
+    public void removeListener(FooterClickListener listener) {
+        removeFooterClickListener(listener);
     }
 
     /**
@@ -4896,7 +5164,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             columnFooters.put(propertyId, footer);
         }
 
-        requestRepaint();
+        markAsDirty();
     }
 
     /**
@@ -4912,7 +5180,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     public void setFooterVisible(boolean visible) {
         if (visible != columnFootersVisible) {
             columnFootersVisible = visible;
-            requestRepaint();
+            markAsDirty();
         }
     }
 
@@ -5019,10 +5287,19 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param listener
      *            The listener to attach to the Table
      */
-    public void addListener(ColumnResizeListener listener) {
-        addListener(VScrollTable.COLUMN_RESIZE_EVENT_ID,
+    public void addColumnResizeListener(ColumnResizeListener listener) {
+        addListener(TableConstants.COLUMN_RESIZE_EVENT_ID,
                 ColumnResizeEvent.class, listener,
                 ColumnResizeEvent.COLUMN_RESIZE_METHOD);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #addColumnResizeListener(ColumnResizeListener)}
+     **/
+    @Deprecated
+    public void addListener(ColumnResizeListener listener) {
+        addColumnResizeListener(listener);
     }
 
     /**
@@ -5031,9 +5308,18 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param listener
      *            The listener to remove
      */
-    public void removeListener(ColumnResizeListener listener) {
-        removeListener(VScrollTable.COLUMN_RESIZE_EVENT_ID,
+    public void removeColumnResizeListener(ColumnResizeListener listener) {
+        removeListener(TableConstants.COLUMN_RESIZE_EVENT_ID,
                 ColumnResizeEvent.class, listener);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #removeColumnResizeListener(ColumnResizeListener)}
+     **/
+    @Deprecated
+    public void removeListener(ColumnResizeListener listener) {
+        removeColumnResizeListener(listener);
     }
 
     /**
@@ -5085,9 +5371,18 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param listener
      *            The listener to attach to the Table
      */
-    public void addListener(ColumnReorderListener listener) {
-        addListener(VScrollTable.COLUMN_REORDER_EVENT_ID,
+    public void addColumnReorderListener(ColumnReorderListener listener) {
+        addListener(TableConstants.COLUMN_REORDER_EVENT_ID,
                 ColumnReorderEvent.class, listener, ColumnReorderEvent.METHOD);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #addColumnReorderListener(ColumnReorderListener)}
+     **/
+    @Deprecated
+    public void addListener(ColumnReorderListener listener) {
+        addColumnReorderListener(listener);
     }
 
     /**
@@ -5096,9 +5391,18 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param listener
      *            The listener to remove
      */
-    public void removeListener(ColumnReorderListener listener) {
-        removeListener(VScrollTable.COLUMN_REORDER_EVENT_ID,
+    public void removeColumnReorderListener(ColumnReorderListener listener) {
+        removeListener(TableConstants.COLUMN_REORDER_EVENT_ID,
                 ColumnReorderEvent.class, listener);
+    }
+
+    /**
+     * @deprecated As of 7.0, replaced by
+     *             {@link #removeColumnReorderListener(ColumnReorderListener)}
+     **/
+    @Deprecated
+    public void removeListener(ColumnReorderListener listener) {
+        removeColumnReorderListener(listener);
     }
 
     /**
@@ -5250,9 +5554,65 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         return rowGenerator;
     }
 
+    /**
+     * Sets a converter for a property id.
+     * <p>
+     * The converter is used to format the the data for the given property id
+     * before displaying it in the table.
+     * </p>
+     * 
+     * @param propertyId
+     *            The propertyId to format using the converter
+     * @param converter
+     *            The converter to use for the property id
+     */
+    public void setConverter(Object propertyId, Converter<String, ?> converter) {
+        if (!getContainerPropertyIds().contains(propertyId)) {
+            throw new IllegalArgumentException("PropertyId " + propertyId
+                    + " must be in the container");
+        }
+        // FIXME: This check should be here but primitive types like Boolean
+        // formatter for boolean property must be handled
+
+        // if (!converter.getSourceType().isAssignableFrom(getType(propertyId)))
+        // {
+        // throw new IllegalArgumentException("Property type ("
+        // + getType(propertyId)
+        // + ") must match converter source type ("
+        // + converter.getSourceType() + ")");
+        // }
+        propertyValueConverters.put(propertyId,
+                (Converter<String, Object>) converter);
+        refreshRowCache();
+    }
+
+    /**
+     * Checks if there is a converter set explicitly for the given property id.
+     * 
+     * @param propertyId
+     *            The propertyId to check
+     * @return true if a converter has been set for the property id, false
+     *         otherwise
+     */
+    protected boolean hasConverter(Object propertyId) {
+        return propertyValueConverters.containsKey(propertyId);
+    }
+
+    /**
+     * Returns the converter used to format the given propertyId.
+     * 
+     * @param propertyId
+     *            The propertyId to check
+     * @return The converter used to format the propertyId or null if no
+     *         converter has been set
+     */
+    public Converter<String, Object> getConverter(Object propertyId) {
+        return propertyValueConverters.get(propertyId);
+    }
+
     @Override
     public void setVisible(boolean visible) {
-        if (!isVisible() && visible) {
+        if (visible) {
             // We need to ensure that the rows are sent to the client when the
             // Table is made visible if it has been rendered as invisible.
             setRowCacheInvalidated(true);
@@ -5260,14 +5620,27 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         super.setVisible(visible);
     }
 
-    private final Logger getLogger() {
-        if (logger == null) {
-            logger = Logger.getLogger(CustomTable.class.getName());
+    @Override
+    public Iterator<Component> iterator() {
+        if (visibleComponents == null) {
+            Collection<Component> empty = Collections.emptyList();
+            return empty.iterator();
         }
-        return logger;
+        return visibleComponents.iterator();
     }
 
-    protected void focusFilterComponent(Focusable toFocus) {
-        getWindow().setFocusedComponent(toFocus);
+    /**
+     * @deprecated As of 7.0, use {@link #iterator()} instead.
+     */
+    @Deprecated
+    public Iterator<Component> getComponentIterator() {
+        return iterator();
+    }
+
+    private final Logger getLogger() {
+        if (logger == null) {
+            logger = Logger.getLogger(Table.class.getName());
+        }
+        return logger;
     }
 }

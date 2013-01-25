@@ -2,6 +2,7 @@ package org.tepi.filtertable.paged;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import com.vaadin.data.Container;
 import com.vaadin.data.Item;
@@ -78,7 +79,12 @@ class PagedFilterTableContainer<T extends Container.Indexed & Container.Filterab
         return container.getItemIds();
     }
 
-    public Property getContainerProperty(Object itemId, Object propertyId) {
+    @Override
+    public List<?> getItemIds(int startIndex, int numberOfItems) {
+        return container.getItemIds(startIndex, numberOfItems);
+    }
+
+    public Property<?> getContainerProperty(Object itemId, Object propertyId) {
         return container.getContainerProperty(itemId, propertyId);
     }
 
@@ -195,11 +201,25 @@ class PagedFilterTableContainer<T extends Container.Indexed & Container.Filterab
         container.removeAllContainerFilters();
     }
 
-    public void addListener(ItemSetChangeListener listener) {
-        ((Container.ItemSetChangeNotifier) container).addListener(listener);
+    @Override
+    public void addItemSetChangeListener(ItemSetChangeListener listener) {
+        ((Container.ItemSetChangeNotifier) container)
+                .addItemSetChangeListener(listener);
     }
 
+    @Override
+    public void removeItemSetChangeListener(ItemSetChangeListener listener) {
+        ((Container.ItemSetChangeNotifier) container)
+                .removeItemSetChangeListener(listener);
+    }
+
+    @Override
+    public void addListener(ItemSetChangeListener listener) {
+        addItemSetChangeListener(listener);
+    }
+
+    @Override
     public void removeListener(ItemSetChangeListener listener) {
-        ((Container.ItemSetChangeNotifier) container).removeListener(listener);
+        removeItemSetChangeListener(listener);
     }
 }
