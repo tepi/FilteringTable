@@ -45,7 +45,6 @@ import com.vaadin.terminal.gwt.client.RenderSpace;
 import com.vaadin.terminal.gwt.client.UIDL;
 import com.vaadin.terminal.gwt.client.Util;
 import com.vaadin.terminal.gwt.client.ui.FocusableScrollPanel;
-import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable;
 import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 
 public class VFilterTreeTable extends VFilterTable {
@@ -187,8 +186,9 @@ public class VFilterTreeTable extends VFilterTable {
         return !(bi.isIE6() || bi.isIE7() || bi.isSafari4());
     }
 
-    public class VTreeTableScrollBody extends
-            VCustomScrollTable.VScrollTableBody {
+    public class VTreeTableScrollBody
+            extends
+            com.vaadin.terminal.gwt.client.ui.VCustomScrollTable.VScrollTableBody {
         private int indentWidth = -1;
 
         VTreeTableScrollBody() {
@@ -204,8 +204,7 @@ public class VFilterTreeTable extends VFilterTable {
             return new VTreeTableRow(uidl, aligns2);
         }
 
-        class VTreeTableRow extends
-                VCustomScrollTable.VScrollTableBody.VScrollTableRow {
+        class VTreeTableRow extends VScrollTableRow {
 
             private boolean isTreeCellAdded = false;
             private SpanElement treeSpacer;
