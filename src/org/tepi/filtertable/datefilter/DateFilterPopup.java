@@ -180,6 +180,11 @@ public class DateFilterPopup extends PopupButton {
         dateFormat = decorator.getDateFormat(propertyId);
         if (dateFormat == null) {
             setDefaultDateFormat();
+            fromField.setDateFormat(null);
+            toField.setDateFormat(null);
+        } else {
+            fromField.setDateFormat(dateFormat.toString());
+            toField.setDateFormat(dateFormat.toString());
         }
     }
 
