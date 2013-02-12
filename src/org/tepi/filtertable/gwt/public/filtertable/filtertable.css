@@ -29,6 +29,7 @@
 	-webkit-border-radius: 0px;
 	-moz-border-radius: 0px;
 	-o-border-radius: 0px;
+	padding: 1px 2px; /* Fixes issue with Chameleon theme's TextField paddings in em's */
 }
 
 .v-ie7 .filters-panel input.v-textfield {
