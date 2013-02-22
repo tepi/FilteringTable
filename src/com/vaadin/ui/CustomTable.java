@@ -5268,6 +5268,14 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     }
 
     protected void focusFilterComponent(Focusable toFocus) {
+        boolean isTextField = toFocus instanceof TextField;
+        int cursorPos = -1;
+        if (isTextField) {
+            cursorPos = ((TextField) toFocus).getCursorPosition();
+        }
         getWindow().setFocusedComponent(toFocus);
+        if (isTextField) {
+            ((TextField) toFocus).setCursorPosition(cursorPos);
+        }
     }
 }
