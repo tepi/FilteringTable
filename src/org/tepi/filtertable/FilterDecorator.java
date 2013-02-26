@@ -1,7 +1,5 @@
 package org.tepi.filtertable;
 
-import java.text.DateFormat;
-
 import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
 import com.vaadin.terminal.Resource;
@@ -123,16 +121,18 @@ public interface FilterDecorator {
     public int getDateFieldResolution(Object propertyId);
 
     /**
-     * Returns the DateFormat object to be used for formatting the date/time
+     * Returns a date format pattern to be used for formatting the date/time
      * values shown in the filtering field of the given property ID. Note that
      * this is completely independent from the resolution set for the property,
      * and is used for display purposes only.
      * 
+     * See SimpleDateFormat for the pattern definition
+     * 
      * @param propertyId
      *            ID of the property the format will be applied to
-     * @return A DateFormat or null to use the default formatting
+     * @return A date format pattern or null to use the default formatting
      */
-    public DateFormat getDateFormat(Object propertyId);
+    public String getDateFormatPattern(Object propertyId);
 
     /**
      * Return the string that should be used as an "input prompt" when no

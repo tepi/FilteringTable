@@ -1,6 +1,7 @@
 package org.tepi.filtertable.demo;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 import org.tepi.filtertable.FilterDecorator;
@@ -100,9 +101,9 @@ class DemoFilterDecorator implements FilterDecorator {
         return DateField.RESOLUTION_DAY;
     }
 
-    public DateFormat getDateFormat(Object propertyId) {
-        return DateFormat.getDateInstance(DateFormat.SHORT, new Locale("fi",
-                "FI"));
+    public String getDateFormatPattern(Object propertyId) {
+        return ((SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT,
+                new Locale("fi", "FI"))).toPattern();
     }
 
     public NumberFilterPopupConfig getNumberFilterPopupConfig() {

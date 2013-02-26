@@ -1,6 +1,7 @@
 package org.tepi.filtertable.datefilter;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -35,7 +36,7 @@ public class DateFilterPopup extends PopupButton {
     private Button set;
     private Button clear;
     private final Object propertyId;
-    private DateFormat dateFormat;
+    private String dateFormatPattern;
 
     public DateFilterPopup(FilterDecorator decorator, Object propertyId) {
         super(null);
@@ -136,8 +137,9 @@ public class DateFilterPopup extends PopupButton {
     public void setInternalValue(Date from, Date to) {
         if (from != null || to != null) {
             value = buildValue(from, to);
-            setCaption((from == null ? "" : dateFormat.format(from)) + " - "
-                    + (to == null ? "" : dateFormat.format(to)));
+            SimpleDateFormat sdf = new SimpleDateFormat(dateFormatPattern);
+            setCaption((from == null ? "" : sdf.format(from)) + " - "
+                    + (to == null ? "" : sdf.format(to)));
         } else {
             value = null;
             setNullCaption();
@@ -177,14 +179,14 @@ public class DateFilterPopup extends PopupButton {
         fromField.setResolution(resolution);
         toField.setResolution(resolution);
 
-        dateFormat = decorator.getDateFormat(propertyId);
-        if (dateFormat == null) {
+        dateFormatPattern = decorator.getDateFormatPattern(propertyId);
+        if (dateFormatPattern == null) {
             setDefaultDateFormat();
             fromField.setDateFormat(null);
             toField.setDateFormat(null);
         } else {
-            fromField.setDateFormat(dateFormat.toString());
-            toField.setDateFormat(dateFormat.toString());
+            fromField.setDateFormat(dateFormatPattern);
+            toField.setDateFormat(dateFormatPattern);
         }
     }
 
@@ -236,7 +238,7 @@ public class DateFilterPopup extends PopupButton {
     }
 
     private void setDefaultDateFormat() {
-        dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT,
-                DateFormat.SHORT, getLocale());
+        dateFormatPattern = ((SimpleDateFormat) DateFormat.getDateTimeInstance(
+                DateFormat.SHORT, DateFormat.SHORT, getLocale())).toPattern();
     }
 }
