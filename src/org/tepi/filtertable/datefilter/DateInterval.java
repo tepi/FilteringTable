@@ -12,7 +12,7 @@ public class DateInterval {
     private final Date from;
     private final Date to;
 
-    DateInterval(Date from, Date to) {
+    public DateInterval(Date from, Date to) {
         this.from = from;
         this.to = to;
     }
