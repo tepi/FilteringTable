@@ -12,7 +12,7 @@ public class NumberInterval implements Serializable {
     private final String greaterThanValue;
     private final String equalsValue;
 
-    NumberInterval(String lessThanValue, String greaterThanValue,
+    public NumberInterval(String lessThanValue, String greaterThanValue,
             String equalsValue) {
         super();
         this.lessThanValue = lessThanValue;
