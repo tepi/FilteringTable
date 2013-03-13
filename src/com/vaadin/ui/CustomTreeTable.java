@@ -23,9 +23,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.tepi.filtertable.gwt.client.ui.VFilterTreeTable;
 
 import com.vaadin.data.Container;
 import com.vaadin.data.Container.Hierarchical;
@@ -44,16 +43,17 @@ import com.vaadin.ui.treetable.Collapsible;
 import com.vaadin.ui.treetable.HierarchicalContainerOrderedWrapper;
 
 /**
- * TreeTable extends the {@link Table} component so that it can also visualize a
- * hierarchy of its Items in a similar manner that {@link Tree} does. The tree
- * hierarchy is always displayed in the first actual column of the TreeTable.
+ * CustomTreeTable extends the {@link Table} component so that it can also
+ * visualize a hierarchy of its Items in a similar manner that {@link Tree}
+ * does. The tree hierarchy is always displayed in the first actual column of
+ * the CustomTreeTable.
  * <p>
- * The TreeTable supports the usual {@link Table} features like lazy loading, so
- * it should be no problem to display lots of items at once. Only required rows
- * and some cache rows are sent to the client.
+ * The CustomTreeTable supports the usual {@link Table} features like lazy
+ * loading, so it should be no problem to display lots of items at once. Only
+ * required rows and some cache rows are sent to the client.
  * <p>
- * TreeTable supports standard {@link Hierarchical} container interfaces, but
- * also a more fine tuned version - {@link Collapsible}. A container
+ * CustomTreeTable supports standard {@link Hierarchical} container interfaces,
+ * but also a more fine tuned version - {@link Collapsible}. A container
  * implementing the {@link Collapsible} interface stores the collapsed/expanded
  * state internally and can this way scale better on the server side than with
  * standard Hierarchical implementations. Developer must however note that
@@ -61,7 +61,7 @@ import com.vaadin.ui.treetable.HierarchicalContainerOrderedWrapper;
  * share UI state in the container.
  */
 @SuppressWarnings({ "serial" })
-@ClientWidget(VFilterTreeTable.class)
+@ClientWidget(VTreeTable.class)
 public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     private interface ContainerStrategy extends Serializable {
@@ -234,9 +234,11 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
             boolean removed = openItems.remove(itemId);
             if (!removed) {
                 openItems.add(itemId);
-                getLogger().finest("Item " + itemId + " is now expanded");
+                getLogger().log(Level.FINEST, "Item {0} is now expanded",
+                        itemId);
             } else {
-                getLogger().finest("Item " + itemId + " is now collapsed");
+                getLogger().log(Level.FINEST, "Item {0} is now collapsed",
+                        itemId);
             }
             clearPreorderCache();
         }
@@ -297,17 +299,17 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     }
 
     /**
-     * Creates an empty TreeTable with a default container.
+     * Creates an empty CustomTreeTable with a default container.
      */
     public CustomTreeTable() {
         super(null, new HierarchicalContainer());
     }
 
     /**
-     * Creates an empty TreeTable with a default container.
+     * Creates an empty CustomTreeTable with a default container.
      * 
      * @param caption
-     *            the caption for the TreeTable
+     *            the caption for the CustomTreeTable
      */
     public CustomTreeTable(String caption) {
         this();
@@ -315,7 +317,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     }
 
     /**
-     * Creates a TreeTable instance with given captions and data source.
+     * Creates a CustomTreeTable instance with given captions and data source.
      * 
      * @param caption
      *            the caption for the component
@@ -697,7 +699,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     }
 
     /**
-     * Explicitly sets the column in which the TreeTable visualizes the
+     * Explicitly sets the column in which the CustomTreeTable visualizes the
      * hierarchy. If hierarchyColumnId is not set, the hierarchy is visualized
      * in the first visible column.
      * 
