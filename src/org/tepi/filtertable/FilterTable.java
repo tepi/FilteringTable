@@ -337,11 +337,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
         return columnIdToFilterMap;
     }
 
-    public void setAlwaysRecalculateColumnWidths(
-            boolean alwaysRecalculateColumnWidths) {
-        this.alwaysRecalculateColumnWidths = alwaysRecalculateColumnWidths;
-    }
-
     public Component getAsComponent() {
         return this;
     }
