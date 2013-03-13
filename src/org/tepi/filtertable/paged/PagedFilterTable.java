@@ -315,12 +315,6 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
     }
 
     @Override
-    public void setAlwaysRecalculateColumnWidths(
-            boolean alwaysRecalculateColumnWidths) {
-        this.alwaysRecalculateColumnWidths = alwaysRecalculateColumnWidths;
-    }
-
-    @Override
     public void resetFilters() {
         super.resetFilters();
         setCurrentPage(1);
