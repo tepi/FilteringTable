@@ -137,7 +137,7 @@ public class FiltertabledemoApplication extends Application {
         PagedFilterTable<IndexedContainer> filterTable = new PagedFilterTable<IndexedContainer>();
         filterTable.setWidth("100%");
 
-        filterTable.setAlwaysRecalculateColumnWidths(true);
+        // filterTable.setAlwaysRecalculateColumnWidths(true);
 
         filterTable.setFilterDecorator(new DemoFilterDecorator());
         filterTable
