@@ -59,6 +59,7 @@ public class DateFilterPopup extends PopupButton {
                 cancelReset = false;
             }
         });
+        setFilterDecorator(decorator);
         setNullCaption();
     }
 
@@ -137,9 +138,9 @@ public class DateFilterPopup extends PopupButton {
     public void setInternalValue(Date from, Date to) {
         if (from != null || to != null) {
             value = buildValue(from, to);
-            SimpleDateFormat sdf = new SimpleDateFormat(dateFormatPattern);
-            setCaption((from == null ? "" : sdf.format(from)) + " - "
-                    + (to == null ? "" : sdf.format(to)));
+            fromField.setValue(value.getFrom());
+            toField.setValue(value.getTo());
+            updateCaption();
         } else {
             value = null;
             setNullCaption();
@@ -157,11 +158,9 @@ public class DateFilterPopup extends PopupButton {
         if (decorator == null) {
             return;
         }
-        /* Prepare DataFormatter with correct locale */
-        Locale locale = getApplication().getLocale();
         /* Set DateField Locale */
-        fromField.setLocale(locale);
-        toField.setLocale(locale);
+        fromField.setLocale(getLocaleFailsafe());
+        toField.setLocale(getLocaleFailsafe());
         /* Set captions */
         if (decorator.getFromCaption() != null) {
             fromLabel.setValue(decorator.getFromCaption());
@@ -182,12 +181,19 @@ public class DateFilterPopup extends PopupButton {
         dateFormatPattern = decorator.getDateFormatPattern(propertyId);
         if (dateFormatPattern == null) {
             setDefaultDateFormat();
-            fromField.setDateFormat(null);
-            toField.setDateFormat(null);
-        } else {
-            fromField.setDateFormat(dateFormatPattern);
-            toField.setDateFormat(dateFormatPattern);
         }
+        fromField.setDateFormat(dateFormatPattern);
+        toField.setDateFormat(dateFormatPattern);
+
+    }
+
+    private void updateCaption() {
+        SimpleDateFormat sdf = new SimpleDateFormat(dateFormatPattern);
+        setCaption((fromField.getValue() == null ? "" : sdf.format(fromField
+                .getValue()))
+                + " - "
+                + (toField.getValue() == null ? "" : sdf.format(toField
+                        .getValue())));
     }
 
     private void setNullCaption() {
@@ -212,7 +218,7 @@ public class DateFilterPopup extends PopupButton {
     }
 
     private Date truncateDate(Date date, int resolution, boolean start) {
-        Calendar cal = Calendar.getInstance(getLocale());
+        Calendar cal = Calendar.getInstance(getLocaleFailsafe());
         cal.setTime(date);
         if (resolution > DateField.RESOLUTION_MSEC) {
             cal.set(Calendar.MILLISECOND, start ? 0 : 999);
@@ -239,6 +245,20 @@ public class DateFilterPopup extends PopupButton {
 
     private void setDefaultDateFormat() {
         dateFormatPattern = ((SimpleDateFormat) DateFormat.getDateTimeInstance(
-                DateFormat.SHORT, DateFormat.SHORT, getLocale())).toPattern();
+                DateFormat.SHORT, DateFormat.SHORT, getLocaleFailsafe()))
+                .toPattern();
+    }
+
+    private Locale getLocaleFailsafe() {
+        /* First try the locale provided by the decorator */
+        if (decorator != null && decorator.getLocale() != null) {
+            return decorator.getLocale();
+        }
+        /* Then try application locale */
+        if (super.getLocale() != null) {
+            return super.getLocale();
+        }
+        /* Finally revert to system default locale */
+        return Locale.getDefault();
     }
 }
