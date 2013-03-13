@@ -115,4 +115,8 @@ class DemoFilterDecorator implements FilterDecorator {
         // TODO Auto-generated method stub
         return false;
     }
+
+    public Locale getLocale() {
+        return new Locale("fi", "FI");
+    }
 }

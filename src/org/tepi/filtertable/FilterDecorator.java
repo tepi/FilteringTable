@@ -1,5 +1,7 @@
 package org.tepi.filtertable;
 
+import java.util.Locale;
+
 import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
 import com.vaadin.terminal.Resource;
@@ -133,6 +135,14 @@ public interface FilterDecorator {
      * @return A date format pattern or null to use the default formatting
      */
     public String getDateFormatPattern(Object propertyId);
+
+    /**
+     * Returns the locale to be used with Date filters. If none is provided,
+     * reverts to default locale of the system.
+     * 
+     * @return Desired locale for the dates
+     */
+    public Locale getLocale();
 
     /**
      * Return the string that should be used as an "input prompt" when no
