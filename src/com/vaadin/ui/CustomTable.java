@@ -5601,7 +5601,9 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (isTextField) {
             cursorPos = ((TextField) toFocus).getCursorPosition();
         }
-        getWindow().setFocusedComponent(toFocus);
+        if (getWindow() != null) {
+            getWindow().setFocusedComponent(toFocus);
+        }
         if (isTextField) {
             ((TextField) toFocus).setCursorPosition(cursorPos);
         }
