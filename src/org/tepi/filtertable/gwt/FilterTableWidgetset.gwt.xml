@@ -5,4 +5,6 @@
 	<inherits name="com.vaadin.DefaultWidgetSet" />
 	<stylesheet src="filtertable/filtertable.css"/>
 	<stylesheet src="popupbutton/popupbutton.css"/>
+
+    <inherits name="org.vaadin.hene.popupbutton.widgetset.PopupbuttonWidgetset" />
 </module>
