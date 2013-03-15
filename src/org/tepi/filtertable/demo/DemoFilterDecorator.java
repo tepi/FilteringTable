@@ -108,7 +108,7 @@ class DemoFilterDecorator implements FilterDecorator, Serializable {
 
     public boolean usePopupForNumericProperty(Object propertyId) {
         // TODO Auto-generated method stub
-        return false;
+        return true;
     }
 
     @Override
