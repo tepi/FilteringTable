@@ -123,8 +123,6 @@ public class FilterTableDemoUI extends UI {
         PagedFilterTable<IndexedContainer> filterTable = new PagedFilterTable<IndexedContainer>();
         filterTable.setWidth("100%");
 
-        filterTable.setAlwaysRecalculateColumnWidths(true);
-
         filterTable.setFilterDecorator(new DemoFilterDecorator());
         filterTable.setFilterGenerator(new DemoFilterGenerator());
 
