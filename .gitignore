@@ -2,3 +2,4 @@ target/*
 .settings
 build/result/*
 WebContent/VAADIN
+/GWT development mode for FilteringTable7.launch
