@@ -23,8 +23,9 @@
 }
 
 /* TextField within the Filter panel*/
-.v-table .filters-panel .v-textfield {
-	height: 19px;
+.reindeer.v-app .v-table .filters-panel input.v-textfield.v-widget, 
+.reindeer .v-window .v-table .filters-panel input.v-textfield.v-widget {
+	height: 23px;
 	border-radius: 0px;
 	-webkit-border-radius: 0px;
 	-moz-border-radius: 0px;
@@ -32,15 +33,11 @@
 	padding: 1px 2px; /* Fixes issue with Chameleon theme's TextField paddings in em's */
 }
 
-.v-ie7 .filters-panel input.v-textfield {
-	margin-top: 0 !important;
-}
-
 /* DateFilter button styles */
-.datefilterpopup,
-.datefilterpopup:focus,
-.datefilterpopup:active,
-.datefilterpopup.v-pressed {
+.datefilterpopup .v-popupbutton,
+.datefilterpopup .v-popupbutton:focus,
+.datefilterpopup .v-popupbutton:active,
+.datefilterpopup .v-popupbutton.v-pressed {
 	background: #fff none repeat-x 0 100%;
 	height: 23px;
 	border: 1px solid #b7b7b7;
@@ -48,16 +45,16 @@
 	position: relative;
 }
 
-.datefilterpopup:focus,
-.datefilterpopup:active,
-.datefilterpopup.v-pressed {
+.datefilterpopup .v-popupbutton:focus,
+.datefilterpopup .v-popupbutton:active,
+.datefilterpopup .v-popupbutton.v-pressed {
 	border-color: #4F83B4 #5B97D0 #5CA0DF;
 }
 
-.datefilterpopup .v-button-wrap,
-.datefilterpopup:focus .v-button-wrap,
-.datefilterpopup:active .v-button-wrap,
-.datefilterpopup.v-pressed .v-button-wrap {
+.datefilterpopup .v-popupbutton .v-button-wrap,
+.datefilterpopup .v-popupbutton:focus .v-button-wrap,
+.datefilterpopup .v-popupbutton:active .v-button-wrap,
+.datefilterpopup .v-popupbutton.v-pressed .v-button-wrap {
 	background: none;
 	overflow: hidden;
 	padding: 0;
@@ -66,7 +63,7 @@
 }
 
 
-.v-popupbutton.datefilterpopup .v-popup-indicator {
+.datefilterpopup .v-popupbutton .v-popup-indicator {
 	height: 21px;
 	width: 18px;
 	position: absolute;
@@ -76,15 +73,11 @@
 	background-position: -5px -8px;
 }
 
-.datefilterpopupcontent .v-datefield-popupcalendar input.v-datefield-textfield {
-	height: 19px;
-}
-
-.v-ie .v-popupbutton.datefilterpopup .v-popup-indicator {
+.v-ie .datefilterpopup .v-popupbutton .v-popup-indicator {
 	display: inline;
 }
 
-.datefilterpopup .v-button-caption {
+.datefilterpopup .v-popupbutton .v-button-caption {
 	display: inline-block;
 	background: none;
 	height: 12px;
