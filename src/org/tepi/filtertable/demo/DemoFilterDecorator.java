@@ -6,6 +6,7 @@ import java.util.Locale;
 
 import org.tepi.filtertable.FilterDecorator;
 import org.tepi.filtertable.demo.FilterTableDemoUI.State;
+import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
 import com.vaadin.server.Resource;
 import com.vaadin.server.ThemeResource;
@@ -108,5 +109,23 @@ class DemoFilterDecorator implements FilterDecorator, Serializable {
     public boolean usePopupForNumericProperty(Object propertyId) {
         // TODO Auto-generated method stub
         return false;
+    }
+
+    @Override
+    public String getDateFormatPattern(Object propertyId) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Locale getLocale() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public NumberFilterPopupConfig getNumberFilterPopupConfig() {
+        // TODO Auto-generated method stub
+        return null;
     }
 }
