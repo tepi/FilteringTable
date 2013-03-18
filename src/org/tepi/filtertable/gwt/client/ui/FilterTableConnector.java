@@ -15,7 +15,9 @@
  */
 package org.tepi.filtertable.gwt.client.ui;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.tepi.filtertable.FilterTable;
 
@@ -44,6 +46,7 @@ import com.vaadin.shared.ui.Connect;
 import com.vaadin.shared.ui.table.TableConstants;
 import com.vaadin.shared.ui.table.TableState;
 
+@SuppressWarnings("deprecation")
 @Connect(FilterTable.class)
 public class FilterTableConnector extends AbstractHasComponentsConnector
         implements Paintable, DirectionalManagedLayout, PostLayoutListener {
@@ -320,24 +323,43 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         /* If filters are not set visible, clear and hide filter panel */
         getWidget().filters.setVisible(getWidget().filters.filtersVisible);
         getWidget().setContainerHeight();
-        Widget toFocus = null;
+        boolean forceRender = uidl.getBooleanAttribute("forceRender");
         if (!getWidget().filters.filtersVisible) {
             getWidget().filters.container.clear();
             getWidget().filters.filters.clear();
         } else {
             /* Prepare and paint filter components */
-            getWidget().filters.filters.clear();
+            Map<String, Widget> newWidgets = new HashMap<String, Widget>();
+            boolean allCached = true;
             for (final Iterator<Object> it = uidl.getChildIterator(); it
                     .hasNext();) {
                 final UIDL cc = (UIDL) it.next();
                 if (cc.getTag().startsWith("filtercomponent-")) {
                     String cid = cc.getStringAttribute("columnid");
                     UIDL uidld = cc.getChildUIDL(0);
-                    ComponentConnector connector = client.getPaintable(uidld);
-                    getWidget().filters.filters.put(cid, connector.getWidget());
+                    if (uidld == null) {
+                        newWidgets.put(cid, null);
+                    } else {
+                        ComponentConnector connector = client
+                                .getPaintable(uidld);
+                        newWidgets.put(cid, connector.getWidget());
+                        if (!uidld.hasAttribute("cached")
+                                || !uidld.getBooleanAttribute("cached")) {
+                            allCached = false;
+                        }
+                    }
                 }
             }
-            getWidget().filters.reRenderFilterComponents();
+            if (forceRender || !allCached
+                    || getWidget().filters.filters.isEmpty()) {
+                getWidget().filters.filters.clear();
+                for (String cid : newWidgets.keySet()) {
+                    getWidget().filters.filters.put(cid, newWidgets.get(cid));
+                }
+                getWidget().filters.reRenderFilterComponents();
+            } else {
+                getWidget().filters.resetFilterWidths();
+            }
         }
     }
 

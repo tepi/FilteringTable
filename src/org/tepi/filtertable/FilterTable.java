@@ -42,6 +42,8 @@ public class FilterTable extends CustomTable implements IFilterTable {
     private FilterFieldGenerator generator;
     /* Is initialization done */
     private boolean initDone;
+    /* Force-render filter fields */
+    private boolean reRenderFilterFields;
 
     /**
      * Creates a new empty FilterTable
@@ -68,6 +70,8 @@ public class FilterTable extends CustomTable implements IFilterTable {
         /* Add filter components to UIDL */
         target.startTag("filters");
         target.addAttribute("filtersvisible", filtersVisible);
+        target.addAttribute("forceRender", reRenderFilterFields);
+        reRenderFilterFields = false;
         if (filtersVisible) {
             for (Object key : getColumnIdToFilterMap().keySet()) {
                 /* Do not paint filters for collapsed columns */
@@ -100,13 +104,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
             if (c != null) {
                 if (c instanceof TextField) {
                     ((TextField) c).setValue("");
-                    /*
-                     * } else if (c instanceof DateFilterPopup) {
-                     * ((DateFilterPopup) c).setInternalValue(null, null); }
-                     * else if (c instanceof NumberFilterPopup) {
-                     * ((NumberFilterPopup) c).setInternalValue(null, null,
-                     * null);
-                     */
                 } else if (c instanceof AbstractField<?>) {
                     ((AbstractField<?>) c).setValue(null);
                 }
@@ -138,6 +135,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
             columnIdsOfHiddenFilters.clear();
             generator.clearFilterData();
             generator.initializeFilterFields();
+            reRenderFilterFields = true;
         }
     }
 
@@ -177,6 +175,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
      */
     public void setFilterBarVisible(boolean filtersVisible) {
         this.filtersVisible = filtersVisible;
+        reRenderFilterFields = true;
         markAsDirty();
     }
 
@@ -199,14 +198,10 @@ public class FilterTable extends CustomTable implements IFilterTable {
      *            true to set visible, false to set hidden
      */
     public void setFilterFieldVisible(Object columnId, boolean visible) {
-        int previousSize = columnIdsOfHiddenFilters.size();
-        if (visible) {
-            columnIdsOfHiddenFilters.remove(columnId);
-        } else {
-            columnIdsOfHiddenFilters.add(columnId);
-        }
-        if (columnIdsOfHiddenFilters.size() != previousSize) {
-            markAsDirty();
+        Component component = columnIdToFilterMap.get(columnId);
+        if (component != null) {
+            component.setVisible(visible);
+            reRenderFilterFields = true;
         }
     }
 
@@ -223,7 +218,11 @@ public class FilterTable extends CustomTable implements IFilterTable {
                 columnId)) {
             return false;
         }
-        return !columnIdsOfHiddenFilters.contains(columnId);
+        Component component = columnIdToFilterMap.get(columnId);
+        if (component != null) {
+            return component.isVisible();
+        }
+        return false;
     }
 
     /**
@@ -243,19 +242,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
         Component field = getColumnIdToFilterMap().get(propertyId);
         boolean retVal = field != null;
         if (field != null) {
-            /*
-             * if (field instanceof DateFilterPopup && value instanceof
-             * DateInterval) { ((DateFilterPopup) field).setInternalValue(
-             * ((DateInterval) value).getFrom(), ((DateInterval)
-             * value).getTo()); } else if (field instanceof NumberFilterPopup &&
-             * value instanceof NumberInterval) { ((NumberFilterPopup)
-             * field).setInternalValue( ((NumberInterval)
-             * value).getLessThanValue(), ((NumberInterval)
-             * value).getGreaterThanValue(), ((NumberInterval)
-             * value).getEqualsValue()); } else {
-             */
             ((AbstractField<?>) field).setConvertedValue(value);
-            // }
         }
         return retVal;
     }
@@ -270,14 +257,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
     public Object getFilterFieldValue(Object propertyId) {
         Component field = getColumnIdToFilterMap().get(propertyId);
         if (field != null) {
-            /*
-             * if (field instanceof DateFilterPopup) { return ((DateFilterPopup)
-             * field).getDateValue(); } else if (field instanceof
-             * NumberFilterPopup) { return ((NumberFilterPopup)
-             * field).getInterval(); } else {
-             */
             return ((AbstractField<?>) field).getValue();
-            // }
         } else {
             return null;
         }
@@ -319,5 +299,4 @@ public class FilterTable extends CustomTable implements IFilterTable {
         }
         return children.iterator();
     }
-
 }

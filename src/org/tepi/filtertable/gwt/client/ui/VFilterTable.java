@@ -9,8 +9,11 @@ import com.google.gwt.event.dom.client.ScrollHandler;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.FocusWidget;
 import com.google.gwt.user.client.ui.Widget;
+import com.vaadin.client.Focusable;
 import com.vaadin.client.Util;
+import com.vaadin.client.VConsole;
 import com.vaadin.client.ui.VCustomScrollTable;
 
 public class VFilterTable extends VCustomScrollTable {
@@ -32,7 +35,6 @@ public class VFilterTable extends VCustomScrollTable {
         /* First calculate the height with the normal method */
         super.setContainerHeight();
         /* Account for possibly visible table filter row */
-        // if (!isDynamicHeight()) {
         if (filters.isVisible()) {
             containerHeight -= filters.getOffsetHeight();
             if (containerHeight < 0) {
@@ -40,7 +42,6 @@ public class VFilterTable extends VCustomScrollTable {
             }
             scrollBodyPanel.setHeight(containerHeight + "px");
         }
-        // }
     }
 
     @Override
@@ -141,6 +142,28 @@ public class VFilterTable extends VCustomScrollTable {
             scrollLeft = wrap.getElement().getScrollLeft();
             scrollBodyPanel.getElement().setScrollLeft(scrollLeft);
             tHead.getElement().setScrollLeft(scrollLeft);
+        }
+
+        public void focusWidget(Widget filterToFocus) {
+            VConsole.log(filterToFocus == null ? "NULL FOCUS" : filterToFocus
+                    .toString());
+            if (filterToFocus == null) {
+                return;
+            } else if (filterToFocus instanceof FocusWidget) {
+                ((FocusWidget) filterToFocus).setFocus(true);
+            } else if (filterToFocus instanceof Focusable) {
+                ((Focusable) filterToFocus).focus();
+            }
+        }
+
+        public void resetFilterWidths() {
+            for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
+                String key = getColKeyByIndex(i);
+                if (key == null) {
+                    continue;
+                }
+                setFilterWidth(i, getColWidth(key));
+            }
         }
     }
 }
