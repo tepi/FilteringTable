@@ -79,15 +79,19 @@
 			<!-- The built server-side classes and the widget set class are here. -->
 			<fileset dir="${result.classes}">
 				<patternset>
-					<!--<include name="${src.package.dir}/**/*" />-->
 					<exclude name="**/demo/**" />
 				</patternset>
 			</fileset>
 			<!-- Include sources. -->
 			<fileset dir="src">
 				<patternset>
-					<!--<include name="${src.package.dir}/**/*" />-->
 					<exclude name="**/demo/**" />
+				</patternset>
+			</fileset>
+			<fileset dir="WebContent">
+				<patternset>
+					<exclude name="**/VAADIN/**" />
+					<exclude name="**/WEB-INF/**" />
 				</patternset>
 			</fileset>
 		</jar>
