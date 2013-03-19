@@ -35,7 +35,7 @@ public class VFilterTable extends VCustomScrollTable {
         /* First calculate the height with the normal method */
         super.setContainerHeight();
         /* Account for possibly visible table filter row */
-        if (filters.isVisible()) {
+        if (!isDynamicHeight() && filters.isVisible()) {
             containerHeight -= filters.getOffsetHeight();
             if (containerHeight < 0) {
                 containerHeight = 0;

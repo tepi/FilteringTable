@@ -269,6 +269,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
     private double lastKnownRowHeight = Double.NaN;
 
     /**
+     * Remember scroll position when getting detached to properly scroll back to
+     * the location that there is data for if getting attached again.
+     */
+    private int detachedScrollPosition = 0;
+
+    /**
      * Represents a select range of rows
      */
     private class SelectionRange {
@@ -496,7 +502,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
     /**
      * Read from the "recalcWidths" -attribute. When it is true, the table will
      * recalculate the widths for columns - desirable in some cases. For #1983,
-     * marked experimental.
+     * marked experimental. See also variable <code>refreshContentWidths</code>
+     * in method {@link TableHead#updateCellsFromUIDL(UIDL)}.
      * <p>
      * For internal use only. May be removed or replaced in the future.
      */
@@ -535,6 +542,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
     public int serverCacheFirst = -1;
     public int serverCacheLast = -1;
 
+    /**
+     * In several cases TreeTable depends on the scrollBody.lastRendered being
+     * 'out of sync' while the update is being done. In those cases the sanity
+     * check must be performed afterwards.
+     */
+    public boolean postponeSanityCheckForLastRendered;
+
     /** For internal use only. May be removed or replaced in the future. */
     public boolean sizeNeedsInit = true;
 
@@ -558,6 +572,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
     /** For internal use only. May be removed or replaced in the future. */
     public ContextMenuDetails contextMenu = null;
+
+    private boolean hadScrollBars = false;
 
     public VCustomScrollTable() {
         setMultiSelectMode(MULTISELECT_MODE_DEFAULT);
@@ -1085,6 +1101,14 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         }
     }
 
+    private ScheduledCommand lazyScroller = new ScheduledCommand() {
+        @Override
+        public void execute() {
+            int offsetTop = measureRowHeightOffset(firstvisible);
+            scrollBodyPanel.setScrollPosition(offsetTop);
+        }
+    };
+
     /** For internal use only. May be removed or replaced in the future. */
     public void updateFirstVisibleAndScrollIfNeeded(UIDL uidl) {
         firstvisible = uidl.hasVariable("firstvisible") ? uidl
@@ -1092,8 +1116,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         if (firstvisible != lastRequestedFirstvisible && scrollBody != null) {
             // received 'surprising' firstvisible from server: scroll there
             firstRowInViewPort = firstvisible;
-            scrollBodyPanel
-                    .setScrollPosition(measureRowHeightOffset(firstvisible));
+
+            /*
+             * Schedule the scrolling to be executed last so no updates to the
+             * rows affect scrolling measurements.
+             */
+            Scheduler.get().scheduleFinally(lazyScroller);
         }
     }
 
@@ -1176,6 +1204,39 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
     public int getTotalRows() {
         return totalRows;
+    }
+
+    /**
+     * Returns the extra space that is given to the header column when column
+     * width is determined by header text.
+     * 
+     * @return extra space in pixels
+     */
+    private int getHeaderPadding() {
+        return scrollBody.getCellExtraWidth();
+    }
+
+    /**
+     * This method exists for the needs of {@link VTreeTable} only. Not part of
+     * the official API, <b>extend at your own risk</b>. May be removed or
+     * replaced in the future.
+     * 
+     * @return index of TreeTable's hierarchy column, or -1 if not applicable
+     */
+    protected int getHierarchyColumnIndex() {
+        return -1;
+    }
+
+    /**
+     * For internal use only. May be removed or replaced in the future.
+     */
+    public void updateMaxIndent() {
+        int oldIndent = scrollBody.getMaxIndent();
+        scrollBody.calculateMaxIndent();
+        if (oldIndent != scrollBody.getMaxIndent()) {
+            // indent updated, headers might need adjusting
+            triggerLazyColumnAdjustment(true);
+        }
     }
 
     /** For internal use only. May be removed or replaced in the future. */
@@ -1371,12 +1432,16 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
      *            amount of rows in data set
      */
     public void updateBody(UIDL uidl, int firstRow, int reqRows) {
+        int oldIndent = scrollBody.getMaxIndent();
         if (uidl == null || reqRows < 1) {
             // container is empty, remove possibly existing rows
             if (firstRow <= 0) {
-                while (scrollBody.getLastRendered() > scrollBody.firstRendered) {
+                postponeSanityCheckForLastRendered = true;
+                while (scrollBody.getLastRendered() > scrollBody
+                        .getFirstRendered()) {
                     scrollBody.unlinkRow(false);
                 }
+                postponeSanityCheckForLastRendered = false;
                 scrollBody.unlinkRow(false);
             }
             return;
@@ -1385,6 +1450,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         scrollBody.renderRows(uidl, firstRow, reqRows);
 
         discardRowsOutsideCacheWindow();
+        scrollBody.calculateMaxIndent();
+        if (oldIndent != scrollBody.getMaxIndent()) {
+            // indent updated, headers might need adjusting
+            headerChangedDuringUpdate = true;
+        }
     }
 
     /** For internal use only. May be removed or replaced in the future. */
@@ -1407,6 +1477,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 * cache_rate);
         int lastRowToKeep = (int) (firstRowInViewPort + pageLength + pageLength
                 * cache_rate);
+        // sanity checks:
+        if (firstRowToKeep < 0) {
+            firstRowToKeep = 0;
+        }
+        if (lastRowToKeep > totalRows) {
+            lastRowToKeep = totalRows - 1;
+        }
         debug("Client side calculated cache rows to keep: " + firstRowToKeep
                 + "-" + lastRowToKeep);
 
@@ -1570,31 +1647,55 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         return tHead.getHeaderCell(index).getColKey();
     }
 
+    /**
+     * Note: not part of the official API, extend at your own risk. May be
+     * removed or replaced in the future.
+     * 
+     * Sets the indicated column's width for headers and scrollBody alike.
+     * 
+     * @param colIndex
+     *            index of the modified column
+     * @param w
+     *            new width (may be subject to modifications if doesn't meet
+     *            minimum requirements)
+     * @param isDefinedWidth
+     *            disables expand ratio if set true
+     */
     protected void setColWidth(int colIndex, int w, boolean isDefinedWidth) {
         final HeaderCell hcell = tHead.getHeaderCell(colIndex);
 
         // Make sure that the column grows to accommodate the sort indicator if
         // necessary.
-        if (w < hcell.getMinWidth()) {
-            w = hcell.getMinWidth();
+        // get min width with no indent or padding
+        int minWidth = hcell.getMinWidth(false, false);
+        if (w < minWidth) {
+            w = minWidth;
         }
 
-        // Set header column width
+        // Set header column width WITHOUT INDENT
         hcell.setWidth(w, isDefinedWidth);
+
+        // Set footer column width likewise
+        FooterCell fcell = tFoot.getFooterCell(colIndex);
+        fcell.setWidth(w, isDefinedWidth);
 
         // Ensure indicators have been taken into account
         tHead.resizeCaptionContainer(hcell);
 
+        // Make sure that the body column grows to accommodate the indent if
+        // necessary.
+        // get min width with indent, no padding
+        minWidth = hcell.getMinWidth(true, false);
+        if (w < minWidth) {
+            w = minWidth;
+        }
+
         // Set body column width
         scrollBody.setColWidth(colIndex, w);
-
-        // Set footer column width
-        FooterCell fcell = tFoot.getFooterCell(colIndex);
-        fcell.setWidth(w, isDefinedWidth);
     }
 
     public int getColWidth(String colKey) {
-        return tHead.getHeaderCell(colKey).getWidth();
+        return tHead.getHeaderCell(colKey).getWidthWithIndent();
     }
 
     /**
@@ -1739,6 +1840,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
     @Override
     protected void onDetach() {
+        detachedScrollPosition = scrollBodyPanel.getScrollPosition();
         rowRequestHandler.cancel();
         super.onDetach();
         // ensure that scrollPosElement will be detached
@@ -1748,6 +1850,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 DOM.removeChild(parent, scrollPositionElement);
             }
         }
+    }
+
+    @Override
+    public void onAttach() {
+        super.onAttach();
+        scrollBodyPanel.setScrollPosition(detachedScrollPosition);
     }
 
     /**
@@ -1787,22 +1895,37 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         tHead.enableBrowserIntelligence();
         tFoot.enableBrowserIntelligence();
 
+        int hierarchyColumnIndent = scrollBody != null ? scrollBody
+                .getMaxIndent() : 0;
+        HeaderCell hierarchyHeaderWithExpandRatio = null;
+
         // first loop: collect natural widths
         while (headCells.hasNext()) {
             final HeaderCell hCell = (HeaderCell) headCells.next();
             final FooterCell fCell = (FooterCell) footCells.next();
+            boolean needsIndent = hierarchyColumnIndent > 0
+                    && hCell.isHierarchyColumn();
             int w = hCell.getWidth();
             if (hCell.isDefinedWidth()) {
                 // server has defined column width explicitly
+                if (needsIndent && w < hierarchyColumnIndent) {
+                    // hierarchy indent overrides explicitly set width
+                    w = hierarchyColumnIndent;
+                }
                 totalExplicitColumnsWidths += w;
             } else {
                 if (hCell.getExpandRatio() > 0) {
                     expandRatioDivider += hCell.getExpandRatio();
                     w = 0;
+                    if (needsIndent && w < hierarchyColumnIndent) {
+                        hierarchyHeaderWithExpandRatio = hCell;
+                        // don't add to widths here, because will be included in
+                        // the expand ratio space if there's enough of it
+                    }
                 } else {
                     // get and store greater of header width and column width,
-                    // and
-                    // store it as a minimumn natural col width
+                    // and store it as a minimum natural column width (these
+                    // already contain the indent if any)
                     int headerWidth = hCell.getNaturalColumnWidth(i);
                     int footerWidth = fCell.getNaturalColumnWidth(i);
                     w = headerWidth > footerWidth ? headerWidth : footerWidth;
@@ -1813,6 +1936,9 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             widths[i] = w;
             total += w;
             i++;
+        }
+        if (hierarchyHeaderWithExpandRatio != null) {
+            total += hierarchyColumnIndent;
         }
 
         tHead.disableBrowserIntelligence();
@@ -1845,13 +1971,24 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
         if (availW > total) {
             // natural size is smaller than available space
-            final int extraSpace = availW - total;
+            int extraSpace = availW - total;
+            if (hierarchyHeaderWithExpandRatio != null) {
+                /*
+                 * add the indent's space back to ensure each column gets an
+                 * even share according to the expand ratios (note: if the
+                 * allocated space isn't enough for the hierarchy column it
+                 * shall be treated like a defined width column and the indent
+                 * space gets removed from the extra space again)
+                 */
+                extraSpace += hierarchyColumnIndent;
+            }
             final int totalWidthR = total - totalExplicitColumnsWidths;
             int checksum = 0;
 
             if (extraSpace == 1) {
                 // We cannot divide one single pixel so we give it the first
                 // undefined column
+                // no need to worry about indent here
                 headCells = tHead.iterator();
                 i = 0;
                 checksum = availW;
@@ -1865,6 +2002,22 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 }
 
             } else if (expandRatioDivider > 0) {
+                boolean setIndentToHierarchyHeader = false;
+                if (hierarchyHeaderWithExpandRatio != null) {
+                    // ensure first that the hierarchyColumn gets at least the
+                    // space allocated for indent
+                    final int newSpace = Math
+                            .round((extraSpace * (hierarchyHeaderWithExpandRatio
+                                    .getExpandRatio() / expandRatioDivider)));
+                    if (newSpace < hierarchyColumnIndent) {
+                        // not enough space for indent, remove indent from the
+                        // extraSpace again and handle hierarchy column's header
+                        // separately
+                        setIndentToHierarchyHeader = true;
+                        extraSpace -= hierarchyColumnIndent;
+                    }
+                }
+
                 // visible columns have some active expand ratios, excess
                 // space is divided according to them
                 headCells = tHead.iterator();
@@ -1873,9 +2026,17 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     HeaderCell hCell = (HeaderCell) headCells.next();
                     if (hCell.getExpandRatio() > 0) {
                         int w = widths[i];
-                        final int newSpace = Math.round((extraSpace * (hCell
-                                .getExpandRatio() / expandRatioDivider)));
-                        w += newSpace;
+                        if (setIndentToHierarchyHeader
+                                && hierarchyHeaderWithExpandRatio.equals(hCell)) {
+                            // hierarchy column's header is no longer part of
+                            // the expansion divide and only gets indent
+                            w += hierarchyColumnIndent;
+                        } else {
+                            final int newSpace = Math
+                                    .round((extraSpace * (hCell
+                                            .getExpandRatio() / expandRatioDivider)));
+                            w += newSpace;
+                        }
                         widths[i] = w;
                     }
                     checksum += widths[i];
@@ -1885,6 +2046,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 // no expand ratios defined, we will share extra space
                 // relatively to "natural widths" among those without
                 // explicit width
+                // no need to worry about indent here, it's already included
                 headCells = tHead.iterator();
                 i = 0;
                 while (headCells.hasNext()) {
@@ -1920,7 +2082,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
 
         } else {
-            // bodys size will be more than available and scrollbar will appear
+            // body's size will be more than available and scrollbar will appear
         }
 
         // last loop: set possibly modified values or reset if new tBody
@@ -1993,15 +2155,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 if (totalRows - 1 > scrollBody.getLastRendered()) {
                     // fetch cache rows
                     int firstInNewSet = scrollBody.getLastRendered() + 1;
-                    rowRequestHandler.setReqFirstRow(firstInNewSet);
                     int lastInNewSet = (int) (firstRowInViewPort + pageLength + cache_rate
                             * pageLength);
                     if (lastInNewSet > totalRows - 1) {
                         lastInNewSet = totalRows - 1;
                     }
-                    rowRequestHandler.setReqRows(lastInNewSet - firstInNewSet
-                            + 1);
-                    rowRequestHandler.deferRowFetch(1);
+                    rowRequestHandler.triggerRowFetch(firstInNewSet,
+                            lastInNewSet - firstInNewSet + 1, 1);
                 }
             }
         }
@@ -2017,11 +2177,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 Util.runWebkitOverflowAutoFix(scrollBodyPanel.getElement());
             }
         });
+
+        hadScrollBars = willHaveScrollbarz;
     }
 
     /**
-     * Note, this method is not official api although declared as protected.
-     * Extend at you own risk.
+     * Note: this method is not part of official API although declared as
+     * protected. Extend at your own risk.
      * 
      * @return true if content area will have scrollbars visible.
      */
@@ -2087,6 +2249,18 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         private int reqRows = 0;
         private boolean isRunning = false;
 
+        public void triggerRowFetch(int first, int rows) {
+            setReqFirstRow(first);
+            setReqRows(rows);
+            deferRowFetch();
+        }
+
+        public void triggerRowFetch(int first, int rows, int delay) {
+            setReqFirstRow(first);
+            setReqRows(rows);
+            deferRowFetch(delay);
+        }
+
         public void deferRowFetch() {
             deferRowFetch(250);
         }
@@ -2113,17 +2287,28 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
         }
 
+        public int getReqFirstRow() {
+            return reqFirstRow;
+        }
+
         public void setReqFirstRow(int reqFirstRow) {
             if (reqFirstRow < 0) {
-                reqFirstRow = 0;
+                this.reqFirstRow = 0;
             } else if (reqFirstRow >= totalRows) {
-                reqFirstRow = totalRows - 1;
+                this.reqFirstRow = totalRows - 1;
+            } else {
+                this.reqFirstRow = reqFirstRow;
             }
-            this.reqFirstRow = reqFirstRow;
         }
 
         public void setReqRows(int reqRows) {
-            this.reqRows = reqRows;
+            if (reqRows < 0) {
+                this.reqRows = 0;
+            } else if (reqFirstRow + reqRows > totalRows) {
+                this.reqRows = totalRows - reqFirstRow;
+            } else {
+                this.reqRows = reqRows;
+            }
         }
 
         @Override
@@ -2134,7 +2319,15 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 schedule(250);
             } else {
 
-                int firstToBeRendered = scrollBody.firstRendered;
+                int firstRendered = scrollBody.getFirstRendered();
+                int lastRendered = scrollBody.getLastRendered();
+                if (lastRendered > totalRows) {
+                    lastRendered = totalRows - 1;
+                }
+                boolean rendered = firstRendered >= 0 && lastRendered >= 0;
+
+                int firstToBeRendered = firstRendered;
+
                 if (reqFirstRow < firstToBeRendered) {
                     firstToBeRendered = reqFirstRow;
                 } else if (firstRowInViewPort - (int) (cache_rate * pageLength) > firstToBeRendered) {
@@ -2143,12 +2336,24 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     if (firstToBeRendered < 0) {
                         firstToBeRendered = 0;
                     }
+                } else if (rendered && firstRendered + 1 < reqFirstRow
+                        && lastRendered + 1 < reqFirstRow) {
+                    // requested rows must fall within the requested rendering
+                    // area
+                    firstToBeRendered = reqFirstRow;
+                }
+                if (firstToBeRendered + reqRows < firstRendered) {
+                    // must increase the required row count accordingly,
+                    // otherwise may leave a gap and the rows beyond will get
+                    // removed
+                    setReqRows(firstRendered - firstToBeRendered);
                 }
 
-                int lastToBeRendered = scrollBody.lastRendered;
+                int lastToBeRendered = lastRendered;
+                int lastReqRow = reqFirstRow + reqRows - 1;
 
-                if (reqFirstRow + reqRows - 1 > lastToBeRendered) {
-                    lastToBeRendered = reqFirstRow + reqRows - 1;
+                if (lastReqRow > lastToBeRendered) {
+                    lastToBeRendered = lastReqRow;
                 } else if (firstRowInViewPort + pageLength + pageLength
                         * cache_rate < lastToBeRendered) {
                     lastToBeRendered = (firstRowInViewPort + pageLength + (int) (pageLength * cache_rate));
@@ -2157,14 +2362,36 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     }
                     // due Safari 3.1 bug (see #2607), verify reqrows, original
                     // problem unknown, but this should catch the issue
-                    if (reqFirstRow + reqRows - 1 > lastToBeRendered) {
-                        reqRows = lastToBeRendered - reqFirstRow;
+                    if (lastReqRow > lastToBeRendered) {
+                        setReqRows(lastToBeRendered - reqFirstRow);
                     }
+                } else if (rendered && lastRendered - 1 > lastReqRow
+                        && firstRendered - 1 > lastReqRow) {
+                    // requested rows must fall within the requested rendering
+                    // area
+                    lastToBeRendered = lastReqRow;
+                }
+
+                if (lastToBeRendered > totalRows) {
+                    lastToBeRendered = totalRows - 1;
+                }
+                if (reqFirstRow < firstToBeRendered
+                        || (reqFirstRow > firstToBeRendered && (reqFirstRow < firstRendered || reqFirstRow > lastRendered + 1))) {
+                    setReqFirstRow(firstToBeRendered);
+                }
+                if (lastRendered < lastToBeRendered
+                        && lastRendered + reqRows < lastToBeRendered) {
+                    // must increase the required row count accordingly,
+                    // otherwise may leave a gap and the rows after will get
+                    // removed
+                    setReqRows(lastToBeRendered - lastRendered);
+                } else if (lastToBeRendered >= firstRendered
+                        && reqFirstRow + reqRows < firstRendered) {
+                    setReqRows(lastToBeRendered - lastRendered);
                 }
 
                 client.updateVariable(paintableId, "firstToBeRendered",
                         firstToBeRendered, false);
-
                 client.updateVariable(paintableId, "lastToBeRendered",
                         lastToBeRendered, false);
                 // remember which firstvisible we requested, in case the server
@@ -2183,10 +2410,6 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 }
                 isRunning = false;
             }
-        }
-
-        public int getReqFirstRow() {
-            return reqFirstRow;
         }
 
         /**
@@ -2343,6 +2566,16 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             expandRatio = 0;
         }
 
+        /**
+         * Sets width to the header cell. This width should not include any
+         * possible indent modifications that are present in
+         * {@link VCustomScrollTableBody#getMaxIndent()}.
+         * 
+         * @param w
+         *            required width of the cell sans indentations
+         * @param ensureDefinedWidth
+         *            disables expand ratio if required
+         */
         public void setWidth(int w, boolean ensureDefinedWidth) {
             if (ensureDefinedWidth) {
                 definedWidth = true;
@@ -2366,15 +2599,23 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                  * unless TD width is not explicitly set.
                  */
                 if (scrollBody != null) {
-                    int tdWidth = width + scrollBody.getCellExtraWidth();
+                    int maxIndent = scrollBody.getMaxIndent();
+                    if (w < maxIndent && isHierarchyColumn()) {
+                        w = maxIndent;
+                    }
+                    int tdWidth = w + scrollBody.getCellExtraWidth();
                     setWidth(tdWidth + "px");
                 } else {
                     Scheduler.get().scheduleDeferred(new Command() {
 
                         @Override
                         public void execute() {
-                            int tdWidth = width
-                                    + scrollBody.getCellExtraWidth();
+                            int maxIndent = scrollBody.getMaxIndent();
+                            int tdWidth = width;
+                            if (tdWidth < maxIndent && isHierarchyColumn()) {
+                                tdWidth = maxIndent;
+                            }
+                            tdWidth += scrollBody.getCellExtraWidth();
                             setWidth(tdWidth + "px");
                         }
                     });
@@ -2397,8 +2638,43 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             return definedWidth && width >= 0;
         }
 
+        /**
+         * This method exists for the needs of {@link VTreeTable} only.
+         * 
+         * Returns the pixels width of the header cell. This includes the
+         * indent, if applicable.
+         * 
+         * @return The width in pixels
+         */
+        protected int getWidthWithIndent() {
+            if (scrollBody != null && isHierarchyColumn()) {
+                int maxIndent = scrollBody.getMaxIndent();
+                if (maxIndent > width) {
+                    return maxIndent;
+                }
+            }
+            return width;
+        }
+
+        /**
+         * Returns the pixels width of the header cell.
+         * 
+         * @return The width in pixels
+         */
         public int getWidth() {
             return width;
+        }
+
+        /**
+         * This method exists for the needs of {@link VTreeTable} only.
+         * 
+         * @return <code>true</code> if this is hierarcyColumn's header cell,
+         *         <code>false</code> otherwise
+         */
+        private boolean isHierarchyColumn() {
+            int hierarchyColumnIndex = getHierarchyColumnIndex();
+            return hierarchyColumnIndex >= 0
+                    && tHead.visibleCells.indexOf(this) == hierarchyColumnIndex;
         }
 
         public void setText(String headerText) {
@@ -2625,7 +2901,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     for (int i = start; i <= visibleCellCount; i++) {
                         if (i > 0) {
                             final String colKey = getColKeyByIndex(i - 1);
-                            slotX += getColWidth(colKey);
+                            // getColWidth only returns the internal width
+                            // without padding, not the offset width of the
+                            // whole td (#10890)
+                            slotX += getColWidth(colKey)
+                                    + scrollBody.getCellExtraWidth();
                         }
                         final int dist = Math.abs(x - slotX);
                         if (closestDistance == -1 || dist < closestDistance) {
@@ -2653,7 +2933,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 DOM.setCapture(getElement());
                 dragStartX = DOM.eventGetClientX(event);
                 colIndex = getColIndexByKey(cid);
-                originalWidth = getWidth();
+                originalWidth = getWidthWithIndent();
                 DOM.eventPreventDefault(event);
                 break;
             case Event.ONMOUSEUP:
@@ -2685,8 +2965,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     tHead.disableAutoColumnWidthCalculation(this);
 
                     int newWidth = originalWidth + deltaX;
-                    if (newWidth < getMinWidth()) {
-                        newWidth = getMinWidth();
+                    // get min width with indent, no padding
+                    int minWidth = getMinWidth(true, false);
+                    if (newWidth < minWidth) {
+                        // already includes indent if any
+                        newWidth = minWidth;
                     }
                     setColWidth(colIndex, newWidth, true);
                     triggerLazyColumnAdjustment(false);
@@ -2698,12 +2981,37 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
         }
 
-        public int getMinWidth() {
-            int cellExtraWidth = 0;
+        /**
+         * Returns the smallest possible cell width in pixels.
+         * 
+         * @param includeIndent
+         *            - width should include hierarchy column indent if
+         *            applicable (VTreeTable only)
+         * @param includeCellExtraWidth
+         *            - width should include paddings etc.
+         * @return
+         */
+        private int getMinWidth(boolean includeIndent,
+                boolean includeCellExtraWidth) {
+            int minWidth = sortIndicator.getOffsetWidth();
             if (scrollBody != null) {
-                cellExtraWidth += scrollBody.getCellExtraWidth();
+                // check the need for indent before adding paddings etc.
+                if (includeIndent && isHierarchyColumn()) {
+                    int maxIndent = scrollBody.getMaxIndent();
+                    if (minWidth < maxIndent) {
+                        minWidth = maxIndent;
+                    }
+                }
+                if (includeCellExtraWidth) {
+                    minWidth += scrollBody.getCellExtraWidth();
+                }
             }
-            return cellExtraWidth + sortIndicator.getOffsetWidth();
+            return minWidth;
+        }
+
+        public int getMinWidth() {
+            // get min width with padding, no indent
+            return getMinWidth(false, true);
         }
 
         public String getCaption() {
@@ -2734,16 +3042,20 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          * @return
          */
         public int getNaturalColumnWidth(int columnIndex) {
+            final int iw = columnIndex == getHierarchyColumnIndex() ? scrollBody
+                    .getMaxIndent() : 0;
             if (isDefinedWidth()) {
+                if (iw > width) {
+                    return iw;
+                }
                 return width;
             } else {
                 if (naturalWidth < 0) {
                     // This is recently revealed column. Try to detect a proper
-                    // value (greater of header and data
-                    // cols)
+                    // value (greater of header and data columns)
 
                     int hw = captionContainer.getOffsetWidth()
-                            + scrollBody.getCellExtraWidth();
+                            + getHeaderPadding();
                     if (BrowserInfo.get().isGecko()) {
                         hw += sortIndicator.getOffsetWidth();
                     }
@@ -2759,7 +3071,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     final int cw = scrollBody.getColWidth(columnIndex);
                     naturalWidth = (hw > cw ? hw : cw);
                 }
-                return naturalWidth;
+                if (iw > naturalWidth) {
+                    // indent is temporary value, naturalWidth shouldn't be
+                    // updated
+                    return iw;
+                } else {
+                    return naturalWidth;
+                }
             }
         }
 
@@ -2856,32 +3174,49 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
         public void resizeCaptionContainer(HeaderCell cell) {
             HeaderCell lastcell = getHeaderCell(visibleCells.size() - 1);
+            int columnSelectorOffset = columnSelector.getOffsetWidth();
 
-            // Measure column widths
-            int columnTotalWidth = 0;
-            for (Widget w : visibleCells) {
-                columnTotalWidth += w.getOffsetWidth();
-            }
-
-            if (cell == lastcell
-                    && columnSelector.getOffsetWidth() > 0
-                    && columnTotalWidth >= div.getOffsetWidth()
-                            - columnSelector.getOffsetWidth()
+            if (cell == lastcell && columnSelectorOffset > 0
                     && !hasVerticalScrollbar()) {
-                // Ensure column caption is visible when placed under the column
-                // selector widget by shifting and resizing the caption.
-                int offset = 0;
-                int diff = div.getOffsetWidth() - columnTotalWidth;
-                if (diff < columnSelector.getOffsetWidth() && diff > 0) {
-                    // If the difference is less than the column selectors width
-                    // then just offset by the
-                    // difference
-                    offset = columnSelector.getOffsetWidth() - diff;
-                } else {
-                    // Else offset by the whole column selector
-                    offset = columnSelector.getOffsetWidth();
+
+                // Measure column widths
+                int columnTotalWidth = 0;
+                for (Widget w : visibleCells) {
+                    int cellExtraWidth = w.getOffsetWidth();
+                    if (scrollBody != null
+                            && visibleCells.indexOf(w) == getHierarchyColumnIndex()
+                            && cellExtraWidth < scrollBody.getMaxIndent()) {
+                        // indent must be taken into consideration even if it
+                        // hasn't been applied yet
+                        columnTotalWidth += scrollBody.getMaxIndent();
+                    } else {
+                        columnTotalWidth += cellExtraWidth;
+                    }
                 }
-                lastcell.resizeCaptionContainer(offset);
+
+                int divOffset = div.getOffsetWidth();
+                if (columnTotalWidth >= divOffset - columnSelectorOffset) {
+                    /*
+                     * Ensure column caption is visible when placed under the
+                     * column selector widget by shifting and resizing the
+                     * caption.
+                     */
+                    int offset = 0;
+                    int diff = divOffset - columnTotalWidth;
+                    if (diff < columnSelectorOffset && diff > 0) {
+                        /*
+                         * If the difference is less than the column selectors
+                         * width then just offset by the difference
+                         */
+                        offset = columnSelectorOffset - diff;
+                    } else {
+                        // Else offset by the whole column selector
+                        offset = columnSelectorOffset;
+                    }
+                    lastcell.resizeCaptionContainer(offset);
+                } else {
+                    cell.resizeCaptionContainer(0);
+                }
             } else {
                 cell.resizeCaptionContainer(0);
             }
@@ -2900,7 +3235,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         public void updateCellsFromUIDL(UIDL uidl) {
             Iterator<?> it = uidl.getChildIterator();
             HashSet<String> updated = new HashSet<String>();
-            boolean refreshContentWidths = false;
+            boolean refreshContentWidths = initializedAndAttached
+                    && hadScrollBars != willHaveScrollbars();
             while (it.hasNext()) {
                 final UIDL col = (UIDL) it.next();
                 final String cid = col.getStringAttribute("cid");
@@ -2943,10 +3279,14 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     // Make sure to accomodate for the sort indicator if
                     // necessary.
                     int width = Integer.parseInt(widthStr);
-                    if (width < c.getMinWidth()) {
-                        width = c.getMinWidth();
+                    int widthWithoutAddedIndent = width;
+
+                    // get min width with indent, no padding
+                    int minWidth = c.getMinWidth(true, false);
+                    if (width < minWidth) {
+                        width = minWidth;
                     }
-                    if (width != c.getWidth() && scrollBody != null) {
+                    if (scrollBody != null && width != c.getWidthWithIndent()) {
                         // Do a more thorough update if a column is resized from
                         // the server *after* the header has been properly
                         // initialized
@@ -2962,7 +3302,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                                 });
                         refreshContentWidths = true;
                     } else {
-                        c.setWidth(width, true);
+                        // get min width with no indent or padding
+                        minWidth = c.getMinWidth(false, false);
+                        if (widthWithoutAddedIndent < minWidth) {
+                            widthWithoutAddedIndent = minWidth;
+                        }
+                        // save min width without indent
+                        c.setWidth(widthWithoutAddedIndent, true);
                     }
                 } else if (recalcWidths) {
                     c.setUndefinedWidth();
@@ -3417,12 +3763,14 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         }
 
         /**
-         * Sets the width of the cell
+         * Sets the width of the cell. This width should not include any
+         * possible indent modifications that are present in
+         * {@link VCustomScrollTableBody#getMaxIndent()}.
          * 
          * @param w
          *            The width of the cell
          * @param ensureDefinedWidth
-         *            Ensures the the given width is not recalculated
+         *            Ensures that the given width is not recalculated
          */
         public void setWidth(int w, boolean ensureDefinedWidth) {
 
@@ -3459,7 +3807,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                  * unless TD width is not explicitly set.
                  */
                 if (scrollBody != null) {
-                    int tdWidth = width + scrollBody.getCellExtraWidth()
+                    int maxIndent = scrollBody.getMaxIndent();
+                    if (w < maxIndent
+                            && tFoot.visibleCells.indexOf(this) == getHierarchyColumnIndex()) {
+                        // ensure there's room for the indent
+                        w = maxIndent;
+                    }
+                    int tdWidth = w + scrollBody.getCellExtraWidth()
                             - borderWidths;
                     setWidth(Math.max(tdWidth, 0) + "px");
                 } else {
@@ -3467,8 +3821,14 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
                         @Override
                         public void execute() {
-                            int tdWidth = width
-                                    + scrollBody.getCellExtraWidth()
+                            int tdWidth = width;
+                            int maxIndent = scrollBody.getMaxIndent();
+                            if (tdWidth < maxIndent
+                                    && tFoot.visibleCells.indexOf(this) == getHierarchyColumnIndex()) {
+                                // ensure there's room for the indent
+                                tdWidth = maxIndent;
+                            }
+                            tdWidth += scrollBody.getCellExtraWidth()
                                     - borderWidths;
                             setWidth(Math.max(tdWidth, 0) + "px");
                         }
@@ -3481,6 +3841,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          * Sets the width to undefined
          */
         public void setUndefinedWidth() {
+            definedWidth = false;
             setWidth(-1, false);
         }
 
@@ -3495,7 +3856,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         }
 
         /**
-         * Returns the pixels width of the footer cell
+         * Returns the pixels width of the footer cell.
          * 
          * @return The width in pixels
          */
@@ -3609,7 +3970,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          * @return
          */
         public int getNaturalColumnWidth(int columnIndex) {
+            final int iw = columnIndex == getHierarchyColumnIndex() ? scrollBody
+                    .getMaxIndent() : 0;
             if (isDefinedWidth()) {
+                if (iw > width) {
+                    return iw;
+                }
                 return width;
             } else {
                 if (naturalWidth < 0) {
@@ -3618,7 +3984,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     // cols)
 
                     final int hw = ((Element) getElement().getLastChild())
-                            .getOffsetWidth() + scrollBody.getCellExtraWidth();
+                            .getOffsetWidth() + getHeaderPadding();
                     if (columnIndex < 0) {
                         columnIndex = 0;
                         for (Iterator<Widget> it = tHead.iterator(); it
@@ -3631,7 +3997,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     final int cw = scrollBody.getColWidth(columnIndex);
                     naturalWidth = (hw > cw ? hw : cw);
                 }
-                return naturalWidth;
+                if (iw > naturalWidth) {
+                    return iw;
+                } else {
+                    return naturalWidth;
+                }
             }
         }
 
@@ -3983,6 +4353,24 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             setElement(container);
         }
 
+        public void setLastRendered(int lastRendered) {
+            if (totalRows >= 0 && lastRendered > totalRows) {
+                VConsole.log("setLastRendered: " + this.lastRendered + " -> "
+                        + lastRendered);
+                this.lastRendered = totalRows - 1;
+            } else {
+                this.lastRendered = lastRendered;
+            }
+        }
+
+        public int getLastRendered() {
+            return lastRendered;
+        }
+
+        public int getFirstRendered() {
+            return firstRendered;
+        }
+
         public VCustomScrollTableRow getRowByRowIndex(int indexInTable) {
             int internalIndex = indexInTable - firstRendered;
             if (internalIndex >= 0 && internalIndex < renderedRows.size()) {
@@ -4037,7 +4425,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
         public void renderInitialRows(UIDL rowData, int firstIndex, int rows) {
             firstRendered = firstIndex;
-            lastRendered = firstIndex + rows - 1;
+            setLastRendered(firstIndex + rows - 1);
             final Iterator<?> it = rowData.getChildIterator();
             aligns = tHead.getColumnAlignments();
             while (it.hasNext()) {
@@ -4059,7 +4447,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     final VCustomScrollTableRow row = prepareRow((UIDL) it
                             .next());
                     addRow(row);
-                    lastRendered++;
+                    setLastRendered(lastRendered + 1);
                 }
                 fixSpacers();
             } else if (firstIndex + rows == firstRendered) {
@@ -4075,19 +4463,27 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 }
             } else {
                 // completely new set of rows
+
+                // there can't be sanity checks for last rendered within this
+                // while loop regardless of what has been set previously, so
+                // change it temporarily to true and then return the original
+                // value
+                boolean temp = postponeSanityCheckForLastRendered;
+                postponeSanityCheckForLastRendered = true;
                 while (lastRendered + 1 > firstRendered) {
                     unlinkRow(false);
                 }
-                final VCustomScrollTableRow row = prepareRow((UIDL) it.next());
+                postponeSanityCheckForLastRendered = temp;
+                VCustomScrollTableRow row = prepareRow((UIDL) it.next());
                 firstRendered = firstIndex;
-                lastRendered = firstIndex - 1;
+                setLastRendered(firstIndex - 1);
                 addRow(row);
-                lastRendered++;
+                setLastRendered(lastRendered + 1);
                 setContainerHeight();
                 fixSpacers();
                 while (it.hasNext()) {
                     addRow(prepareRow((UIDL) it.next()));
-                    lastRendered++;
+                    setLastRendered(lastRendered + 1);
                 }
                 fixSpacers();
             }
@@ -4123,14 +4519,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                  * not waste time rendering a set of rows that will never be
                  * visible...
                  */
-                rowRequestHandler.setReqFirstRow(reactFirstRow);
-                rowRequestHandler.setReqRows(reactLastRow - reactFirstRow + 1);
-                rowRequestHandler.deferRowFetch(1);
+                rowRequestHandler.triggerRowFetch(reactFirstRow, reactLastRow
+                        - reactFirstRow + 1, 1);
             } else if (lastRendered < reactLastRow) {
                 // get some cache rows below visible area
-                rowRequestHandler.setReqFirstRow(lastRendered + 1);
-                rowRequestHandler.setReqRows(reactLastRow - lastRendered);
-                rowRequestHandler.deferRowFetch(1);
+                rowRequestHandler.triggerRowFetch(lastRendered + 1,
+                        reactLastRow - lastRendered, 1);
             } else if (firstRendered > reactFirstRow) {
                 /*
                  * Branch for fetching cache above visible area.
@@ -4140,9 +4534,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                  * some rare situations the table may make two cache visits to
                  * server.
                  */
-                rowRequestHandler.setReqFirstRow(reactFirstRow);
-                rowRequestHandler.setReqRows(firstRendered - reactFirstRow);
-                rowRequestHandler.deferRowFetch(1);
+                rowRequestHandler.triggerRowFetch(reactFirstRow, firstRendered
+                        - reactFirstRow, 1);
             }
         }
 
@@ -4167,7 +4560,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                             .next());
                     addRow(row);
                     insertedRows.add(row);
-                    lastRendered++;
+                    if (postponeSanityCheckForLastRendered) {
+                        lastRendered++;
+                    } else {
+                        setLastRendered(lastRendered + 1);
+                    }
                 }
                 fixSpacers();
             } else if (firstIndex + rows == firstRendered) {
@@ -4189,7 +4586,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     VCustomScrollTableRow row = prepareRow((UIDL) it.next());
                     insertRowAt(row, ix);
                     insertedRows.add(row);
-                    lastRendered++;
+                    if (postponeSanityCheckForLastRendered) {
+                        lastRendered++;
+                    } else {
+                        setLastRendered(lastRendered + 1);
+                    }
                     ix++;
                 }
                 fixSpacers();
@@ -4303,7 +4704,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 firstRendered++;
             } else {
                 actualIx = renderedRows.size() - 1;
-                lastRendered--;
+                if (postponeSanityCheckForLastRendered) {
+                    --lastRendered;
+                } else {
+                    setLastRendered(lastRendered - 1);
+                }
             }
             if (actualIx >= 0) {
                 unlinkRowAtActualIndex(actualIx);
@@ -4319,6 +4724,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
             if (firstRendered > firstIndex
                     && firstRendered < firstIndex + count) {
+                count = count - (firstRendered - firstIndex);
                 firstIndex = firstRendered;
             }
             int lastIndex = firstIndex + count - 1;
@@ -4327,7 +4733,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
             for (int ix = lastIndex; ix >= firstIndex; ix--) {
                 unlinkRowAtActualIndex(actualIndex(ix));
-                lastRendered--;
+                if (postponeSanityCheckForLastRendered) {
+                    // partialUpdate handles sanity check later
+                    lastRendered--;
+                } else {
+                    setLastRendered(lastRendered - 1);
+                }
             }
             fixSpacers();
         }
@@ -4349,7 +4760,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
             for (int ix = renderedRows.size() - 1; ix >= index; ix--) {
                 unlinkRowAtActualIndex(actualIndex(ix));
-                lastRendered--;
+                setLastRendered(lastRendered - 1);
             }
             fixSpacers();
         }
@@ -4501,6 +4912,28 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             return cellExtraWidth;
         }
 
+        /**
+         * This method exists for the needs of {@link VTreeTable} only. May be
+         * removed or replaced in the future.</br> </br> Returns the maximum
+         * indent of the hierarcyColumn, if applicable.
+         * 
+         * @see {@link VCustomScrollTable#getHierarchyColumnIndex()}
+         * 
+         * @return maximum indent in pixels
+         */
+        protected int getMaxIndent() {
+            return 0;
+        }
+
+        /**
+         * This method exists for the needs of {@link VTreeTable} only. May be
+         * removed or replaced in the future.</br> </br> Calculates the maximum
+         * indent of the hierarcyColumn, if applicable.
+         */
+        protected void calculateMaxIndent() {
+            // NOP
+        }
+
         private void detectExtrawidth() {
             NodeList<TableRowElement> rows = tBodyElement.getRows();
             if (rows.getLength() == 0) {
@@ -4534,14 +4967,6 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     firstTD.getParentElement().removeChild(firstTD);
                 }
             }
-        }
-
-        public int getLastRendered() {
-            return lastRendered;
-        }
-
-        public int getFirstRendered() {
-            return firstRendered;
         }
 
         public void moveCol(int oldIndex, int newIndex) {
@@ -4691,8 +5116,23 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
             protected void setCellWidth(int cellIx, int width) {
                 final Element cell = DOM.getChild(getElement(), cellIx);
-                cell.getFirstChildElement().getStyle()
-                        .setPropertyPx("width", width);
+                Style wrapperStyle = cell.getFirstChildElement().getStyle();
+                int wrapperWidth = width;
+                if (BrowserInfo.get().isWebkit()
+                        || BrowserInfo.get().isOpera10()) {
+                    /*
+                     * Some versions of Webkit and Opera ignore the width
+                     * definition of zero width table cells. Instead, use 1px
+                     * and compensate with a negative margin.
+                     */
+                    if (width == 0) {
+                        wrapperWidth = 1;
+                        wrapperStyle.setMarginRight(-1, Unit.PX);
+                    } else {
+                        wrapperStyle.clearMarginRight();
+                    }
+                }
+                wrapperStyle.setPropertyPx("width", wrapperWidth);
                 cell.getStyle().setPropertyPx("width", width);
             }
 
@@ -5754,7 +6194,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     @Override
                     public void execute() {
                         if (showRowHeaders) {
-                            setCellWidth(0, tHead.getHeaderCell(0).getWidth());
+                            setCellWidth(0, tHead.getHeaderCell(0)
+                                    .getWidthWithIndent());
                             calcAndSetSpanWidthOnCell(1);
                         } else {
                             calcAndSetSpanWidthOnCell(0);
@@ -5914,8 +6355,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             client.updateVariable(paintableId, "pagelength", pageLength, false);
 
             if (!rendering) {
-                int currentlyVisible = scrollBody.lastRendered
-                        - scrollBody.firstRendered;
+                int currentlyVisible = scrollBody.getLastRendered()
+                        - scrollBody.getFirstRendered();
                 if (currentlyVisible < pageLength
                         && currentlyVisible < totalRows) {
                     // shake scrollpanel to fill empty space
@@ -5988,14 +6429,35 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             int totalExplicitColumnsWidths = 0;
             float expandRatioDivider = 0;
             int colIndex = 0;
+
+            int hierarchyColumnIndent = scrollBody.getMaxIndent();
+            int hierarchyColumnIndex = getHierarchyColumnIndex();
+            HeaderCell hierarchyHeaderInNeedOfFurtherHandling = null;
+
             while (headCells.hasNext()) {
                 final HeaderCell hCell = (HeaderCell) headCells.next();
+                boolean hasIndent = hierarchyColumnIndent > 0
+                        && hCell.isHierarchyColumn();
                 if (hCell.isDefinedWidth()) {
-                    totalExplicitColumnsWidths += hCell.getWidth();
-                    usedMinimumWidth += hCell.getWidth();
+                    // get width without indent to find out whether adjustments
+                    // are needed (requires special handling further ahead)
+                    int w = hCell.getWidth();
+                    if (hasIndent && w < hierarchyColumnIndent) {
+                        // enforce indent if necessary
+                        w = hierarchyColumnIndent;
+                        hierarchyHeaderInNeedOfFurtherHandling = hCell;
+                    }
+                    totalExplicitColumnsWidths += w;
+                    usedMinimumWidth += w;
                 } else {
-                    usedMinimumWidth += hCell.getNaturalColumnWidth(colIndex);
+                    // natural width already includes indent if any
+                    int naturalColumnWidth = hCell
+                            .getNaturalColumnWidth(colIndex);
+                    usedMinimumWidth += naturalColumnWidth;
                     expandRatioDivider += hCell.getExpandRatio();
+                    if (hasIndent) {
+                        hierarchyHeaderInNeedOfFurtherHandling = hCell;
+                    }
                 }
                 colIndex++;
             }
@@ -6040,6 +6502,28 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             int totalUndefinedNaturalWidths = usedMinimumWidth
                     - totalExplicitColumnsWidths;
 
+            if (hierarchyHeaderInNeedOfFurtherHandling != null
+                    && !hierarchyHeaderInNeedOfFurtherHandling.isDefinedWidth()) {
+                // ensure the cell gets enough space for the indent
+                int w = hierarchyHeaderInNeedOfFurtherHandling
+                        .getNaturalColumnWidth(hierarchyColumnIndex);
+                int newSpace = Math.round(w + (float) extraSpace * (float) w
+                        / totalUndefinedNaturalWidths);
+                if (newSpace >= hierarchyColumnIndent) {
+                    // no special handling required
+                    hierarchyHeaderInNeedOfFurtherHandling = null;
+                } else {
+                    // treat as a defined width column of indent's width
+                    totalExplicitColumnsWidths += hierarchyColumnIndent;
+                    usedMinimumWidth -= w - hierarchyColumnIndent;
+                    totalUndefinedNaturalWidths = usedMinimumWidth
+                            - totalExplicitColumnsWidths;
+                    expandRatioDivider += hierarchyHeaderInNeedOfFurtherHandling
+                            .getExpandRatio();
+                    extraSpace = Math.max(availW - usedMinimumWidth, 0);
+                }
+            }
+
             // we have some space that can be divided optimally
             HeaderCell hCell;
             colIndex = 0;
@@ -6055,7 +6539,10 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                         newSpace = Math.round((w + extraSpace
                                 * hCell.getExpandRatio() / expandRatioDivider));
                     } else {
-                        if (totalUndefinedNaturalWidths != 0) {
+                        if (hierarchyHeaderInNeedOfFurtherHandling == hCell) {
+                            // still exists, so needs exactly the indent's width
+                            newSpace = hierarchyColumnIndent;
+                        } else if (totalUndefinedNaturalWidths != 0) {
                             // divide relatively to natural column widths
                             newSpace = Math.round(w + (float) extraSpace
                                     * (float) w / totalUndefinedNaturalWidths);
@@ -6065,8 +6552,21 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     }
                     checksum += newSpace;
                     setColWidth(colIndex, newSpace, false);
+
                 } else {
-                    checksum += hCell.getWidth();
+                    if (hierarchyHeaderInNeedOfFurtherHandling == hCell) {
+                        // defined with enforced into indent width
+                        checksum += hierarchyColumnIndent;
+                        setColWidth(colIndex, hierarchyColumnIndent, false);
+                    } else {
+                        int cellWidth = hCell.getWidthWithIndent();
+                        checksum += cellWidth;
+                        if (hCell.isHierarchyColumn()) {
+                            // update in case the indent has changed
+                            // (not detectable earlier)
+                            setColWidth(colIndex, cellWidth, true);
+                        }
+                    }
                 }
                 colIndex++;
             }
@@ -6082,8 +6582,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 while (headCells.hasNext()) {
                     HeaderCell hc = (HeaderCell) headCells.next();
                     if (!hc.isDefinedWidth()) {
-                        setColWidth(colIndex,
-                                hc.getWidth() + availW - checksum, false);
+                        setColWidth(colIndex, hc.getWidthWithIndent() + availW
+                                - checksum, false);
                         break;
                     }
                     colIndex++;
@@ -6177,7 +6677,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
     }
 
     private int contentAreaBorderHeight = -1;
-    public int scrollLeft;
+    protected int scrollLeft;
     private int scrollTop;
 
     /** For internal use only. May be removed or replaced in the future. */
@@ -6401,10 +6901,9 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         }
         if (postLimit > lastRendered) {
             // need some rows to the end of the rendered area
-            rowRequestHandler.setReqFirstRow(lastRendered + 1);
-            rowRequestHandler.setReqRows((int) ((firstRowInViewPort
-                    + pageLength + pageLength * cache_rate) - lastRendered));
-            rowRequestHandler.deferRowFetch();
+            int reqRows = (int) ((firstRowInViewPort + pageLength + pageLength
+                    * cache_rate) - lastRendered);
+            rowRequestHandler.triggerRowFetch(lastRendered + 1, reqRows);
         }
     }
 
@@ -6936,11 +7435,19 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         navKeyDown = false;
 
         if (BrowserInfo.get().isIE()) {
-            // IE sometimes moves focus to a clicked table cell...
+            /*
+             * IE sometimes moves focus to a clicked table cell... (#7965)
+             * ...and sometimes it sends blur events even though the focus
+             * handler is still active. (#10464)
+             */
             Element focusedElement = Util.getIEFocusedElement();
-            if (Util.getConnectorForElement(client, getParent(), focusedElement) == this) {
-                // ..in that case, steal the focus back to the focus handler
-                // but not if focus is in a child component instead (#7965)
+            if (Util.getConnectorForElement(client, getParent(), focusedElement) == this
+                    && focusedElement != null
+                    && focusedElement != scrollBodyPanel.getFocusElement()) {
+                /*
+                 * Steal focus back to the focus handler if it was moved to some
+                 * other part of the table. Avoid stealing focus in other cases.
+                 */
                 focus();
                 return;
             }
@@ -7175,4 +7682,5 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
     public Widget getWidgetForPaintable() {
         return this;
     }
+
 }

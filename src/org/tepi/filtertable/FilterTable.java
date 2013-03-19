@@ -33,8 +33,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
     private Set<Object> collapsedColumnIds = new HashSet<Object>();
     /* Set to true to show the filter components */
     private boolean filtersVisible;
-    /* Column IDs of hidden filter components */
-    private Set<Object> columnIdsOfHiddenFilters = new HashSet<Object>();
     /* Filter Generator and Decorator */
     private FilterGenerator filterGenerator;
     private FilterDecorator decorator;
@@ -75,12 +73,10 @@ public class FilterTable extends CustomTable implements IFilterTable {
         if (filtersVisible) {
             for (Object key : getColumnIdToFilterMap().keySet()) {
                 /* Do not paint filters for collapsed columns */
-                /* Do not filters for columns that do not exist in container */
-                /* Do not paint hidden filters */
+                /* Do not paint filters for cols that do not exist in container */
                 if (collapsedColumnIds.contains(key)
                         || !getContainerDataSource().getContainerPropertyIds()
-                                .contains(key)
-                        || columnIdsOfHiddenFilters.contains(key)) {
+                                .contains(key)) {
                     continue;
                 }
                 /* Paint the filter field */
@@ -132,7 +128,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
             }
             collapsedColumnIds.clear();
             columnIdToFilterMap.clear();
-            columnIdsOfHiddenFilters.clear();
             generator.clearFilterData();
             generator.initializeFilterFields();
             reRenderFilterFields = true;
@@ -292,9 +287,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
         }
         if (initDone) {
             for (Object key : columnIdToFilterMap.keySet()) {
-                if (!columnIdsOfHiddenFilters.contains(key)) {
-                    children.add(columnIdToFilterMap.get(key));
-                }
+                children.add(columnIdToFilterMap.get(key));
             }
         }
         return children.iterator();

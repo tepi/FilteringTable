@@ -1,18 +1,3 @@
-/*
- * Copyright 2000-2013 Vaadin Ltd.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package org.tepi.filtertable.gwt.client.ui;
 
 import java.util.HashMap;
@@ -25,7 +10,6 @@ import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style.Position;
-import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.ApplicationConnection;
@@ -40,8 +24,9 @@ import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
 import com.vaadin.client.ui.AbstractHasComponentsConnector;
 import com.vaadin.client.ui.PostLayoutListener;
+import com.vaadin.client.ui.VCustomScrollTable;
 import com.vaadin.client.ui.VCustomScrollTable.ContextMenuDetails;
-import com.vaadin.client.ui.VCustomScrollTable.VCustomScrollTableBody.VCustomScrollTableRow;
+import com.vaadin.client.ui.VScrollTable.VScrollTableBody.VScrollTableRow;
 import com.vaadin.shared.ui.Connect;
 import com.vaadin.shared.ui.table.TableConstants;
 import com.vaadin.shared.ui.table.TableState;
@@ -170,12 +155,20 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         UIDL partialRowAdditions = uidl.getChildByTagName("prows");
         UIDL partialRowUpdates = uidl.getChildByTagName("urows");
         if (partialRowUpdates != null || partialRowAdditions != null) {
+            getWidget().postponeSanityCheckForLastRendered = true;
             // we may have pending cache row fetch, cancel it. See #2136
             getWidget().rowRequestHandler.cancel();
 
             getWidget().updateRowsInBody(partialRowUpdates);
             getWidget().addAndRemoveRows(partialRowAdditions);
+
+            // sanity check (in case the value has slipped beyond the total
+            // amount of rows)
+            getWidget().scrollBody.setLastRendered(getWidget().scrollBody
+                    .getLastRendered());
+            getWidget().updateMaxIndent();
         } else {
+            getWidget().postponeSanityCheckForLastRendered = false;
             UIDL rowData = uidl.getChildByTagName("rows");
             if (rowData != null) {
                 // we may have pending cache row fetch, cancel it. See #2136
@@ -294,21 +287,6 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         getWidget().rendering = false;
         getWidget().headerChangedDuringUpdate = false;
 
-        /* BEGIN CHANGES FOR FilterTable */
-        final int newTotalRows = uidl.getIntAttribute("totalrows");
-        if (newTotalRows == 0) {
-            int totalWidth = 0;
-            for (int width : getWidget().columnWidths.values()) {
-                totalWidth += width;
-            }
-            getWidget().scrollBody.getElement().getStyle()
-                    .setWidth(totalWidth, Unit.PX);
-            getWidget().scrollBody.getElement().getStyle()
-                    .setHeight(1, Unit.PX);
-        } else {
-            getWidget().scrollBody.getElement().getStyle().clearWidth();
-            getWidget().scrollBody.getElement().getStyle().clearHeight();
-        }
         updateFiltersFromUIDL(uidl.getChildByTagName("filters"), client);
     }
 
@@ -385,7 +363,7 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
 
     @Override
     public void postLayout() {
-        VFilterTable table = getWidget();
+        VCustomScrollTable table = getWidget();
         if (table.sizeNeedsInit) {
             table.sizeInit();
             Scheduler.get().scheduleFinally(new ScheduledCommand() {
@@ -427,7 +405,7 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
             Iterator<Widget> iterator = getWidget().scrollBody.iterator();
             while (iterator.hasNext()) {
                 Widget w = iterator.next();
-                VCustomScrollTableRow row = (VCustomScrollTableRow) w;
+                VScrollTableRow row = (VScrollTableRow) w;
                 if (row.getKey().equals(savedContextMenu.rowKey)) {
                     getWidget().contextMenu = savedContextMenu;
                     getConnection().getContextMenu().showAt(row,
@@ -445,10 +423,10 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         if (element != getWidget().getElement()) {
             Object node = Util.findWidget(
                     (com.google.gwt.user.client.Element) element,
-                    VCustomScrollTableRow.class);
+                    VScrollTableRow.class);
 
             if (node != null) {
-                VCustomScrollTableRow row = (VCustomScrollTableRow) node;
+                VScrollTableRow row = (VScrollTableRow) node;
                 info = row.getTooltip(element);
             }
         }
@@ -466,13 +444,4 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         // TODO Move code from updateFromUIDL to this method
     }
 
-    // @Override
-    // public List<ServerConnector> getChildren() {
-    // List<ServerConnector> newLst = new ArrayList<ServerConnector>();
-    // if (super.getChildren() != null) {
-    // newLst.addAll(super.getChildren());
-    // }
-    // newLst.addAll(filterConnectors);
-    // return newLst;
-    // }
 }

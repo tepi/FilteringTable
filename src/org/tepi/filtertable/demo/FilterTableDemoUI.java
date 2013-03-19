@@ -8,6 +8,7 @@ import java.util.Random;
 import org.tepi.filtertable.FilterTable;
 import org.tepi.filtertable.paged.PagedFilterTable;
 
+import com.vaadin.annotations.PreserveOnRefresh;
 import com.vaadin.annotations.Title;
 import com.vaadin.data.Container;
 import com.vaadin.data.Property;
@@ -30,6 +31,7 @@ import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.Reindeer;
 
 @Title("FilterTable Demo Application")
+@PreserveOnRefresh
 public class FilterTableDemoUI extends UI {
 
     /**
