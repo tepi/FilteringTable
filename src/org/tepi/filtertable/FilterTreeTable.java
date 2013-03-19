@@ -38,17 +38,15 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
     private Set<Object> collapsedColumnIds = new HashSet<Object>();
     /* Set to true to show the filter components */
     private boolean filtersVisible;
-    /* Column IDs of hidden filter components */
-    private Set<Object> columnIdsOfHiddenFilters = new HashSet<Object>();
     /* Filter Generator and Decorator */
     private FilterGenerator filterGenerator;
     private FilterDecorator decorator;
-    /* Temporary reference to to-be-focused filter field */
-    private Object filterToFocus;
     /* FilterFieldGenerator instance */
     private FilterFieldGenerator generator;
     /* Is initialization done */
     private boolean initDone;
+    /* Force-render filter fields */
+    private boolean reRenderFilterFields = true;
 
     /**
      * Creates a new empty FilterTable
@@ -73,8 +71,13 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
     public void paintContent(PaintTarget target) throws PaintException {
         super.paintContent(target);
         /* Add filter components to UIDL */
+        if (target.isFullRepaint()) {
+            reRenderFilterFields = true;
+        }
         target.startTag("filters");
         target.addAttribute("filtersvisible", filtersVisible);
+        target.addAttribute("forceRender", reRenderFilterFields);
+        reRenderFilterFields = false;
         if (filtersVisible) {
             for (Object key : getColumnIdToFilterMap().keySet()) {
                 /* Do not paint filters for collapsed columns */
@@ -84,11 +87,10 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
                 target.startTag("filtercomponent");
                 target.addAttribute("columnid", columnIdMap.key(key));
                 Component c = getColumnIdToFilterMap().get(key);
-                // Paint labels instead of fields for generated columns and
-                // hidden filters
+                /* Paint labels instead of fields for generated columns */
+                /* Paint labels instead of fields for hidden filters */
                 if (!getContainerDataSource().getContainerPropertyIds()
-                        .contains(key)
-                        || columnIdsOfHiddenFilters.contains(key)) {
+                        .contains(key) || !c.isVisible()) {
                     c = new Label();
                     c.setSizeUndefined();
                 }
@@ -97,14 +99,6 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
             }
         }
         target.endTag("filters");
-        /* Focus the previously focused filter component */
-        if (filterToFocus != null) {
-            Component filter = getColumnIdToFilterMap().get(filterToFocus);
-            if (filter instanceof Focusable) {
-                focusFilterComponent((Focusable) filter);
-            }
-            filterToFocus = null;
-        }
     }
 
     @Override
@@ -162,10 +156,10 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
         if (initDone) {
             collapsedColumnIds.clear();
             columnIdToFilterMap.clear();
-            columnIdsOfHiddenFilters.clear();
             generator.clearFilterData();
             generator.initializeFilterFields();
         }
+        reRenderFilterFields = true;
     }
 
     /**
@@ -204,6 +198,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
      */
     public void setFilterBarVisible(boolean filtersVisible) {
         this.filtersVisible = filtersVisible;
+        reRenderFilterFields = true;
         requestRepaint();
     }
 
@@ -226,13 +221,10 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
      *            true to set visible, false to set hidden
      */
     public void setFilterFieldVisible(Object columnId, boolean visible) {
-        int previousSize = columnIdsOfHiddenFilters.size();
-        if (visible) {
-            columnIdsOfHiddenFilters.remove(columnId);
-        } else {
-            columnIdsOfHiddenFilters.add(columnId);
-        }
-        if (columnIdsOfHiddenFilters.size() != previousSize) {
+        Component component = columnIdToFilterMap.get(columnId);
+        if (component != null) {
+            component.setVisible(visible);
+            reRenderFilterFields = true;
             requestRepaint();
         }
     }
@@ -250,7 +242,11 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
                 columnId)) {
             return false;
         }
-        return !columnIdsOfHiddenFilters.contains(columnId);
+        Component component = columnIdToFilterMap.get(columnId);
+        if (component != null) {
+            return component.isVisible();
+        }
+        return false;
     }
 
     /**
@@ -323,14 +319,6 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 
     public FilterDecorator getFilterDecorator() {
         return decorator;
-    }
-
-    public void focusFilter(Focusable toFocus) {
-        super.focusFilterComponent(toFocus);
-    }
-
-    public void setFilterToFocus(Object propertyId) {
-        filterToFocus = propertyId;
     }
 
     public Map<Object, Component> getColumnIdToFilterMap() {

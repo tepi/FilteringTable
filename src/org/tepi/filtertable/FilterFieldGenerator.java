@@ -30,7 +30,6 @@ import com.vaadin.terminal.Resource;
 import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.ComboBox;
 import com.vaadin.ui.Component;
-import com.vaadin.ui.Component.Focusable;
 import com.vaadin.ui.TextField;
 
 class FilterFieldGenerator implements Serializable {
@@ -419,22 +418,6 @@ class FilterFieldGenerator implements Serializable {
                 if (owner instanceof PagedFilterTable<?>) {
                     ((PagedFilterTable<?>) owner).setCurrentPage(1);
                 }
-
-                /*
-                 * Handle focusing. Note: The size comparison is an ugly hack
-                 * due to some focusing behavior within the VScrollTable which I
-                 * could not understand :).
-                 */
-                if (owner.getPageLength() <= owner.getContainerDataSource()
-                        .size()) {
-                    owner.setFilterToFocus(propertyId);
-                } else {
-                    Component filter = owner.getColumnIdToFilterMap().get(
-                            propertyId);
-                    if (filter instanceof Focusable) {
-                        owner.focusFilter((Focusable) filter);
-                    }
-                }
             }
         };
     }
@@ -460,10 +443,6 @@ class FilterFieldGenerator implements Serializable {
         public FilterDecorator getFilterDecorator();
 
         public int getPageLength();
-
-        public void setFilterToFocus(Object propertyId);
-
-        public void focusFilter(Focusable filter);
 
         public Component getAsComponent();
 

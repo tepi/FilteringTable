@@ -146,7 +146,8 @@ public class VFilterTable extends VCustomScrollTable {
             this.client = client;
             filtersVisible = uidl.hasAttribute("filtersvisible") ? uidl
                     .getBooleanAttribute("filtersvisible") : false;
-
+            boolean forceRender = uidl.getBooleanAttribute("forceRender");
+            boolean unRegisterOldOnes = false;
             /* If filters are not set visible, clear and hide filter panel */
             setVisible(filtersVisible);
             setContainerHeight();
@@ -154,7 +155,8 @@ public class VFilterTable extends VCustomScrollTable {
             if (!filtersVisible) {
                 container.clear();
                 filters.clear();
-            } else {
+                unRegisterOldOnes = true;
+            } else if (forceRender) {
                 /* Prepare and paint filter components */
                 uidls.clear();
                 for (final Iterator<Object> it = uidl.getChildIterator(); it
@@ -166,12 +168,27 @@ public class VFilterTable extends VCustomScrollTable {
                     }
                 }
                 reRenderFilterComponents();
+                unRegisterOldOnes = true;
+            } else {
+                resetFilterWidths();
             }
-            Collection<Widget> newFilters = filters.values();
-            for (Widget filter : oldFilters) {
-                if (!newFilters.contains(filter)) {
-                    client.unregisterPaintable((Paintable) filter);
+            if (unRegisterOldOnes) {
+                Collection<Widget> newFilters = filters.values();
+                for (Widget filter : oldFilters) {
+                    if (!newFilters.contains(filter)) {
+                        client.unregisterPaintable((Paintable) filter);
+                    }
                 }
+            }
+        }
+
+        private void resetFilterWidths() {
+            for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
+                String key = getColKeyByIndex(i);
+                if (key == null) {
+                    continue;
+                }
+                setFilterWidth(i, getColWidth(key));
             }
         }
 
