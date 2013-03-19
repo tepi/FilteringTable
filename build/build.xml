@@ -131,6 +131,12 @@
 				<exclude name="**/demo/**" />
 			</patternset>
 		</fileset>
+		<fileset dir="WebContent">
+			<patternset>
+				<exclude name="**/VAADIN/**" />
+				<exclude name="**/WEB-INF/**" />
+			</patternset>
+		</fileset>
 	</jar>
 </target>
 
