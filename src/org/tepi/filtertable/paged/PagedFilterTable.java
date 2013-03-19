@@ -41,6 +41,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
 
     public HorizontalLayout createControls() {
         Label itemsPerPageLabel = new Label("Items per page:");
+        itemsPerPageLabel.setSizeUndefined();
         final ComboBox itemsPerPageSelect = new ComboBox();
 
         itemsPerPageSelect.addItem("5");
