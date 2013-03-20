@@ -107,6 +107,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
         } else {
             collapsedColumnIds.remove(propertyId);
         }
+        reRenderFilterFields = true;
         markAsDirty();
     }
 
