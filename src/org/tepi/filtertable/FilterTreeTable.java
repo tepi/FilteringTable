@@ -122,6 +122,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
         } else {
             collapsedColumnIds.remove(propertyId);
         }
+        reRenderFilterFields = true;
         requestRepaint();
     }
 
