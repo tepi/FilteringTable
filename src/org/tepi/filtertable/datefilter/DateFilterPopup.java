@@ -52,6 +52,8 @@ public class DateFilterPopup extends CustomField<DateInterval> {
     public DateFilterPopup(FilterDecorator decorator, Object propertyId) {
         this.decorator = decorator;
         this.propertyId = propertyId;
+        /* This call is needed for the value setting to function before attach */
+        getContent();
     }
 
     @Override

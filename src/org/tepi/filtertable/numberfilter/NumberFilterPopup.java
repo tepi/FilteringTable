@@ -54,6 +54,8 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 
     public NumberFilterPopup(FilterDecorator decorator) {
         this.decorator = decorator;
+        /* This call is needed for the value setting to function before attach */
+        getContent();
     }
 
     private void initPopup() {
