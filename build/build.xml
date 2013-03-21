@@ -3,7 +3,7 @@
 <project name="Calendar" basedir="../" default="all" xmlns:ivy="antlib:org.apache.ivy.ant">
 
 	<!-- Main target that does all -->
-	<target name="all" depends="clean-all, compile, widgetset, package-jar, demo.war, cleanup" />
+	<target name="all" depends="clean-all, compile, widgetset, javadoc, sources-jar, package-jar, package-zip, demo.war, cleanup" />
 
 	<!-- Non-project specific settings. -->
 	<property file="build/build.properties" />
@@ -65,6 +65,21 @@
 	<!-- Packaging                                                          -->
 	<!-- ================================================================== -->
 
+	<!-- Create javadoc -->
+	<target name='javadoc'>
+		<javadoc use='true' author='true' version='true' access='package' sourcepath='src' packagenames='*.*' destdir='${result-path}/javadoc' windowtitle='${addon.title} ${version}' noqualifier='java.*:javax.*:com.sun.*' linksource='true'>
+			<classpath refid='ivy.deps' />
+			<link href='http://java.sun.com/javase/6/docs/api/' />
+			<header>
+				<![CDATA[<h1>${app.name} ${app.version}</h1>]]></header>
+		</javadoc>
+	</target>
+
+	<!-- Create sources JAR -->
+	<target name="sources-jar">
+		<jar basedir="src" destfile="${result-path}/${addon.name}-${version}-sources.jar" />
+	</target>
+	
 	<!-- Create the JAR package [Note: JAR is not functional by itself]. -->
 	<target name="package-jar" depends="compile" unless="run.no-package-jar">
 		<echo>Creating ${addon.title} JAR...</echo>
@@ -97,6 +112,32 @@
 		</jar>
 	</target>
 
+	<!-- Create the ZIP distribution package. -->
+	<target name="package-zip" depends="package-jar">
+		<echo>Creating ${addon.title} ZIP...</echo>
+		<property name="zip.name" value="${result-path}/${addon.name}-${version}.zip" />
+		<!-- Make the zip manifest -->
+		<mkdir dir="${result-path}/META-INF" />
+		<echo file="${result-path}/META-INF/MANIFEST.MF">Vaadin-Addon: ${addon.name}-${version}/${jar.name}
+Vaadin-Package-Version: 1
+Implementation-Title: ${addon.title}
+Implementation-Version: ${version}
+Implementation-Vendor: ${addon.vendor}
+Vaadin-Dependency: ${dependency.popupbutton}
+	       </echo>
+		<zip destfile="${zip.name}">
+			<zipfileset dir="${result-path}" includes="META-INF/MANIFEST.MF" />
+			<!-- The add-on library itself -->
+			<zipfileset prefix="${addon.name}-${version}" file="${result-path}/${jar.name}" />
+			<!-- Dependency: PopupButton -->
+			<zipfileset file="${temp.lib.dir}/${dependency.popupbutton}" />
+			<!-- Javadoc -->
+			<zipfileset prefix="javadoc" dir="${result-path}/javadoc" />
+			<!-- Sources -->
+			<zipfileset file="${result-path}/${addon.name}-${version}-sources.jar" />
+		</zip>
+	</target>
+
 	<!-- Create demo application WAR -->
 	<target name="demo.war" depends="package-jar">
 		<echo>Creating ${addon.title} Demo Application WAR...</echo>
@@ -115,5 +156,8 @@
 
 	<target name="cleanup">
 		<delete dir="${temp.lib.dir}" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+		<delete dir="${result-path}/war" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+		<delete dir="${result-path}/META-INF" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+		<delete dir="${result-path}/javadoc" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
 	</target>
 </project>
