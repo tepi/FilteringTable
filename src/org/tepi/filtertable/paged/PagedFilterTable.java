@@ -95,7 +95,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
             }
         });
         pageLabel.setWidth(null);
-        currentPageTextField.setWidth("20px");
+        currentPageTextField.setColumns(3);
         separatorLabel.setWidth(null);
         totalPagesLabel.setWidth(null);
 
@@ -188,20 +188,28 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         controlBar.addComponent(pageManagement);
         controlBar.setComponentAlignment(pageManagement,
                 Alignment.MIDDLE_CENTER);
-        controlBar.setWidth("100%");
+        controlBar.setWidth(100, Unit.PERCENTAGE);
         controlBar.setExpandRatio(pageSize, 1);
         addListener(new PageChangeListener() {
+            private boolean inMiddleOfValueChange;
+
             public void pageChanged(PagedTableChangeEvent event) {
-                first.setEnabled(container.getStartIndex() > 0);
-                previous.setEnabled(container.getStartIndex() > 0);
-                next.setEnabled(container.getStartIndex() < container
-                        .getRealSize() - getPageLength());
-                last.setEnabled(container.getStartIndex() < container
-                        .getRealSize() - getPageLength());
-                currentPageTextField.setValue(String.valueOf(getCurrentPage()));
-                totalPagesLabel.setValue(Integer
-                        .toString(getTotalAmountOfPages()));
-                itemsPerPageSelect.setValue(String.valueOf(getPageLength()));
+                if (!inMiddleOfValueChange) {
+                    inMiddleOfValueChange = true;
+                    first.setEnabled(container.getStartIndex() > 0);
+                    previous.setEnabled(container.getStartIndex() > 0);
+                    next.setEnabled(container.getStartIndex() < container
+                            .getRealSize() - getPageLength());
+                    last.setEnabled(container.getStartIndex() < container
+                            .getRealSize() - getPageLength());
+                    currentPageTextField.setValue(String
+                            .valueOf(getCurrentPage()));
+                    totalPagesLabel.setValue(Integer
+                            .toString(getTotalAmountOfPages()));
+                    itemsPerPageSelect
+                            .setValue(String.valueOf(getPageLength()));
+                    inMiddleOfValueChange = false;
+                }
             }
         });
         return controlBar;
