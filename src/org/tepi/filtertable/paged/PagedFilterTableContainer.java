@@ -81,7 +81,8 @@ class PagedFilterTableContainer<T extends Container.Indexed & Container.Filterab
 
     @Override
     public List<?> getItemIds(int startIndex, int numberOfItems) {
-        return container.getItemIds(startIndex, numberOfItems);
+        return container
+                .getItemIds(this.startIndex + startIndex, numberOfItems);
     }
 
     public Property<?> getContainerProperty(Object itemId, Object propertyId) {
