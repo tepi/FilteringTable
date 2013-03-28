@@ -1,5 +1,7 @@
 package org.tepi.filtertable;
 
+import java.io.Serializable;
+
 import com.vaadin.data.Container.Filter;
 import com.vaadin.ui.AbstractField;
 
@@ -10,7 +12,7 @@ import com.vaadin.ui.AbstractField;
  * @author tepi
  * 
  */
-public interface FilterGenerator {
+public interface FilterGenerator extends Serializable {
 
     /**
      * Generates a new Filter for the property with the given ID, using the

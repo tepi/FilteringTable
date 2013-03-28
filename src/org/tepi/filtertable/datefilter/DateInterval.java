@@ -1,5 +1,6 @@
 package org.tepi.filtertable.datefilter;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -8,7 +9,7 @@ import java.util.Date;
  * @author Teppo Kurki
  * 
  */
-public class DateInterval {
+public class DateInterval implements Serializable {
     private final Date from;
     private final Date to;
 
