@@ -113,7 +113,7 @@ class DemoFilterDecorator implements FilterDecorator {
 
     public boolean usePopupForNumericProperty(Object propertyId) {
         // TODO Auto-generated method stub
-        return false;
+        return true;
     }
 
     public Locale getLocale() {

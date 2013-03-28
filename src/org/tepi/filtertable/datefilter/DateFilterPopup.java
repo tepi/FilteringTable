@@ -143,6 +143,8 @@ public class DateFilterPopup extends PopupButton {
             updateCaption();
         } else {
             value = null;
+            fromField.setValue(null);
+            toField.setValue(null);
             setNullCaption();
         }
         setPopupVisible(false);

@@ -156,8 +156,8 @@ public class VFilterTable extends VCustomScrollTable {
                 container.clear();
                 filters.clear();
                 unRegisterOldOnes = true;
-            } else if (forceRender) {
-                /* Prepare and paint filter components */
+            } else {
+                /* Just update, don't re-render */
                 uidls.clear();
                 for (final Iterator<Object> it = uidl.getChildIterator(); it
                         .hasNext();) {
@@ -167,10 +167,21 @@ public class VFilterTable extends VCustomScrollTable {
                         uidls.put(cid, cc.getChildUIDL(0));
                     }
                 }
-                reRenderFilterComponents();
-                unRegisterOldOnes = true;
-            } else {
-                resetFilterWidths();
+                if (forceRender) {
+                    /* Repaint filter components */
+                    reRenderFilterComponents();
+                    unRegisterOldOnes = true;
+                } else {
+                    /* Just update from the UIDL */
+                    for (String filter : filters.keySet()) {
+                        Widget w = filters.get(filter);
+                        if (w != null && w instanceof Paintable) {
+                            ((Paintable) w).updateFromUIDL(uidls.get(filter),
+                                    client);
+                        }
+                    }
+                    resetFilterWidths();
+                }
             }
             if (unRegisterOldOnes) {
                 Collection<Widget> newFilters = filters.values();

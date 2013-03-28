@@ -41,8 +41,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
     /* Filter Generator and Decorator */
     private FilterGenerator filterGenerator;
     private FilterDecorator decorator;
-    /* Temporary reference to to-be-focused filter field */
-    // private Object filterToFocus;
     /* FilterFieldGenerator instance */
     private FilterFieldGenerator generator;
     /* Is initialization done */
