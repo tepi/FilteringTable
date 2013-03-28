@@ -1,5 +1,6 @@
 package org.tepi.filtertable;
 
+import java.io.Serializable;
 import java.util.Locale;
 
 import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
@@ -16,7 +17,7 @@ import com.vaadin.ui.DateField;
  * @author Teppo Kurki
  * 
  */
-public interface FilterDecorator {
+public interface FilterDecorator extends Serializable {
 
     /**
      * Returns the filter display name for the given enum value when filtering

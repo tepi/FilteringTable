@@ -1,6 +1,8 @@
 package org.tepi.filtertable.paged;
 
-class PagedTableChangeEvent {
+import java.io.Serializable;
+
+class PagedTableChangeEvent implements Serializable {
     private final PagedFilterTable<?> table;
 
     PagedTableChangeEvent(PagedFilterTable<?> table) {
