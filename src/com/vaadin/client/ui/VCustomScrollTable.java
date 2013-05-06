@@ -2646,7 +2646,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          * 
          * @return The width in pixels
          */
-        protected int getWidthWithIndent() {
+        public int getWidthWithIndent() {
             if (scrollBody != null && isHierarchyColumn()) {
                 int maxIndent = scrollBody.getMaxIndent();
                 if (maxIndent > width) {
