@@ -32,8 +32,7 @@
 		<dependency org="com.vaadin" name="vaadin-client-compiler"
 			rev="&vaadin.version;" conf="widgetset-compile->default" />
 			
-		<dependency org="org.vaadin.addons" name="popupbutton" rev="2.2.0" />
-			
+			<dependency org="org.vaadin.addons" name="popupbutton" rev="2.2.0" />
 	</dependencies>
 </ivy-module>
     
