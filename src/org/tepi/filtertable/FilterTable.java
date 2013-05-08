@@ -72,16 +72,11 @@ public class FilterTable extends CustomTable implements IFilterTable {
 		reRenderFilterFields = false;
 		if (filtersVisible) {
 			for (Object key : getColumnIdToFilterMap().keySet()) {
-				/* Do not paint filters for collapsed columns */
-				/* Do not paint filters for cols that do not exist in container */
-				/* Do not paint filters for cols that are not visible */
-				if (collapsedColumnIds.contains(key)
-				        || !getContainerDataSource().getContainerPropertyIds()
-				                .contains(key) || !visibleColumns.contains(key)) {
-					System.err.println("Not painting filter for: " + key);
+				/* Do not paint filters which are not children */
+				if (columnIdToFilterMap.get(key) != null
+				        && columnIdToFilterMap.get(key).getParent() == null) {
 					continue;
 				}
-				System.err.println("Painting filter for: " + key);
 				/* Paint the filter field */
 				target.startTag("filtercomponent-" + columnIdMap.key(key));
 				target.addAttribute("columnid", columnIdMap.key(key));
@@ -101,6 +96,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
 		if (collapsed) {
 			collapsedColumnIds.add(propertyId);
 			if (c != null) {
+				c.setParent(null);
 				if (c instanceof TextField) {
 					((TextField) c).setValue("");
 				} else if (c instanceof AbstractField<?>) {
@@ -108,6 +104,9 @@ public class FilterTable extends CustomTable implements IFilterTable {
 				}
 			}
 		} else {
+			if (c != null) {
+				c.setParent(this);
+			}
 			collapsedColumnIds.remove(propertyId);
 		}
 		reRenderFilterFields = true;
@@ -201,6 +200,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
 		if (component != null) {
 			component.setVisible(visible);
 			reRenderFilterFields = true;
+			markAsDirty();
 		}
 	}
 
@@ -291,12 +291,10 @@ public class FilterTable extends CustomTable implements IFilterTable {
 		}
 		if (initDone) {
 			for (Object key : columnIdToFilterMap.keySet()) {
-				if (collapsedColumnIds.contains(key)
-				        || !getContainerDataSource().getContainerPropertyIds()
-				                .contains(key) || !visibleColumns.contains(key)) {
-					continue;
+				Component filter = columnIdToFilterMap.get(key);
+				if (equals(filter.getParent())) {
+					children.add(filter);
 				}
-				children.add(columnIdToFilterMap.get(key));
 			}
 		}
 		return children.iterator();
@@ -305,6 +303,19 @@ public class FilterTable extends CustomTable implements IFilterTable {
 	@Override
 	public void setVisibleColumns(Object[] visibleColumns) {
 		reRenderFilterFields = true;
+		if (visibleColumns != null && columnIdToFilterMap != null) {
+			/* First clear all parent references */
+			for (Object key : columnIdToFilterMap.keySet()) {
+				columnIdToFilterMap.get(key).setParent(null);
+			}
+			/* Set this as parent to visible columns */
+			for (Object key : visibleColumns) {
+				Component filter = columnIdToFilterMap.get(key);
+				if (filter != null) {
+					filter.setParent(this);
+				}
+			}
+		}
 		super.setVisibleColumns(visibleColumns);
 	}
 }

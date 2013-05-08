@@ -96,14 +96,14 @@ public class FilterTableDemoUI extends UI {
 
 		filterTable.setColumnCollapsingAllowed(true);
 
-		filterTable.setColumnCollapsed("state", true);
-
 		filterTable.setColumnReorderingAllowed(true);
 
 		filterTable.setContainerDataSource(buildContainer());
 
-		// filterTable.setVisibleColumns(new String[] { "name", "id", "state",
-		// "date", "validated", "checked" });
+		filterTable.setColumnCollapsed("state", true);
+
+		filterTable.setVisibleColumns(new String[] { /* "name", */"id", "state",
+		        "date", "validated", "checked" });
 
 		return filterTable;
 	}
@@ -210,13 +210,6 @@ public class FilterTableDemoUI extends UI {
 		Calendar c = Calendar.getInstance();
 
 		cont.addContainerProperty("name", String.class, null);
-		cont.addContainerProperty("name2", String.class, null);
-		cont.addContainerProperty("name3", String.class, null);
-		cont.addContainerProperty("name4", String.class, null);
-		cont.addContainerProperty("name5", String.class, null);
-		cont.addContainerProperty("name6", String.class, null);
-		cont.addContainerProperty("name7", String.class, null);
-		cont.addContainerProperty("name8", String.class, null);
 		cont.addContainerProperty("id", Integer.class, null);
 		cont.addContainerProperty("state", State.class, null);
 		cont.addContainerProperty("date", Timestamp.class, null);
