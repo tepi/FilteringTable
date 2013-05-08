@@ -74,11 +74,14 @@ public class FilterTable extends CustomTable implements IFilterTable {
 			for (Object key : getColumnIdToFilterMap().keySet()) {
 				/* Do not paint filters for collapsed columns */
 				/* Do not paint filters for cols that do not exist in container */
+				/* Do not paint filters for cols that are not visible */
 				if (collapsedColumnIds.contains(key)
 				        || !getContainerDataSource().getContainerPropertyIds()
-				                .contains(key)) {
+				                .contains(key) || !visibleColumns.contains(key)) {
+					System.err.println("Not painting filter for: " + key);
 					continue;
 				}
+				System.err.println("Painting filter for: " + key);
 				/* Paint the filter field */
 				target.startTag("filtercomponent-" + columnIdMap.key(key));
 				target.addAttribute("columnid", columnIdMap.key(key));
@@ -288,9 +291,20 @@ public class FilterTable extends CustomTable implements IFilterTable {
 		}
 		if (initDone) {
 			for (Object key : columnIdToFilterMap.keySet()) {
+				if (collapsedColumnIds.contains(key)
+				        || !getContainerDataSource().getContainerPropertyIds()
+				                .contains(key) || !visibleColumns.contains(key)) {
+					continue;
+				}
 				children.add(columnIdToFilterMap.get(key));
 			}
 		}
 		return children.iterator();
+	}
+
+	@Override
+	public void setVisibleColumns(Object[] visibleColumns) {
+		reRenderFilterFields = true;
+		super.setVisibleColumns(visibleColumns);
 	}
 }
