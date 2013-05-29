@@ -20,6 +20,7 @@
 .filters-wrap {
 	border-left: 1px solid #C2C3C4;
 	border-right: 1px solid #C2C3C4;
+	overflow: hidden;
 }
 
 /* TextField within the Filter panel*/

@@ -3,6 +3,7 @@ package org.tepi.filtertable.gwt.client.ui;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.event.dom.client.ScrollEvent;
 import com.google.gwt.event.dom.client.ScrollHandler;
@@ -18,152 +19,162 @@ import com.vaadin.client.ui.VCustomScrollTable;
 
 public class VFilterTable extends VCustomScrollTable {
 
-    /* Custom FlowPanel for the column filters */
-    FilterPanel filters;
+	/* Custom FlowPanel for the column filters */
+	FilterPanel filters;
 
-    Map<Integer, Integer> columnWidths = new HashMap<Integer, Integer>();
+	Map<Integer, Integer> columnWidths = new HashMap<Integer, Integer>();
 
-    public VFilterTable() {
-        super();
-        /* Create filter panel and insert between CustomTable Header and Content */
-        filters = new FilterPanel();
-        insert(filters, 1);
-    }
+	public VFilterTable() {
+		super();
 
-    @Override
-    protected void setContainerHeight() {
-        /* First calculate the height with the normal method */
-        super.setContainerHeight();
-        /* Account for possibly visible table filter row */
-        if (!isDynamicHeight() && filters.isVisible()) {
-            containerHeight -= filters.getOffsetHeight();
-            if (containerHeight < 0) {
-                containerHeight = 0;
-            }
-            scrollBodyPanel.setHeight(containerHeight + "px");
-        }
-    }
+		/* Create filter panel and insert between CustomTable Header and Content */
+		filters = new FilterPanel();
+		insert(filters, 1);
 
-    @Override
-    protected void setColWidth(int colIndex, int w, boolean isDefinedWidth) {
-        super.setColWidth(colIndex, w, isDefinedWidth);
-        columnWidths.put(colIndex, w);
-        filters.setFilterWidth(colIndex, w);
-    }
+		/*
+		 * Do not display the filter bar initially.
+		 * 
+		 * This is a tentative fix for a weird issue where the width of the
+		 * FilteringTable is not calculated correctly when it is contained
+		 * within a Window.
+		 */
+		filters.getElement().getStyle().setDisplay(Display.NONE);
+	}
 
-    @Override
-    protected void setContentWidth(int pixels) {
-        super.setContentWidth(pixels);
-        filters.setWidth(pixels + "px");
-    }
+	@Override
+	protected void setContainerHeight() {
+		/* First calculate the height with the normal method */
+		super.setContainerHeight();
+		/* Account for possibly visible table filter row */
+		if (!isDynamicHeight() && filters.isVisible()) {
+			containerHeight -= filters.getOffsetHeight();
+			if (containerHeight < 0) {
+				containerHeight = 0;
+			}
+			scrollBodyPanel.setHeight(containerHeight + "px");
+		}
+	}
 
-    @Override
-    protected void reOrderColumn(String columnKey, int newIndex) {
-        super.reOrderColumn(columnKey, newIndex);
-        filters.reRenderFilterComponents();
-    }
+	@Override
+	protected void setColWidth(int colIndex, int w, boolean isDefinedWidth) {
+		super.setColWidth(colIndex, w, isDefinedWidth);
+		columnWidths.put(colIndex, w);
+		filters.setFilterWidth(colIndex, w);
+	}
 
-    @Override
-    public void onScroll(ScrollEvent event) {
-        super.onScroll(event);
-        filters.setScrollLeft(scrollLeft);
-    }
+	@Override
+	protected void setContentWidth(int pixels) {
+		filters.setWidth(pixels + "px");
+		super.setContentWidth(pixels);
+	}
 
-    protected String getColKeyByIndex(int index) {
-        HeaderCell hc = tHead.getHeaderCell(index);
-        return hc == null ? null : hc.getColKey();
-    }
+	@Override
+	protected void reOrderColumn(String columnKey, int newIndex) {
+		super.reOrderColumn(columnKey, newIndex);
+		filters.reRenderFilterComponents();
+	}
 
-    @Override
-    public void onFocus(FocusEvent event) {
-        super.onFocus(event);
-    }
+	@Override
+	public void onScroll(ScrollEvent event) {
+		super.onScroll(event);
+		filters.setScrollLeft(scrollLeft);
+	}
 
-    class FilterPanel extends FlowPanel implements ScrollHandler {
-        /* Column filter components - mapped by column keys */
-        Map<String, Widget> filters = new HashMap<String, Widget>();
-        /* Set to true to render the filter bar */
-        boolean filtersVisible;
-        /* Wrapper that holds the filter component container */
-        private FlowPanel wrap = new FlowPanel();
-        /* Actual container for the filter components */
-        FlowPanel container = new FlowPanel();
+	protected String getColKeyByIndex(int index) {
+		HeaderCell hc = tHead.getHeaderCell(index);
+		return hc == null ? null : hc.getColKey();
+	}
 
-        public FilterPanel() {
-            container.setStyleName("filters-panel");
-            DOM.setStyleAttribute(wrap.getElement(), "overflow", "hidden");
-            setStyleName("filters-wrap");
-            wrap.sinkEvents(Event.ONSCROLL);
-            wrap.addDomHandler(this, ScrollEvent.getType());
-            wrap.add(container);
-            add(wrap);
-        }
+	@Override
+	public void onFocus(FocusEvent event) {
+		super.onFocus(event);
+	}
 
-        void reRenderFilterComponents() {
-            container.clear();
-            for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
-                String key = getColKeyByIndex(i);
-                if (key == null) {
-                    continue;
-                }
-                Widget widget = filters.get(key);
+	class FilterPanel extends FlowPanel implements ScrollHandler {
+		/* Column filter components - mapped by column keys */
+		Map<String, Widget> filters = new HashMap<String, Widget>();
+		/* Set to true to render the filter bar */
+		boolean filtersVisible;
+		/* Wrapper that holds the filter component container */
+		private FlowPanel wrap = new FlowPanel();
+		/* Actual container for the filter components */
+		FlowPanel container = new FlowPanel();
 
-                if (widget == null) {
-                    /* No filter defined */
-                    /* Use a place holder of the correct width */
-                    Widget placeHolder = new FlowPanel();
-                    placeHolder.addStyleName("filterplaceholder");
-                    container.add(placeHolder);
-                    filters.put(key, placeHolder);
-                    setFilterWidth(i, getColWidth(key));
-                } else {
-                    container.add(widget);
-                    setFilterWidth(i, getColWidth(key));
-                }
-            }
-        }
+		public FilterPanel() {
+			container.setStyleName("filters-panel");
+			DOM.setStyleAttribute(wrap.getElement(), "overflow", "hidden");
+			setStyleName("filters-wrap");
+			wrap.sinkEvents(Event.ONSCROLL);
+			wrap.addDomHandler(this, ScrollEvent.getType());
+			wrap.add(container);
+			add(wrap);
+		}
 
-        public void setScrollLeft(int scrollLeft) {
-            wrap.getElement().setScrollLeft(scrollLeft);
-        }
+		void reRenderFilterComponents() {
+			container.clear();
+			for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
+				String key = getColKeyByIndex(i);
+				if (key == null) {
+					continue;
+				}
+				Widget widget = filters.get(key);
 
-        private void setFilterWidth(int index, int width) {
-            Widget p = filters.get(getColKeyByIndex(index));
-            if (p != null) {
-                p.setWidth(Util.getRequiredWidth(tHead.getHeaderCell(index))
-                        + "px");
-            }
-        }
+				if (widget == null) {
+					/* No filter defined */
+					/* Use a place holder of the correct width */
+					Widget placeHolder = new FlowPanel();
+					placeHolder.addStyleName("filterplaceholder");
+					container.add(placeHolder);
+					filters.put(key, placeHolder);
+					setFilterWidth(i, getColWidth(key));
+				} else {
+					container.add(widget);
+					setFilterWidth(i, getColWidth(key));
+				}
+			}
+		}
 
-        public void onScroll(ScrollEvent event) {
-            if (!isAttached()) {
-                return;
-            }
-            scrollLeft = wrap.getElement().getScrollLeft();
-            scrollBodyPanel.getElement().setScrollLeft(scrollLeft);
-            tHead.getElement().setScrollLeft(scrollLeft);
-        }
+		public void setScrollLeft(int scrollLeft) {
+			wrap.getElement().setScrollLeft(scrollLeft);
+		}
 
-        public void focusWidget(Widget filterToFocus) {
-            VConsole.log(filterToFocus == null ? "NULL FOCUS" : filterToFocus
-                    .toString());
-            if (filterToFocus == null) {
-                return;
-            } else if (filterToFocus instanceof FocusWidget) {
-                ((FocusWidget) filterToFocus).setFocus(true);
-            } else if (filterToFocus instanceof Focusable) {
-                ((Focusable) filterToFocus).focus();
-            }
-        }
+		private void setFilterWidth(int index, int width) {
+			Widget p = filters.get(getColKeyByIndex(index));
+			if (p != null) {
+				p.setWidth(Util.getRequiredWidth(tHead.getHeaderCell(index))
+						+ "px");
+			}
+		}
 
-        public void resetFilterWidths() {
-            for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
-                String key = getColKeyByIndex(i);
-                if (key == null) {
-                    continue;
-                }
-                setFilterWidth(i, getColWidth(key));
-            }
-        }
-    }
+		public void onScroll(ScrollEvent event) {
+			if (!isAttached()) {
+				return;
+			}
+			scrollLeft = wrap.getElement().getScrollLeft();
+			scrollBodyPanel.getElement().setScrollLeft(scrollLeft);
+			tHead.getElement().setScrollLeft(scrollLeft);
+		}
+
+		public void focusWidget(Widget filterToFocus) {
+			VConsole.log(filterToFocus == null ? "NULL FOCUS" : filterToFocus
+					.toString());
+			if (filterToFocus == null) {
+				return;
+			} else if (filterToFocus instanceof FocusWidget) {
+				((FocusWidget) filterToFocus).setFocus(true);
+			} else if (filterToFocus instanceof Focusable) {
+				((Focusable) filterToFocus).focus();
+			}
+		}
+
+		public void resetFilterWidths() {
+			for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
+				String key = getColKeyByIndex(i);
+				if (key == null) {
+					continue;
+				}
+				setFilterWidth(i, getColWidth(key));
+			}
+		}
+	}
 }
