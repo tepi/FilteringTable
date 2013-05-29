@@ -86,6 +86,15 @@ class FilterFieldGenerator implements Serializable {
 
 	private Filter generateFilter(Property field, Object propertyId,
 			Object value) {
+		/* First try to get custom filter based on the field */
+		if (owner.getFilterGenerator() != null) {
+			Filter newFilter = owner.getFilterGenerator().generateFilter(
+					propertyId, field);
+			if (newFilter != null) {
+				return newFilter;
+			}
+		}
+		/* Use default filtering */
 		if (field instanceof DateFilterPopup) {
 			return generateDateFilter(field, propertyId, value);
 		} else if (field instanceof NumberFilterPopup) {
