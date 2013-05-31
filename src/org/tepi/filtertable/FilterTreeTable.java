@@ -89,7 +89,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 				/* Paint labels instead of fields for generated columns */
 				/* Paint labels instead of fields for hidden filters */
 				if (!getContainerDataSource().getContainerPropertyIds()
-				        .contains(key) || !c.isVisible()) {
+						.contains(key) || !c.isVisible()) {
 					c = new Label();
 					c.setSizeUndefined();
 				}
@@ -102,7 +102,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 
 	@Override
 	public void setColumnCollapsed(Object propertyId, boolean collapsed)
-	        throws IllegalStateException {
+			throws IllegalStateException {
 		super.setColumnCollapsed(propertyId, collapsed);
 		Component c = getColumnIdToFilterMap().get(propertyId);
 		if (collapsed) {
@@ -240,7 +240,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 	public boolean isFilterFieldVisible(Object columnId) {
 		/* Return false for generated columns */
 		if (!getContainerDataSource().getContainerPropertyIds().contains(
-		        columnId)) {
+				columnId)) {
 			return false;
 		}
 		Component component = columnIdToFilterMap.get(columnId);
@@ -263,21 +263,21 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 	 *             exception from the underlying field
 	 */
 	public boolean setFilterFieldValue(Object propertyId, Object value)
-	        throws ConversionException {
+			throws ConversionException {
 		Field field = (Field) getColumnIdToFilterMap().get(propertyId);
 		boolean retVal = field != null;
 		if (field != null) {
 			if (field instanceof DateFilterPopup
-			        && value instanceof DateInterval) {
+					&& value instanceof DateInterval) {
 				((DateFilterPopup) field).setInternalValue(
-				        ((DateInterval) value).getFrom(),
-				        ((DateInterval) value).getTo());
+						((DateInterval) value).getFrom(),
+						((DateInterval) value).getTo());
 			} else if (field instanceof NumberFilterPopup
-			        && value instanceof NumberInterval) {
+					&& value instanceof NumberInterval) {
 				((NumberFilterPopup) field).setInternalValue(
-				        ((NumberInterval) value).getLessThanValue(),
-				        ((NumberInterval) value).getGreaterThanValue(),
-				        ((NumberInterval) value).getEqualsValue());
+						((NumberInterval) value).getLessThanValue(),
+						((NumberInterval) value).getGreaterThanValue(),
+						((NumberInterval) value).getEqualsValue());
 			} else {
 				field.setValue(value);
 			}
@@ -307,9 +307,21 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 		}
 	}
 
+	/**
+	 * Returns the filter component instance associated with the given property
+	 * ID.
+	 * 
+	 * @param propertyId
+	 *            Property id for which to find the filter component.
+	 * @return Related component instance or null if not found.
+	 */
+	public Component getFilterField(Object propertyId) {
+		return getColumnIdToFilterMap().get(propertyId);
+	}
+
 	public Filterable getFilterable() {
 		return getContainerDataSource() instanceof Filterable ? (Filterable) getContainerDataSource()
-		        : null;
+				: null;
 	}
 
 	public FilterGenerator getFilterGenerator() {
