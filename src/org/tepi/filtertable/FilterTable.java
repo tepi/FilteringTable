@@ -74,7 +74,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
 			for (Object key : getColumnIdToFilterMap().keySet()) {
 				/* Do not paint filters which are not children */
 				if (columnIdToFilterMap.get(key) != null
-				        && columnIdToFilterMap.get(key).getParent() == null) {
+						&& columnIdToFilterMap.get(key).getParent() == null) {
 					continue;
 				}
 				/* Paint the filter field */
@@ -90,7 +90,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
 
 	@Override
 	public void setColumnCollapsed(Object propertyId, boolean collapsed)
-	        throws IllegalStateException {
+			throws IllegalStateException {
 		super.setColumnCollapsed(propertyId, collapsed);
 		Component c = getColumnIdToFilterMap().get(propertyId);
 		if (collapsed) {
@@ -214,7 +214,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
 	public boolean isFilterFieldVisible(Object columnId) {
 		/* Return false for generated columns */
 		if (!getContainerDataSource().getContainerPropertyIds().contains(
-		        columnId)) {
+				columnId)) {
 			return false;
 		}
 		Component component = columnIdToFilterMap.get(columnId);
@@ -237,7 +237,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
 	 *             exception from the underlying field
 	 */
 	public boolean setFilterFieldValue(Object propertyId, Object value)
-	        throws ConversionException {
+			throws ConversionException {
 		Component field = getColumnIdToFilterMap().get(propertyId);
 		boolean retVal = field != null;
 		if (field != null) {
@@ -262,9 +262,21 @@ public class FilterTable extends CustomTable implements IFilterTable {
 		}
 	}
 
+	/**
+	 * Returns the filter component instance associated with the given property
+	 * ID.
+	 * 
+	 * @param propertyId
+	 *            Property id for which to find the filter component.
+	 * @return Related component instance or null if not found.
+	 */
+	public Component getFilterField(Object propertyId) {
+		return getColumnIdToFilterMap().get(propertyId);
+	}
+
 	public Filterable getFilterable() {
 		return getContainerDataSource() instanceof Filterable ? (Filterable) getContainerDataSource()
-		        : null;
+				: null;
 	}
 
 	public FilterGenerator getFilterGenerator() {
