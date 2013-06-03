@@ -72,4 +72,10 @@ class DemoFilterGenerator implements FilterGenerator {
 		n.setDelayMsec(800);
 		window.showNotification(n);
 	}
+
+	public Filter filterGeneratorFailed(Exception reason, Object propertyId,
+			Object value) {
+		/* Return null -> Does not add any filter on failure */
+		return null;
+	}
 }

@@ -80,4 +80,18 @@ public interface FilterGenerator extends Serializable {
 	public void filterAdded(Object propertyId,
 			Class<? extends Filter> filterType, Object value);
 
+	/**
+	 * This method is called when Filter generator fails for any reason. You may
+	 * handle the error and return any Filter or null as the result.
+	 * 
+	 * @param reason
+	 *            Root exception
+	 * @param propertyId
+	 *            ID of the property to which the filter was to be added
+	 * @param value
+	 *            Value the filter was to be based on
+	 * @return A Filter or null
+	 */
+	public Filter filterGeneratorFailed(Exception reason, Object propertyId,
+			Object value);
 }
