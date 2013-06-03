@@ -1,6 +1,7 @@
 package org.tepi.filtertable;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -31,6 +32,7 @@ import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.ComboBox;
 import com.vaadin.ui.Component;
+import com.vaadin.ui.Field;
 import com.vaadin.ui.TextField;
 
 class FilterFieldGenerator implements Serializable {
@@ -107,22 +109,33 @@ class FilterFieldGenerator implements Serializable {
 
 	private Filter generateFilter(Property<?> field, Object propertyId,
 			Object value) {
-		/* First try to get custom filter based on the field */
-		if (owner.getFilterGenerator() != null) {
-			Filter newFilter = owner.getFilterGenerator().generateFilter(
-					propertyId, field);
-			if (newFilter != null) {
-				return newFilter;
+		try {
+			/* First try to get custom filter based on the field */
+			if (owner.getFilterGenerator() != null && field instanceof Field) {
+				Filter newFilter = owner.getFilterGenerator().generateFilter(
+						propertyId, (Field<?>) field);
+				if (newFilter != null) {
+					return newFilter;
+				}
+			}
+			if (field instanceof NumberFilterPopup) {
+				return generateNumberFilter(field, propertyId, value);
+			} else if (field instanceof DateFilterPopup) {
+				return generateDateFilter(field, propertyId, value);
+			} else if (value != null && !value.equals("")) {
+				return generateGenericFilter(field, propertyId, value);
+			}
+			return null;
+		} catch (Exception reason) {
+			if (owner.getFilterGenerator() != null) {
+				return owner.getFilterGenerator().filterGeneratorFailed(reason,
+						propertyId, value);
+			} else {
+				throw new RuntimeException("Creating a filter for property '"
+						+ propertyId + "' with value '" + value
+						+ "'has failed.", reason);
 			}
 		}
-		if (field instanceof NumberFilterPopup) {
-			return generateNumberFilter(field, propertyId, value);
-		} else if (field instanceof DateFilterPopup) {
-			return generateDateFilter(field, propertyId, value);
-		} else if (value != null && !value.equals("")) {
-			return generateGenericFilter(field, propertyId, value);
-		}
-		return null;
 	}
 
 	private Filter generateGenericFilter(Property<?> field, Object propertyId,
@@ -140,7 +153,9 @@ class FilterFieldGenerator implements Serializable {
 	}
 
 	private Filter generateNumberFilter(Property<?> field, Object propertyId,
-			Object value) {
+			Object value) throws SecurityException, NoSuchMethodException,
+			IllegalArgumentException, IllegalAccessException,
+			InvocationTargetException {
 		/* Handle number filtering */
 		NumberInterval interval = ((NumberFilterPopup) field).getValue();
 		if (interval == null) {
@@ -163,29 +178,20 @@ class FilterFieldGenerator implements Serializable {
 
 		// We use reflection to get the vaueOf method of the container
 		// datatype
-		try {
-			valueOf = clazz.getMethod("valueOf", String.class);
-			if (eqValue != null) {
-				return new Compare.Equal(propertyId, valueOf.invoke(clazz,
-						eqValue));
-			} else if (ltValue != null && gtValue != null) {
-				return new And(new Compare.Less(propertyId, valueOf.invoke(
-						clazz, ltValue)), new Compare.Greater(propertyId,
-						valueOf.invoke(clazz, gtValue)));
-			} else if (ltValue != null) {
-				return new Compare.Less(propertyId, valueOf.invoke(clazz,
-						ltValue));
-			} else if (gtValue != null) {
-				return new Compare.Greater(propertyId, valueOf.invoke(clazz,
-						gtValue));
-			} else {
-				return null;
-			}
-		} catch (NumberFormatException nfe) {
-			return null;
-		} catch (Exception e) {
-			throw new RuntimeException("Creating number filter has failed.", e);
+		valueOf = clazz.getMethod("valueOf", String.class);
+		if (eqValue != null) {
+			return new Compare.Equal(propertyId, valueOf.invoke(clazz, eqValue));
+		} else if (ltValue != null && gtValue != null) {
+			return new And(new Compare.Less(propertyId, valueOf.invoke(clazz,
+					ltValue)), new Compare.Greater(propertyId, valueOf.invoke(
+					clazz, gtValue)));
+		} else if (ltValue != null) {
+			return new Compare.Less(propertyId, valueOf.invoke(clazz, ltValue));
+		} else if (gtValue != null) {
+			return new Compare.Greater(propertyId, valueOf.invoke(clazz,
+					gtValue));
 		}
+		return null;
 	}
 
 	private Filter generateDateFilter(Property<?> field, Object propertyId,

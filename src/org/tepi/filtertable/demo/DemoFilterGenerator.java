@@ -69,4 +69,11 @@ class DemoFilterGenerator implements FilterGenerator, Serializable {
 		n.setDelayMsec(800);
 		n.show(Page.getCurrent());
 	}
+
+	@Override
+	public Filter filterGeneratorFailed(Exception reason, Object propertyId,
+			Object value) {
+		/* Return null -> Does not add any filter on failure */
+		return null;
+	}
 }
