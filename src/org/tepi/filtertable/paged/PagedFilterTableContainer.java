@@ -10,8 +10,8 @@ import com.vaadin.data.Property;
 import com.vaadin.data.util.filter.UnsupportedFilterException;
 
 public class PagedFilterTableContainer<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>
-        implements Container, Container.Indexed, Container.Sortable,
-        Container.Filterable, Container.ItemSetChangeNotifier {
+		implements Container, Container.Indexed, Container.Sortable,
+		Container.Filterable, Container.ItemSetChangeNotifier {
 	private static final long serialVersionUID = -2134233618583099046L;
 
 	private final T container;
@@ -82,7 +82,7 @@ public class PagedFilterTableContainer<T extends Container.Indexed & Container.F
 	@Override
 	public List<?> getItemIds(int startIndex, int numberOfItems) {
 		return container
-		        .getItemIds(this.startIndex + startIndex, numberOfItems);
+				.getItemIds(this.startIndex + startIndex, numberOfItems);
 	}
 
 	public Property<?> getContainerProperty(Object itemId, Object propertyId) {
@@ -106,17 +106,17 @@ public class PagedFilterTableContainer<T extends Container.Indexed & Container.F
 	}
 
 	public boolean removeItem(Object itemId)
-	        throws UnsupportedOperationException {
+			throws UnsupportedOperationException {
 		return container.removeItem(itemId);
 	}
 
 	public boolean addContainerProperty(Object propertyId, Class<?> type,
-	        Object defaultValue) throws UnsupportedOperationException {
+			Object defaultValue) throws UnsupportedOperationException {
 		return container.addContainerProperty(propertyId, type, defaultValue);
 	}
 
 	public boolean removeContainerProperty(Object propertyId)
-	        throws UnsupportedOperationException {
+			throws UnsupportedOperationException {
 		return container.removeContainerProperty(propertyId);
 	}
 
@@ -149,12 +149,12 @@ public class PagedFilterTableContainer<T extends Container.Indexed & Container.F
 	}
 
 	public Object addItemAfter(Object previousItemId)
-	        throws UnsupportedOperationException {
+			throws UnsupportedOperationException {
 		return container.addItemAfter(previousItemId);
 	}
 
 	public Item addItemAfter(Object previousItemId, Object newItemId)
-	        throws UnsupportedOperationException {
+			throws UnsupportedOperationException {
 		return container.addItemAfter(previousItemId, newItemId);
 	}
 
@@ -167,7 +167,7 @@ public class PagedFilterTableContainer<T extends Container.Indexed & Container.F
 	}
 
 	public Item addItemAt(int index, Object newItemId)
-	        throws UnsupportedOperationException {
+			throws UnsupportedOperationException {
 		return container.addItemAt(index, newItemId);
 	}
 
@@ -184,14 +184,19 @@ public class PagedFilterTableContainer<T extends Container.Indexed & Container.F
 	public Collection<?> getSortableContainerPropertyIds() {
 		if (container instanceof Container.Sortable) {
 			return ((Container.Sortable) container)
-			        .getSortableContainerPropertyIds();
+					.getSortableContainerPropertyIds();
 		}
 		return Collections.EMPTY_LIST;
 	}
 
 	public void addContainerFilter(Filter filter)
-	        throws UnsupportedFilterException {
+			throws UnsupportedFilterException {
 		container.addContainerFilter(filter);
+	}
+
+	@Override
+	public Collection<Filter> getContainerFilters() {
+		return container.getContainerFilters();
 	}
 
 	public void removeContainerFilter(Filter filter) {
@@ -205,13 +210,13 @@ public class PagedFilterTableContainer<T extends Container.Indexed & Container.F
 	@Override
 	public void addItemSetChangeListener(ItemSetChangeListener listener) {
 		((Container.ItemSetChangeNotifier) container)
-		        .addItemSetChangeListener(listener);
+				.addItemSetChangeListener(listener);
 	}
 
 	@Override
 	public void removeItemSetChangeListener(ItemSetChangeListener listener) {
 		((Container.ItemSetChangeNotifier) container)
-		        .removeItemSetChangeListener(listener);
+				.removeItemSetChangeListener(listener);
 	}
 
 	@Override

@@ -14,7 +14,6 @@ import com.google.gwt.user.client.ui.FocusWidget;
 import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.Focusable;
 import com.vaadin.client.Util;
-import com.vaadin.client.VConsole;
 import com.vaadin.client.ui.VCustomScrollTable;
 
 public class VFilterTable extends VCustomScrollTable {
@@ -156,8 +155,6 @@ public class VFilterTable extends VCustomScrollTable {
 		}
 
 		public void focusWidget(Widget filterToFocus) {
-			VConsole.log(filterToFocus == null ? "NULL FOCUS" : filterToFocus
-					.toString());
 			if (filterToFocus == null) {
 				return;
 			} else if (filterToFocus instanceof FocusWidget) {

@@ -33,6 +33,7 @@ import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.ComboBox;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.Field;
+import com.vaadin.ui.HasComponents;
 import com.vaadin.ui.TextField;
 
 class FilterFieldGenerator implements Serializable {
@@ -490,7 +491,7 @@ class FilterFieldGenerator implements Serializable {
 
 		public int getPageLength();
 
-		public Component getAsComponent();
+		public HasComponents getAsComponent();
 
 	}
 }

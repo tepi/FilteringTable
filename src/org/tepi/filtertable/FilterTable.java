@@ -17,6 +17,7 @@ import com.vaadin.server.PaintTarget;
 import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomTable;
+import com.vaadin.ui.HasComponents;
 import com.vaadin.ui.TextField;
 
 /**
@@ -291,7 +292,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
 		return columnIdToFilterMap;
 	}
 
-	public Component getAsComponent() {
+	public HasComponents getAsComponent() {
 		return this;
 	}
 
@@ -313,7 +314,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
 	}
 
 	@Override
-	public void setVisibleColumns(Object[] visibleColumns) {
+	public void setVisibleColumns(Object... visibleColumns) {
 		reRenderFilterFields = true;
 		if (visibleColumns != null && columnIdToFilterMap != null) {
 			/* First clear all parent references */
