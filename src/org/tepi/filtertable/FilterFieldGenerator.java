@@ -24,6 +24,7 @@ import com.vaadin.data.Property.ValueChangeListener;
 import com.vaadin.data.util.filter.And;
 import com.vaadin.data.util.filter.Between;
 import com.vaadin.data.util.filter.Compare;
+import com.vaadin.data.util.filter.Compare.Equal;
 import com.vaadin.data.util.filter.SimpleStringFilter;
 import com.vaadin.event.FieldEvents.TextChangeEvent;
 import com.vaadin.event.FieldEvents.TextChangeListener;
@@ -128,8 +129,12 @@ class FilterFieldGenerator implements Serializable {
 				return newFilter;
 			}
 		}
-		return new SimpleStringFilter(propertyId, String.valueOf(value), true,
-				false);
+		if (field instanceof ComboBox) {
+			return new Equal(propertyId, value);
+		} else {
+			return new SimpleStringFilter(propertyId, String.valueOf(value),
+					true, false);
+		}
 	}
 
 	private Filter generateNumberFilter(Property field, Object propertyId,
