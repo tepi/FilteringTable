@@ -302,8 +302,10 @@ class FilterFieldGenerator implements Serializable {
 			return dfp;
 		} else if ((type == Integer.class || type == Long.class
 				|| type == Float.class || type == Double.class
+				|| type == Short.class || type == Byte.class
 				|| type == int.class || type == long.class
-				|| type == float.class || type == double.class)
+				|| type == float.class || type == double.class
+				|| type == short.class || type == byte.class)
 				&& owner.getFilterDecorator() != null
 				&& owner.getFilterDecorator().usePopupForNumericProperty(
 						property)) {
