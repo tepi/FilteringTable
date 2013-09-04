@@ -41,16 +41,15 @@ public class VFilterTable extends VCustomScrollTable {
 	}
 
 	@Override
-	protected void setContainerHeight() {
+	protected void calculateContainerHeight() {
 		/* First calculate the height with the normal method */
-		super.setContainerHeight();
+		super.calculateContainerHeight();
 		/* Account for possibly visible table filter row */
-		if (!isDynamicHeight() && filters.isVisible()) {
+		if (filters.isVisible()) {
 			containerHeight -= filters.getOffsetHeight();
 			if (containerHeight < 0) {
 				containerHeight = 0;
 			}
-			scrollBodyPanel.setHeight(containerHeight + "px");
 		}
 	}
 
