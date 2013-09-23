@@ -37,6 +37,7 @@ import com.vaadin.ui.Field;
 import com.vaadin.ui.HasComponents;
 import com.vaadin.ui.TextField;
 
+@SuppressWarnings("serial")
 class FilterFieldGenerator implements Serializable {
     private final IFilterTable owner;
 

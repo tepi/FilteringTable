@@ -6,6 +6,7 @@ import java.io.Serializable;
  * @author Vimukthi
  * 
  */
+@SuppressWarnings("serial")
 public class NumberInterval implements Serializable {
 
     private final String lessThanValue;

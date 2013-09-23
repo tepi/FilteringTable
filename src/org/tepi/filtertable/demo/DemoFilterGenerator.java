@@ -13,6 +13,7 @@ import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.Field;
 import com.vaadin.ui.Notification;
 
+@SuppressWarnings("serial")
 class DemoFilterGenerator implements FilterGenerator, Serializable {
 
     @Override

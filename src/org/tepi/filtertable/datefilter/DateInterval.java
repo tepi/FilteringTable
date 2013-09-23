@@ -9,6 +9,7 @@ import java.util.Date;
  * @author Teppo Kurki
  * 
  */
+@SuppressWarnings("serial")
 public class DateInterval implements Serializable {
     private final Date from;
     private final Date to;

@@ -2,6 +2,7 @@ package org.tepi.filtertable.paged;
 
 import java.io.Serializable;
 
+@SuppressWarnings("serial")
 public class PagedTableChangeEvent implements Serializable {
     private final PagedFilterTable<?> table;
 

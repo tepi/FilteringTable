@@ -21,9 +21,9 @@ import com.vaadin.ui.TextField;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.themes.Reindeer;
 
+@SuppressWarnings("serial")
 public class PagedFilterTable<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>
         extends FilterTable {
-    private static final long serialVersionUID = 6881455780158545828L;
 
     public interface PageChangeListener {
         public void pageChanged(PagedTableChangeEvent event);
@@ -60,6 +60,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         itemsPerPageSelect.addValueChangeListener(new ValueChangeListener() {
             private static final long serialVersionUID = -2255853716069800092L;
 
+            @Override
             public void valueChange(
                     com.vaadin.data.Property.ValueChangeEvent event) {
                 setPageLength(Integer.valueOf(String.valueOf(event
@@ -84,6 +85,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         currentPageTextField.addValueChangeListener(new ValueChangeListener() {
             private static final long serialVersionUID = -2255853716069800092L;
 
+            @Override
             public void valueChange(
                     com.vaadin.data.Property.ValueChangeEvent event) {
                 if (currentPageTextField.isValid()
@@ -105,6 +107,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         final Button first = new Button("<<", new ClickListener() {
             private static final long serialVersionUID = -355520120491283992L;
 
+            @Override
             public void buttonClick(ClickEvent event) {
                 setCurrentPage(0);
             }
@@ -112,6 +115,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         final Button previous = new Button("<", new ClickListener() {
             private static final long serialVersionUID = -355520120491283992L;
 
+            @Override
             public void buttonClick(ClickEvent event) {
                 previousPage();
             }
@@ -119,6 +123,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         final Button next = new Button(">", new ClickListener() {
             private static final long serialVersionUID = -1927138212640638452L;
 
+            @Override
             public void buttonClick(ClickEvent event) {
                 nextPage();
             }
@@ -126,6 +131,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         final Button last = new Button(">>", new ClickListener() {
             private static final long serialVersionUID = -355520120491283992L;
 
+            @Override
             public void buttonClick(ClickEvent event) {
                 setCurrentPage(getTotalAmountOfPages());
             }
@@ -193,6 +199,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         addListener(new PageChangeListener() {
             private boolean inMiddleOfValueChange;
 
+            @Override
             public void pageChanged(PagedTableChangeEvent event) {
                 if (!inMiddleOfValueChange) {
                     inMiddleOfValueChange = true;
@@ -253,6 +260,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
             containerItemSetChange(new Container.ItemSetChangeEvent() {
                 private static final long serialVersionUID = -5083660879306951876L;
 
+                @Override
                 public Container getContainer() {
                     return container;
                 }

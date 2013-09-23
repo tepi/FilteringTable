@@ -10,6 +10,7 @@ import java.io.Serializable;
  * @author Vimukthi
  * 
  */
+@SuppressWarnings("serial")
 public class NumberFilterPopupConfig implements Serializable {
     private String ltPrompt;
     private String gtPrompt;

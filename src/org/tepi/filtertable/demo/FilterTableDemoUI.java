@@ -30,6 +30,7 @@ import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.Reindeer;
 
+@SuppressWarnings("serial")
 @Title("FilterTable Demo Application")
 @PreserveOnRefresh
 public class FilterTableDemoUI extends UI {
@@ -102,8 +103,8 @@ public class FilterTableDemoUI extends UI {
 
         filterTable.setColumnCollapsed("state", true);
 
-        filterTable.setVisibleColumns(new String[] { /* "name", */"id",
-                "state", "date", "validated", "checked" });
+        filterTable.setVisibleColumns((Object[]) new String[] { /* "name", */
+                "id", "state", "date", "validated", "checked" });
 
         return filterTable;
     }
@@ -144,8 +145,8 @@ public class FilterTableDemoUI extends UI {
 
         filterTable.setContainerDataSource(buildContainer());
 
-        filterTable.setVisibleColumns(new String[] { "name", "id", "state",
-                "date", "validated", "checked" });
+        filterTable.setVisibleColumns((Object[]) new String[] { "name", "id",
+                "state", "date", "validated", "checked" });
 
         return filterTable;
     }
