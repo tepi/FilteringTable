@@ -26,7 +26,7 @@ import com.vaadin.client.ui.AbstractHasComponentsConnector;
 import com.vaadin.client.ui.PostLayoutListener;
 import com.vaadin.client.ui.VCustomScrollTable;
 import com.vaadin.client.ui.VCustomScrollTable.ContextMenuDetails;
-import com.vaadin.client.ui.VScrollTable.VScrollTableBody.VScrollTableRow;
+import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 import com.vaadin.shared.ui.Connect;
 import com.vaadin.shared.ui.table.TableConstants;
 import com.vaadin.shared.ui.table.TableState;
