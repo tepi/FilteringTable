@@ -8,6 +8,7 @@ import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.event.dom.client.ScrollEvent;
 import com.google.gwt.event.dom.client.ScrollHandler;
 import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.FocusWidget;
@@ -15,13 +16,12 @@ import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.Focusable;
 import com.vaadin.client.Util;
 import com.vaadin.client.ui.VCustomScrollTable;
+import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 
 public class VFilterTable extends VCustomScrollTable {
 
     /* Custom FlowPanel for the column filters */
     FilterPanel filters;
-
-    Map<Integer, Integer> columnWidths = new HashMap<Integer, Integer>();
 
     public VFilterTable() {
         super();
@@ -56,8 +56,7 @@ public class VFilterTable extends VCustomScrollTable {
     @Override
     protected void setColWidth(int colIndex, int w, boolean isDefinedWidth) {
         super.setColWidth(colIndex, w, isDefinedWidth);
-        columnWidths.put(colIndex, w);
-        filters.setFilterWidth(colIndex, w);
+        filters.setFilterWidth(colIndex);
     }
 
     @Override
@@ -124,10 +123,10 @@ public class VFilterTable extends VCustomScrollTable {
                     placeHolder.addStyleName("filterplaceholder");
                     container.add(placeHolder);
                     filters.put(key, placeHolder);
-                    setFilterWidth(i, getColWidth(key));
+                    setFilterWidth(i);
                 } else {
                     container.add(widget);
-                    setFilterWidth(i, getColWidth(key));
+                    setFilterWidth(i);
                 }
             }
         }
@@ -136,11 +135,22 @@ public class VFilterTable extends VCustomScrollTable {
             wrap.getElement().setScrollLeft(scrollLeft);
         }
 
-        private void setFilterWidth(int index, int width) {
+        private void setFilterWidth(int index) {
             Widget p = filters.get(getColKeyByIndex(index));
             if (p != null) {
-                p.setWidth(Util.getRequiredWidth(tHead.getHeaderCell(index))
-                        + "px");
+                /* Try to get width from header cell */
+                int w = Util.getRequiredWidth(tHead.getHeaderCell(index));
+                if (w <= 0) {
+                    /* Header not available, try first rendered row */
+                    VScrollTableRow firstRow = scrollBody
+                            .getRowByRowIndex(scrollBody.getFirstRendered());
+                    final Element cell = DOM.getChild(firstRow.getElement(),
+                            index);
+                    w = Util.getRequiredWidth(cell);
+                }
+                /* Ensure no negative widths are set */
+                w = w > 0 ? w : 0;
+                p.setWidth(w + "px");
             }
         }
 
@@ -166,11 +176,7 @@ public class VFilterTable extends VCustomScrollTable {
 
         public void resetFilterWidths() {
             for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
-                String key = getColKeyByIndex(i);
-                if (key == null) {
-                    continue;
-                }
-                setFilterWidth(i, getColWidth(key));
+                setFilterWidth(i);
             }
         }
     }
