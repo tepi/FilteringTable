@@ -214,11 +214,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
      * @return true if filter is visible, false if it's hidden
      */
     public boolean isFilterFieldVisible(Object columnId) {
-        /* Return false for generated columns */
-        if (!getContainerDataSource().getContainerPropertyIds().contains(
-                columnId)) {
-            return false;
-        }
         Component component = columnIdToFilterMap.get(columnId);
         if (component != null) {
             return component.isVisible();
