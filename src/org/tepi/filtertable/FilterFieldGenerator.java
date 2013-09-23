@@ -129,6 +129,9 @@ class FilterFieldGenerator implements Serializable {
 			}
 			return null;
 		} catch (Exception reason) {
+			/* Clear the field on failure during generating filter */
+			field.setValue(null);
+			/* Notify FilterGenerator, or re-throw if not available */
 			if (owner.getFilterGenerator() != null) {
 				return owner.getFilterGenerator().filterGeneratorFailed(reason,
 						propertyId, value);
