@@ -81,7 +81,7 @@ class FilterFieldGenerator implements Serializable {
 							.getContainerDataSource().getType(property));
 					addFilterColumn(property, filter);
 				} else {
-					addFilterColumn(property, createField(null, null));
+					addFilterColumn(property, createField(property, null));
 				}
 			}
 		}
