@@ -6695,8 +6695,18 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 	 * size is used.
 	 */
 	protected int containerHeight;
+        
+	protected void calculateContainerHeight() {
+		containerHeight = getOffsetHeight();
+		containerHeight -= showColHeaders ? tHead.getOffsetHeight() : 0;
+		containerHeight -= tFoot.getOffsetHeight();
+		containerHeight -= getContentAreaBorderHeight();
+		if (containerHeight < 0) {
+			containerHeight = 0;
+		}
+	}
 
-	protected void setContainerHeight() {
+	public void setContainerHeight() {
 		if (!isDynamicHeight()) {
 
 			/*
@@ -6709,13 +6719,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 				getElement().getStyle().setDisplay(Display.BLOCK);
 			}
 
-			containerHeight = getOffsetHeight();
-			containerHeight -= showColHeaders ? tHead.getOffsetHeight() : 0;
-			containerHeight -= tFoot.getOffsetHeight();
-			containerHeight -= getContentAreaBorderHeight();
-			if (containerHeight < 0) {
-				containerHeight = 0;
-			}
+			calculateContainerHeight();
 
 			scrollBodyPanel.setHeight(containerHeight + "px");
 
