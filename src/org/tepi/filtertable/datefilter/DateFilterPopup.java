@@ -196,6 +196,9 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         /* Truncate the from and to dates */
         Resolution res = decorator != null ? decorator
                 .getDateFieldResolution(propertyId) : DEFAULT_RESOLUTION;
+        if (res == null) {
+            res = DEFAULT_RESOLUTION;
+        }
         fromValue = truncateDate(fromField.getValue(), res, true);
         toValue = truncateDate(toField.getValue(), res, false);
         setValue(new DateInterval(fromValue, toValue));
