@@ -32,6 +32,7 @@ import com.vaadin.ui.VerticalLayout;
  * @author Teppo Kurki
  * 
  */
+@SuppressWarnings("serial")
 public class DateFilterPopup extends CustomField<DateInterval> {
     private PopupButton content;
 
@@ -90,6 +91,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         set = new Button();
         clear = new Button();
         ClickListener buttonClickHandler = new ClickListener() {
+            @Override
             public void buttonClick(ClickEvent event) {
                 updateValue(clear.equals(event.getButton()));
             }
@@ -249,6 +251,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
             setFilterDecorator(decorator);
             updateCaption(true);
             content.addPopupVisibilityListener(new PopupVisibilityListener() {
+                @Override
                 public void popupVisibilityChange(PopupVisibilityEvent event) {
                     if (cancelReset || event.getPopupButton().isPopupVisible()) {
                         fromValue = fromField.getValue();
@@ -268,5 +271,14 @@ public class DateFilterPopup extends CustomField<DateInterval> {
     @Override
     public Class<? extends DateInterval> getType() {
         return DateInterval.class;
+    }
+
+    @Override
+    public void setReadOnly(boolean readOnly) {
+        super.setReadOnly(readOnly);
+        set.setEnabled(!readOnly);
+        clear.setEnabled(!readOnly);
+        fromField.setEnabled(!readOnly);
+        toField.setEnabled(!readOnly);
     }
 }

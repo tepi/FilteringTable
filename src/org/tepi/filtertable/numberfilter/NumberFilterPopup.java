@@ -24,6 +24,7 @@ import com.vaadin.ui.TextField;
  * @author Vimukthi
  * @author Teppo Kurki [adapted for V7]
  */
+@SuppressWarnings("serial")
 public class NumberFilterPopup extends CustomField<NumberInterval> {
 
     private PopupButton content;
@@ -87,6 +88,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
         // disable gt and lt fields when this activates
         eqInput.addTextChangeListener(new FieldEvents.TextChangeListener() {
 
+            @Override
             public void textChange(TextChangeEvent event) {
                 if (event.getText().equals("")) {
                     gtInput.setEnabled(true);
@@ -99,6 +101,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
         });
 
         ok = new Button(DEFAULT_OK_CAPTION, new ClickListener() {
+            @Override
             public void buttonClick(ClickEvent event) {
                 // users inputs
                 String ltNow;
@@ -128,6 +131,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
         });
 
         reset = new Button(DEFAULT_RESET_CAPTION, new ClickListener() {
+            @Override
             public void buttonClick(ClickEvent event) {
                 setValue(null);
                 NumberFilterPopup.this.content.setPopupVisible(false);
@@ -273,5 +277,15 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
     @Override
     public Class<? extends NumberInterval> getType() {
         return NumberInterval.class;
+    }
+
+    @Override
+    public void setReadOnly(boolean readOnly) {
+        super.setReadOnly(readOnly);
+        ok.setEnabled(!readOnly);
+        reset.setEnabled(!readOnly);
+        ltInput.setEnabled(!readOnly);
+        gtInput.setEnabled(!readOnly);
+        eqInput.setEnabled(!readOnly);
     }
 }
