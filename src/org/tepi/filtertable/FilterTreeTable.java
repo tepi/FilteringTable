@@ -325,4 +325,12 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
         super.setVisibleColumns(visibleColumns);
         resetFilters();
     }
+
+    @Override
+    public void setRefreshingEnabled(boolean enabled) {
+        if (enabled)
+            enableContentRefreshing(true);
+        else
+            disableContentRefreshing();
+    }
 }

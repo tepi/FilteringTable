@@ -26,6 +26,8 @@ import com.vaadin.client.ComputedStyle;
 import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
 import com.vaadin.client.ui.VCustomScrollTable;
+import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody;
+import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 
 public class VFilterTreeTable extends VFilterTable {
     /** For internal use only. May be removed or replaced in the future. */
@@ -113,7 +115,7 @@ public class VFilterTreeTable extends VFilterTable {
     }
 
     public class VTreeTableScrollBody extends
-            VCustomScrollTable.VScrollTableBody {
+            VScrollTableBody {
         private int indentWidth = -1;
         private int maxIndent = 0;
 
@@ -131,7 +133,7 @@ public class VFilterTreeTable extends VFilterTable {
         }
 
         public class VTreeTableRow extends
-                VCustomScrollTable.VScrollTableBody.VScrollTableRow {
+                VScrollTableRow {
 
             private boolean isTreeCellAdded = false;
             private SpanElement treeSpacer;

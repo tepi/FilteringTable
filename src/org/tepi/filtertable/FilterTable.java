@@ -128,6 +128,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
      */
     public void resetFilters() {
         if (initDone) {
+            disableContentRefreshing();
             for (Component c : columnIdToFilterMap.values()) {
                 c.setParent(null);
             }
@@ -136,6 +137,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
             generator.clearFilterData();
             generator.initializeFilterFields();
             reRenderFilterFields = true;
+            enableContentRefreshing(true);
         }
     }
 
@@ -332,5 +334,13 @@ public class FilterTable extends CustomTable implements IFilterTable {
         }
         super.setVisibleColumns(visibleColumns);
         resetFilters();
+    }
+
+    @Override
+    public void setRefreshingEnabled(boolean enabled) {
+        if (enabled)
+            enableContentRefreshing(true);
+        else
+            disableContentRefreshing();
     }
 }
