@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="Calendar" basedir="../" default="all" xmlns:ivy="antlib:org.apache.ivy.ant">
+<project name="FilteringTable7" basedir="../" default="all" xmlns:ivy="antlib:org.apache.ivy.ant">
 
 	<!-- Main target that does all -->
 	<target name="all" depends="clean-all, compile, widgetset, javadoc, sources-jar, package-jar, package-zip, demo.war, cleanup" />
@@ -36,8 +36,11 @@
 		<echo>Compiling server side...</echo>
 		<property name="result.classes" value="${result-path}/war/WEB-INF/classes" />
 		<mkdir dir="${result.classes}" />
-		<javac includeantruntime="false" srcdir="src" verbose="yes" destdir="${result.classes}" target="1.6" source="1.6" debug="true">
+		<javac includeantruntime="false" verbose="yes" destdir="${result.classes}" target="1.6" source="1.6" debug="true">
 			<classpath refid="ivy.deps" />
+			<src path="src" />
+			<exclude name="com/vaadin/client/ui/**" />
+			<exclude name="org/tepi/filtertable/gwt/**" />
 		</javac>
 	</target>
 
@@ -72,92 +75,92 @@
 			<link href='http://java.sun.com/javase/6/docs/api/' />
 			<header>
 				<![CDATA[<h1>${app.name} ${app.version}</h1>]]></header>
-		</javadoc>
-	</target>
+	</javadoc>
+</target>
 
-	<!-- Create sources JAR -->
-	<target name="sources-jar">
-		<jar basedir="src" destfile="${result-path}/${addon.name}-${version}-sources.jar" />
-	</target>
-	
-	<!-- Create the JAR package [Note: JAR is not functional by itself]. -->
-	<target name="package-jar" depends="compile" unless="run.no-package-jar">
-		<echo>Creating ${addon.title} JAR...</echo>
-		<jar jarfile="${jar.path}" compress="true">
-			<manifest>
-				<attribute name="Vaadin-Package-Version" value="1" />
-				<attribute name="Vaadin-Widgetsets" value="${addon.widgetset}" />
-				<attribute name="Implementation-Title" value="${addon.title}" />
-				<attribute name="Implementation-Version" value="${version}" />
-				<attribute name="Implementation-Vendor" value="${addon.vendor}" />
-			</manifest>
-			<!-- The built server-side classes and the widget set class are here. -->
-			<fileset dir="${result.classes}">
-				<patternset>
-					<exclude name="**/demo/**" />
-				</patternset>
-			</fileset>
-			<!-- Include sources. -->
-			<fileset dir="src">
-				<patternset>
-					<exclude name="**/demo/**" />
-				</patternset>
-			</fileset>
-			<fileset dir="WebContent">
-				<patternset>
-					<exclude name="**/VAADIN/**" />
-					<exclude name="**/WEB-INF/**" />
-				</patternset>
-			</fileset>
-		</jar>
-	</target>
+<!-- Create sources JAR -->
+<target name="sources-jar">
+	<jar basedir="src" destfile="${result-path}/${addon.name}-${version}-sources.jar" />
+</target>
 
-	<!-- Create the ZIP distribution package. -->
-	<target name="package-zip" depends="package-jar">
-		<echo>Creating ${addon.title} ZIP...</echo>
-		<property name="zip.name" value="${result-path}/${addon.name}-${version}.zip" />
-		<!-- Make the zip manifest -->
-		<mkdir dir="${result-path}/META-INF" />
-		<echo file="${result-path}/META-INF/MANIFEST.MF">Vaadin-Addon: ${addon.name}-${version}/${jar.name}
+<!-- Create the JAR package [Note: JAR is not functional by itself]. -->
+<target name="package-jar" depends="compile" unless="run.no-package-jar">
+	<echo>Creating ${addon.title} JAR...</echo>
+	<jar jarfile="${jar.path}" compress="true">
+		<manifest>
+			<attribute name="Vaadin-Package-Version" value="1" />
+			<attribute name="Vaadin-Widgetsets" value="${addon.widgetset}" />
+			<attribute name="Implementation-Title" value="${addon.title}" />
+			<attribute name="Implementation-Version" value="${version}" />
+			<attribute name="Implementation-Vendor" value="${addon.vendor}" />
+		</manifest>
+		<!-- The built server-side classes and the widget set class are here. -->
+		<fileset dir="${result.classes}">
+			<patternset>
+				<exclude name="**/demo/**" />
+			</patternset>
+		</fileset>
+		<!-- Include sources. -->
+		<fileset dir="src">
+			<patternset>
+				<exclude name="**/demo/**" />
+			</patternset>
+		</fileset>
+		<fileset dir="WebContent">
+			<patternset>
+				<exclude name="**/VAADIN/**" />
+				<exclude name="**/WEB-INF/**" />
+			</patternset>
+		</fileset>
+	</jar>
+</target>
+
+<!-- Create the ZIP distribution package. -->
+<target name="package-zip" depends="package-jar">
+	<echo>Creating ${addon.title} ZIP...</echo>
+	<property name="zip.name" value="${result-path}/${addon.name}-${version}.zip" />
+	<!-- Make the zip manifest -->
+	<mkdir dir="${result-path}/META-INF" />
+	<echo file="${result-path}/META-INF/MANIFEST.MF">Vaadin-Addon: ${addon.name}-${version}/${jar.name}
 Vaadin-Package-Version: 1
 Implementation-Title: ${addon.title}
 Implementation-Version: ${version}
 Implementation-Vendor: ${addon.vendor}
 Vaadin-Dependency: ${dependency.popupbutton}
 	       </echo>
-		<zip destfile="${zip.name}">
-			<zipfileset dir="${result-path}" includes="META-INF/MANIFEST.MF" />
-			<!-- The add-on library itself -->
-			<zipfileset prefix="${addon.name}-${version}" file="${result-path}/${jar.name}" />
-			<!-- Dependency: PopupButton -->
-			<zipfileset file="${temp.lib.dir}/${dependency.popupbutton}" />
-			<!-- Javadoc -->
-			<zipfileset prefix="javadoc" dir="${result-path}/javadoc" />
-			<!-- Sources -->
-			<zipfileset file="${result-path}/${addon.name}-${version}-sources.jar" />
-		</zip>
-	</target>
+	<zip destfile="${zip.name}">
+		<zipfileset dir="${result-path}" includes="META-INF/MANIFEST.MF" />
+		<!-- The add-on library itself -->
+		<zipfileset prefix="${addon.name}-${version}" file="${result-path}/${jar.name}" />
+		<!-- Dependency: PopupButton -->
+		<zipfileset file="${temp.lib.dir}/${dependency.popupbutton}" />
+		<!-- Javadoc -->
+		<zipfileset prefix="javadoc" dir="${result-path}/javadoc" />
+		<!-- Sources -->
+		<zipfileset file="${result-path}/${addon.name}-${version}-sources.jar" />
+	</zip>
+</target>
 
-	<!-- Create demo application WAR -->
-	<target name="demo.war" depends="package-jar">
-		<echo>Creating ${addon.title} Demo Application WAR...</echo>
-		<property name="war.path" value="${result-path}/${addon.name}-v7.war" />
-		<war destfile="${war.path}" webxml="${web.xml.location}">
-			<classes dir="${result.classes}" />
-			<lib file="${jar.path}" />
-			<lib dir="${temp.lib.dir}" />
-			<fileset dir="${webcontent.dir}">
-				<patternset>
-					<include name="${webcontent.widgetset.dir}${addon.widgetset}/**/*" />
-				</patternset>
-			</fileset>
-		</war>
-	</target>
+<!-- Create demo application WAR -->
+<target name="demo.war" depends="package-jar">
+	<echo>Creating ${addon.title} Demo Application WAR...</echo>
+	<property name="war.path" value="${result-path}/${addon.name}-v7.war" />
+	<war destfile="${war.path}" webxml="${web.xml.location}">
+		<classes dir="${result.classes}" />
+		<lib file="${jar.path}" />
+		<lib dir="${temp.lib.dir}" />
+		<fileset dir="${webcontent.dir}">
+			<patternset>
+				<include name="${webcontent.widgetset.dir}${addon.widgetset}/**/*" />
+			</patternset>
+		</fileset>
+	</war>
+</target>
 
-	<target name="cleanup">
-		<delete dir="${temp.lib.dir}" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
-		<delete dir="${result-path}/war" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
-		<delete dir="${result-path}/META-INF" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
-		<delete dir="${result-path}/javadoc" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
-	</target>
+<target name="cleanup">
+	<delete dir="${temp.lib.dir}" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+	<delete dir="${result-path}/war" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+	<delete dir="${result-path}/META-INF" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+	<delete dir="${result-path}/javadoc" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+</target>
 </project>
