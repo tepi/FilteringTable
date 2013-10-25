@@ -156,10 +156,12 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
      */
     public void resetFilters() {
         if (initDone) {
+            setRefreshingEnabled(false);
             collapsedColumnIds.clear();
             columnIdToFilterMap.clear();
             generator.clearFilterData();
             generator.initializeFilterFields();
+            setRefreshingEnabled(true);
         }
         reRenderFilterFields = true;
     }
@@ -355,5 +357,13 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 
         reRenderFilterFields = true;
         requestRepaint();
+    }
+
+    @Override
+    public void setRefreshingEnabled(boolean enabled) {
+        if (enabled)
+            enableContentRefreshing(true);
+        else
+            disableContentRefreshing();
     }
 }

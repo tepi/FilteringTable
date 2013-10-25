@@ -248,7 +248,6 @@ class FilterFieldGenerator implements Serializable {
     private void addFilterColumn(Object propertyId, Component filter) {
         owner.getColumnIdToFilterMap().put(propertyId, filter);
         filter.setParent(owner.getAsComponent());
-        owner.requestRepaint();
     }
 
     private void removeFilter(Object propertyId) {
@@ -438,6 +437,9 @@ class FilterFieldGenerator implements Serializable {
                 } else if (booleans.containsKey(field)) {
                     propertyId = booleans.get(field);
                 }
+
+                owner.setRefreshingEnabled(false);
+
                 removeFilter(propertyId);
                 /* Generate and set a new filter */
                 Filter newFilter = generateFilter(field, propertyId, value);
@@ -456,6 +458,8 @@ class FilterFieldGenerator implements Serializable {
                 if (owner instanceof PagedFilterTable<?>) {
                     ((PagedFilterTable<?>) owner).setCurrentPage(1);
                 }
+
+                owner.setRefreshingEnabled(true);
             }
         };
     }
@@ -476,13 +480,12 @@ class FilterFieldGenerator implements Serializable {
 
         public Map<Object, Component> getColumnIdToFilterMap();
 
-        public void requestRepaint();
-
         public FilterDecorator getFilterDecorator();
 
         public int getPageLength();
 
         public Component getAsComponent();
 
+        public void setRefreshingEnabled(boolean enabled);
     }
 }
