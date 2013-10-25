@@ -117,42 +117,16 @@ public class NumberFilterPopup extends PopupButton implements
         ok = new Button(okCaption, new ClickListener() {
             public void buttonClick(ClickEvent event) {
                 // users inputs
-                String ltNow;
-                String gtNow;
-                String eqNow;
-
-                try {
-                    Double.valueOf((String) ltInput.getValue());
-                    ltNow = (String) ltInput.getValue();
-                } catch (RuntimeException e) {
-                    ltNow = null;
-                }
-
-                try {
-                    Double.valueOf((String) gtInput.getValue());
-                    gtNow = (String) gtInput.getValue();
-                } catch (RuntimeException e) {
-                    gtNow = null;
-                }
-
-                try {
-                    Double.valueOf((String) eqInput.getValue());
-                    eqNow = (String) eqInput.getValue();
-                } catch (RuntimeException e) {
-                    eqNow = null;
-                }
+                String ltNow = (String) ltInput.getValue();
+                String gtNow = (String) gtInput.getValue();
+                String eqNow = (String) eqInput.getValue();
                 setInternalValue(ltNow, gtNow, eqNow);
             }
         });
 
         reset = new Button(resetCaption, new ClickListener() {
             public void buttonClick(ClickEvent event) {
-                setInternalValue(null, null, null);
-                ltInput.setValue("");
-                gtInput.setValue("");
-                eqInput.setValue("");
-                gtInput.setEnabled(true);
-                ltInput.setEnabled(true);
+                reset();
             }
         });
         HorizontalLayout buttons = new HorizontalLayout();
@@ -245,6 +219,16 @@ public class NumberFilterPopup extends PopupButton implements
         return interval;
     }
 
+    public void reset() {
+        setInternalValue(null, null, null);
+        ltInput.setValue("");
+        gtInput.setValue("");
+        eqInput.setValue("");
+        gtInput.setEnabled(true);
+        ltInput.setEnabled(true);
+        setNullCaption();
+    }
+
     /**
      * set the initial caption for the filter
      */
@@ -271,8 +255,8 @@ public class NumberFilterPopup extends PopupButton implements
                 return valueMarker + " = " + interval.getEqualsValue();
             } else if (interval.getGreaterThanValue() != null
                     && interval.getLessThanValue() != null) {
-                return interval.getGreaterThanValue() + " < " + valueMarker + " < "
-                        + interval.getLessThanValue();
+                return interval.getGreaterThanValue() + " < " + valueMarker
+                        + " < " + interval.getLessThanValue();
             } else if (interval.getGreaterThanValue() != null) {
                 return valueMarker + " > " + interval.getGreaterThanValue();
             } else if (interval.getLessThanValue() != null) {

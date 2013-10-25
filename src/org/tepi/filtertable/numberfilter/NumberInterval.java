@@ -15,9 +15,23 @@ public class NumberInterval implements Serializable {
     public NumberInterval(String lessThanValue, String greaterThanValue,
             String equalsValue) {
         super();
-        this.lessThanValue = lessThanValue;
-        this.greaterThanValue = greaterThanValue;
-        this.equalsValue = equalsValue;
+        if (lessThanValue != null && !lessThanValue.trim().isEmpty()) {
+            this.lessThanValue = lessThanValue;
+        } else {
+            this.lessThanValue = null;
+        }
+
+        if (greaterThanValue != null && !greaterThanValue.trim().isEmpty()) {
+            this.greaterThanValue = greaterThanValue;
+        } else {
+            this.greaterThanValue = null;
+        }
+
+        if (equalsValue != null && !equalsValue.trim().isEmpty()) {
+            this.equalsValue = equalsValue;
+        } else {
+            this.equalsValue = null;
+        }
     }
 
     public String getLessThanValue() {
