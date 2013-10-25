@@ -423,9 +423,8 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
                 Widget w = iterator.next();
                 VScrollTableRow row = (VScrollTableRow) w;
                 if (row.getKey().equals(savedContextMenu.rowKey)) {
-                    getWidget().contextMenu = savedContextMenu;
-                    getConnection().getContextMenu().showAt(row,
-                            savedContextMenu.left, savedContextMenu.top);
+                    row.showContextMenu(savedContextMenu.left,
+                            savedContextMenu.top);
                 }
             }
         }

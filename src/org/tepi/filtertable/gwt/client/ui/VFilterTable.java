@@ -13,6 +13,7 @@ import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.FocusWidget;
 import com.google.gwt.user.client.ui.Widget;
+import com.vaadin.client.BrowserInfo;
 import com.vaadin.client.Focusable;
 import com.vaadin.client.Util;
 import com.vaadin.client.ui.VCustomScrollTable;
@@ -40,15 +41,35 @@ public class VFilterTable extends VCustomScrollTable {
         filters.getElement().getStyle().setDisplay(Display.NONE);
     }
 
-    @Override
-    protected void calculateContainerHeight() {
-        /* First calculate the height with the normal method */
-        super.calculateContainerHeight();
-        /* Account for possibly visible table filter row */
-        if (filters.isVisible()) {
-            containerHeight -= filters.getOffsetHeight();
+    public void setContainerHeight() {
+        if (!isDynamicHeight()) {
+
+            /*
+             * Android 2.3 cannot measure the height of the inline-block
+             * properly, and will return the wrong offset height. So for android
+             * 2.3 we set the element to a block element while measuring and
+             * then restore it which yields the correct result. #11331
+             */
+            if (BrowserInfo.get().isAndroid23()) {
+                getElement().getStyle().setDisplay(Display.BLOCK);
+            }
+
+            containerHeight = getOffsetHeight();
+            containerHeight -= showColHeaders ? tHead.getOffsetHeight() : 0;
+            containerHeight -= tFoot.getOffsetHeight();
+            containerHeight -= getContentAreaBorderHeight();
+            /* Account for possibly visible table filter row */
+            if (filters.isVisible()) {
+                containerHeight -= filters.getOffsetHeight();
+            }
             if (containerHeight < 0) {
                 containerHeight = 0;
+            }
+
+            scrollBodyPanel.setHeight(containerHeight + "px");
+
+            if (BrowserInfo.get().isAndroid23()) {
+                getElement().getStyle().clearDisplay();
             }
         }
     }

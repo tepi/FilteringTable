@@ -84,7 +84,7 @@ import com.vaadin.shared.ui.table.TableConstants;
  * @author Vaadin Ltd.
  * @since 3.0
  */
-@SuppressWarnings({ "deprecation", "serial" })
+@SuppressWarnings({ "deprecation" })
 public class CustomTable extends AbstractSelect implements Action.Container,
         Container.Ordered, Container.Sortable, ItemClickNotifier, DragSource,
         DropTarget, HasComponents {
@@ -369,7 +369,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     /**
      * Holds noncollapsible columns.
      */
-    private final HashSet<Object> noncollapsibleColumns = new HashSet<Object>();
+    private HashSet<Object> noncollapsibleColumns = new HashSet<Object>();
 
     /**
      * Holds propertyIds of currently collapsed columns.
@@ -425,6 +425,12 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * Index of the first item on the current page.
      */
     private int currentPageFirstItemIndex = 0;
+
+    /**
+     * Index of the "first" item on the last page if a user has used
+     * setCurrentPageFirstItemIndex to scroll down. -1 if not set.
+     */
+    private int currentPageFirstItemIndexOnLastPage = -1;
 
     /**
      * Holds value of property selectable.
@@ -553,7 +559,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
     private boolean painted = false;
 
-    private final HashMap<Object, Converter<String, Object>> propertyValueConverters = new HashMap<Object, Converter<String, Object>>();
+    private HashMap<Object, Converter<String, Object>> propertyValueConverters = new HashMap<Object, Converter<String, Object>>();
 
     /**
      * Set to true if the client-side should be informed that the key mapper has
@@ -562,7 +568,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      */
     private boolean keyMapperReset;
 
-    private final List<Throwable> exceptionsDuringCachePopulation = new ArrayList<Throwable>();
+    private List<Throwable> exceptionsDuringCachePopulation = new ArrayList<Throwable>();
 
     private boolean isBeingPainted;
 
@@ -1477,12 +1483,14 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         }
 
         /*
-         * FIXME #7607 Take somehow into account the case where we want to
-         * scroll to the bottom so that the last row is completely visible even
-         * if (table height) / (row height) is not an integer. Reverted the
-         * original fix because of #8662 regression.
+         * If the new index is on the last page we set the index to be the first
+         * item on that last page and make a note of the real index for the
+         * client side to be able to move the scroll position to the correct
+         * position.
          */
+        int indexOnLastPage = -1;
         if (newIndex > maxIndex) {
+            indexOnLastPage = newIndex;
             newIndex = maxIndex;
         }
 
@@ -1494,6 +1502,20 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                 currentPageFirstItemId = null;
             }
             currentPageFirstItemIndex = newIndex;
+
+            if (needsPageBufferReset) {
+                /*
+                 * The flag currentPageFirstItemIndexOnLastPage denotes a user
+                 * set scrolling position on the last page via
+                 * setCurrentPageFirstItemIndex() and shouldn't be changed by
+                 * the table component internally changing the firstvisible item
+                 * on lazy row fetching. Doing so would make the scrolling
+                 * position not be updated correctly when the lazy rows are
+                 * finally rendered.
+                 */
+                currentPageFirstItemIndexOnLastPage = indexOnLastPage;
+            }
+
         } else {
 
             // For containers not supporting indexes, we must iterate the
@@ -1708,8 +1730,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * 
      */
     public static class CacheUpdateException extends RuntimeException {
-        private final Throwable[] causes;
-        private final CustomTable table;
+        private Throwable[] causes;
+        private CustomTable table;
 
         public CacheUpdateException(CustomTable table, String message,
                 Throwable[] causes) {
@@ -2624,8 +2646,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * <br>
      * All rows and columns are generated as visible using this method. If the
      * new container contains properties that are not meant to be shown you
-     * should use
-     * {@link CustomTable#setContainerDataSource(Container, Collection)}
+     * should use {@link Table#setContainerDataSource(Container, Collection)}
      * instead, especially if the table is editable.
      * 
      * @param newDataSource
@@ -2662,8 +2683,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * Sets the container data source and the columns that will be visible.
      * Columns are shown in the collection's iteration order.
      * 
-     * @see CustomTable#setContainerDataSource(Container)
-     * @see CustomTable#setVisibleColumns(Object[])
+     * @see Table#setContainerDataSource(Container)
+     * @see Table#setVisibleColumns(Object[])
      * 
      * @param newDataSource
      *            the new data source.
@@ -3448,6 +3469,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (getCurrentPageFirstItemIndex() != 0 || getPageLength() > 0) {
             target.addVariable(this, "firstvisible",
                     getCurrentPageFirstItemIndex());
+            target.addVariable(this, "firstvisibleonlastpage",
+                    currentPageFirstItemIndexOnLastPage);
         }
     }
 
@@ -5890,7 +5913,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
     private final Logger getLogger() {
         if (logger == null) {
-            logger = Logger.getLogger(CustomTable.class.getName());
+            logger = Logger.getLogger(Table.class.getName());
         }
         return logger;
     }
