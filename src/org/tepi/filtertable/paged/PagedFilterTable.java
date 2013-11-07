@@ -1,5 +1,6 @@
 package org.tepi.filtertable.paged;
 
+import java.io.Serializable;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,7 @@ import com.vaadin.ui.themes.Reindeer;
 public class PagedFilterTable<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>
         extends FilterTable {
 
-    public interface PageChangeListener {
+    public interface PageChangeListener extends Serializable {
         public void pageChanged(PagedTableChangeEvent event);
     }
 
