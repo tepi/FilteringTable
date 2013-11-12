@@ -31,16 +31,13 @@
 	<!-- Compilation                                                        -->
 	<!-- ================================================================== -->
 
-	<!-- Compile server-side Java -->
 	<target name="compile" depends="init">
 		<echo>Compiling server side...</echo>
 		<property name="result.classes" value="${result-path}/war/WEB-INF/classes" />
 		<mkdir dir="${result.classes}" />
-		<javac includeantruntime="false" verbose="yes" destdir="${result.classes}" target="1.6" source="1.6" debug="true">
+		<javac includeantruntime="false" listfiles="yes" verbose="yes" destdir="${result.classes}" target="1.6" source="1.6" debug="true">
 			<classpath refid="ivy.deps" />
 			<src path="src" />
-			<exclude name="com/vaadin/client/ui/**" />
-			<exclude name="org/tepi/filtertable/gwt/**" />
 		</javac>
 	</target>
 
