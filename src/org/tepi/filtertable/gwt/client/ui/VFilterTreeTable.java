@@ -25,9 +25,6 @@ import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.ComputedStyle;
 import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
-import com.vaadin.client.ui.VCustomScrollTable;
-import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody;
-import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 
 public class VFilterTreeTable extends VFilterTable {
     /** For internal use only. May be removed or replaced in the future. */
@@ -115,7 +112,7 @@ public class VFilterTreeTable extends VFilterTable {
     }
 
     public class VTreeTableScrollBody extends
-            VScrollTableBody {
+            com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody {
         private int indentWidth = -1;
         private int maxIndent = 0;
 
@@ -132,8 +129,7 @@ public class VFilterTreeTable extends VFilterTable {
             return new VTreeTableRow(uidl, aligns2);
         }
 
-        public class VTreeTableRow extends
-                VScrollTableRow {
+        public class VTreeTableRow extends VScrollTableRow {
 
             private boolean isTreeCellAdded = false;
             private SpanElement treeSpacer;
@@ -257,16 +253,6 @@ public class VFilterTreeTable extends VFilterTable {
                 } else {
                     return Integer.parseInt(w.substring(0, w.length() - 2));
                 }
-            }
-
-            private int getHierarchyAndIconWidth() {
-                int consumedSpace = treeSpacer.getOffsetWidth();
-                if (treeSpacer.getParentElement().getChildCount() > 2) {
-                    // icon next to tree spacer
-                    consumedSpace += ((com.google.gwt.dom.client.Element) treeSpacer
-                            .getNextSibling()).getOffsetWidth();
-                }
-                return consumedSpace;
             }
 
             @Override
