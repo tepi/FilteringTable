@@ -20,6 +20,7 @@ import com.vaadin.ui.CustomTreeTable;
 import com.vaadin.ui.HasComponents;
 import com.vaadin.ui.TextField;
 
+@SuppressWarnings("serial")
 public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
     /* Maps property id's to column filter components */
     private final Map<Object, Component> columnIdToFilterMap = new HashMap<Object, Component>();

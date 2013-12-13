@@ -15,7 +15,7 @@ import com.vaadin.shared.ui.Connect;
 import com.vaadin.shared.ui.treetable.TreeTableConstants;
 import com.vaadin.shared.ui.treetable.TreeTableState;
 
-@SuppressWarnings("serial")
+@SuppressWarnings({ "serial", "deprecation" })
 @Connect(FilterTreeTable.class)
 public class FilterTreeTableConnector extends FilterTableConnector {
 

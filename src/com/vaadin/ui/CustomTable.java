@@ -84,7 +84,7 @@ import com.vaadin.shared.ui.table.TableConstants;
  * @author Vaadin Ltd.
  * @since 3.0
  */
-@SuppressWarnings({ "deprecation" })
+@SuppressWarnings({ "deprecation", "serial" })
 public class CustomTable extends AbstractSelect implements Action.Container,
         Container.Ordered, Container.Sortable, ItemClickNotifier, DragSource,
         DropTarget, HasComponents {
@@ -2165,7 +2165,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             // more efficient implementation for containers supporting access by
             // index
 
-            Container.Indexed indexed = ((Container.Indexed) items);
             List<?> itemIds = getItemIds(firstIndex, rows);
             for (int i = 0; i < rows && i < itemIds.size(); i++) {
                 Object id = itemIds.get(i);
@@ -2215,6 +2214,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         return cells;
     }
 
+    @SuppressWarnings("unchecked")
     protected List<Object> getItemIds(int firstIndex, int rows) {
         return (List<Object>) ((Container.Indexed) items).getItemIds(
                 firstIndex, rows);
@@ -2573,6 +2573,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      *            given id.
      * @return Returns item id for the new row. Returns null if operation fails.
      */
+    @SuppressWarnings("unchecked")
     public Object addItem(Object[] cells, Object itemId)
             throws UnsupportedOperationException {
 
@@ -3978,6 +3979,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @return Object Either formatted value or Component for field.
      * @see #setTableFieldFactory(TableFieldFactory)
      */
+    @SuppressWarnings("rawtypes")
     protected Object getPropertyValue(Object rowId, Object colId,
             Property property) {
         if (isEditable() && fieldFactory != null) {
@@ -4007,6 +4009,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param field
      * @since 6.7.3
      */
+    @SuppressWarnings("rawtypes")
     protected void bindPropertyToField(Object rowId, Object colId,
             Property property, Field field) {
         // check if field has a property that is Viewer set. In that case we
@@ -4035,6 +4038,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @return the String representation of property and its value.
      * @since 3.1
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     protected String formatPropertyValue(Object rowId, Object colId,
             Property<?> property) {
         if (property == null) {
@@ -5054,8 +5058,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         }
 
         @Override
-        public CustomTable getSourceComponent() {
-            return (CustomTable) super.getSourceComponent();
+        public Table getSourceComponent() {
+            return (Table) super.getSourceComponent();
         }
 
     }
@@ -5120,7 +5124,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      */
     public static abstract class TableDropCriterion extends ServerSideCriterion {
 
-        private CustomTable table;
+        private Table table;
 
         private Set<Object> allowedItemIds;
 
@@ -5149,7 +5153,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         public boolean accept(DragAndDropEvent dragEvent) {
             AbstractSelectTargetDetails dropTargetData = (AbstractSelectTargetDetails) dragEvent
                     .getTargetDetails();
-            table = (CustomTable) dragEvent.getTargetDetails().getTarget();
+            table = (Table) dragEvent.getTargetDetails().getTarget();
             Collection<?> visibleItemIds = table.getVisibleItemIds();
             allowedItemIds = getAllowedItemIds(dragEvent, table,
                     (Collection<Object>) visibleItemIds);
@@ -5191,7 +5195,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          *         be accepted
          */
         protected abstract Set<Object> getAllowedItemIds(
-                DragAndDropEvent dragEvent, CustomTable table,
+                DragAndDropEvent dragEvent, Table table,
                 Collection<Object> visibleItemIds);
 
     }
@@ -5840,6 +5844,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param converter
      *            The converter to use for the property id
      */
+    @SuppressWarnings("unchecked")
     public void setConverter(Object propertyId, Converter<String, ?> converter) {
         if (!getContainerPropertyIds().contains(propertyId)) {
             throw new IllegalArgumentException("PropertyId " + propertyId

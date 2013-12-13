@@ -29,7 +29,6 @@ import java.util.logging.Logger;
 import com.vaadin.data.Collapsible;
 import com.vaadin.data.Container;
 import com.vaadin.data.Container.Hierarchical;
-import com.vaadin.data.Container.ItemSetChangeEvent;
 import com.vaadin.data.util.ContainerHierarchicalWrapper;
 import com.vaadin.data.util.HierarchicalContainer;
 import com.vaadin.data.util.HierarchicalContainerOrderedWrapper;
@@ -59,7 +58,7 @@ import com.vaadin.ui.Tree.ExpandListener;
  * {@link Collapsible} containers can not be shared among several users as they
  * share UI state in the container.
  */
-@SuppressWarnings({ "serial" })
+@SuppressWarnings({ "serial", "deprecation" })
 public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     private interface ContainerStrategy extends Serializable {
@@ -590,11 +589,11 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
         // does not change component hierarchy during paint
         containerSupportsPartialUpdates = (newDataSource instanceof ItemSetChangeNotifier) && false;
 
-        if (!(newDataSource instanceof Hierarchical)) {
+        if (newDataSource != null && !(newDataSource instanceof Hierarchical)) {
             newDataSource = new ContainerHierarchicalWrapper(newDataSource);
         }
 
-        if (!(newDataSource instanceof Ordered)) {
+        if (newDataSource != null && !(newDataSource instanceof Ordered)) {
             newDataSource = new HierarchicalContainerOrderedWrapper(
                     (Hierarchical) newDataSource);
         }

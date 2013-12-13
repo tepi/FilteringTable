@@ -385,6 +385,9 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
             Scheduler.get().scheduleFinally(new ScheduledCommand() {
                 @Override
                 public void execute() {
+                    // IE8 needs some hacks to measure sizes correctly
+                    Util.forceIE8Redraw(getWidget().getElement());
+
                     getLayoutManager().setNeedsMeasure(
                             FilterTableConnector.this);
                     ServerConnector parent = getParent();

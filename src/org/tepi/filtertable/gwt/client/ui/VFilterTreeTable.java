@@ -1,3 +1,19 @@
+/*
+ * Copyright 2000-2013 Vaadin Ltd.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package org.tepi.filtertable.gwt.client.ui;
 
 import java.util.ArrayList;
@@ -25,8 +41,10 @@ import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.ComputedStyle;
 import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
+import com.vaadin.client.ui.VCustomScrollTable;
 
 public class VFilterTreeTable extends VFilterTable {
+
     /** For internal use only. May be removed or replaced in the future. */
     public static class PendingNavigationEvent {
         public final int keycode;
@@ -112,7 +130,7 @@ public class VFilterTreeTable extends VFilterTable {
     }
 
     public class VTreeTableScrollBody extends
-            com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody {
+            VCustomScrollTable.VScrollTableBody {
         private int indentWidth = -1;
         private int maxIndent = 0;
 
@@ -129,7 +147,8 @@ public class VFilterTreeTable extends VFilterTable {
             return new VTreeTableRow(uidl, aligns2);
         }
 
-        public class VTreeTableRow extends VScrollTableRow {
+        public class VTreeTableRow extends
+                VCustomScrollTable.VScrollTableBody.VScrollTableRow {
 
             private boolean isTreeCellAdded = false;
             private SpanElement treeSpacer;
@@ -876,4 +895,5 @@ public class VFilterTreeTable extends VFilterTable {
         int newTotalRows = uidl.getIntAttribute("totalrows");
         setTotalRows(newTotalRows);
     }
+
 }
