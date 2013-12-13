@@ -438,11 +438,18 @@ class FilterFieldGenerator implements Serializable {
                     propertyId = booleans.get(field);
                 }
 
-                owner.setRefreshingEnabled(false);
-
-                removeFilter(propertyId);
-                /* Generate and set a new filter */
+                // Generate a new filter
                 Filter newFilter = generateFilter(field, propertyId, value);
+
+                // Check if the filter is already set
+                Filter possiblyExistingFilter = filters.get(propertyId);
+                if (possiblyExistingFilter != null
+                        && possiblyExistingFilter.equals(newFilter)) {
+                    return;
+                }
+
+                /* Remove the old filter and set the new filter */
+                removeFilter(propertyId);
                 if (newFilter != null) {
                     setFilter(newFilter, propertyId);
                     if (owner.getFilterGenerator() != null) {
