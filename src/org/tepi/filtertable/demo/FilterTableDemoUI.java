@@ -32,6 +32,7 @@ import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
+import com.vaadin.ui.Table;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.Reindeer;
@@ -61,11 +62,30 @@ public class FilterTableDemoUI extends UI {
         mainLayout.addComponent(ts);
         mainLayout.setExpandRatio(ts, 1);
 
+        ts.addTab(buildTableTab(), "Normal Table");
         ts.addTab(buildNormalTableTab(), "Normal FilterTable");
         ts.addTab(buildPagedTableTab(), "Paged FilterTable");
         ts.addTab(buildTreeTableTab(), "FilterTreeTable");
 
         setContent(mainLayout);
+    }
+
+    private Component buildTableTab() {
+        /* Create FilterTable */
+        Table normalFilterTable = buildTable();
+        final VerticalLayout mainLayout = new VerticalLayout();
+        mainLayout.setSizeFull();
+        mainLayout.setSpacing(true);
+        mainLayout.setMargin(true);
+        mainLayout.addComponent(normalFilterTable);
+        mainLayout.setExpandRatio(normalFilterTable, 1);
+
+        Panel p = new Panel();
+        p.setStyleName(Reindeer.PANEL_LIGHT);
+        p.setSizeFull();
+        p.setContent(mainLayout);
+
+        return p;
     }
 
     private Component buildNormalTableTab() {
@@ -87,6 +107,37 @@ public class FilterTableDemoUI extends UI {
         return p;
     }
 
+    private Table buildTable() {
+        Table filterTable = new Table();
+        filterTable.setSizeFull();
+
+        filterTable.setSelectable(true);
+        filterTable.setImmediate(true);
+        filterTable.setMultiSelect(true);
+
+        filterTable.setColumnCollapsingAllowed(true);
+
+        filterTable.setColumnReorderingAllowed(true);
+
+        filterTable.setContainerDataSource(buildContainer());
+
+        filterTable.setColumnCollapsed("state", true);
+
+        filterTable.setVisibleColumns((Object[]) new String[] { "name", "id",
+                "state", "date", "validated", "checked" });
+
+        filterTable.setItemDescriptionGenerator(new ItemDescriptionGenerator() {
+
+            @Override
+            public String generateDescription(Component source, Object itemId,
+                    Object propertyId) {
+                return "Just testing ItemDescriptionGenerator";
+            }
+        });
+
+        return filterTable;
+    }
+    
     private FilterTable buildFilterTable() {
         FilterTable filterTable = new FilterTable();
         filterTable.setSizeFull();
