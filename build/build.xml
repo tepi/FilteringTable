@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="FilteringTable" basedir="../" default="all">
-
+	<description>Build script for FilteringTable (Vaadin 6 version)</description>
 	<!-- Main target that does all -->
-	<target name="all" depends="clean-all, compile, widgetset, javadoc, sources-jar, package-jar, package-zip, demo.war, cleanup" />
+	<target name="all" depends="clean-all, compile, widgetset, javadoc, sources-jar, package-jar, package-zip, demo.war, cleanup" description="Builds the add-on JAR, add-on ZIP, demo application WAR and creates javadocs. Cleans up temporary files afterwards." />
 
 	<!-- Non-project specific settings. -->
 	<property file="build/build.properties" />
@@ -13,13 +13,13 @@
 	<!-- ================================================================== -->
 
 	<!-- Clean old compilation results. -->
-	<target name="clean-all">
+	<target name="clean-all" description="Deletes all existing build results.">
 		<delete dir="${result-path}" includes="**/*" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
 		<delete dir="${build-path}/javadoc" includes="**/*" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
 	</target>
 
 	<!-- Initialization -->
-	<target name="init">
+	<target name="init" description="Initializes variables necessary for the build.">
 		<property name="base-name" value="${addon.name}-${version}" />
 		<property name="jar.name" value="${base-name}.jar" />
 		<property name="jar.path" value="${result-path}/${jar.name}" />
@@ -44,7 +44,7 @@
 	<!-- ================================================================== -->
 
 	<!-- Compile server-side Java -->
-	<target name="compile" depends="init">
+	<target name="compile" depends="init" description="Compiles server-side Java files.">
 		<echo>Compiling server side...</echo>
 		<property name="result.classes" value="${result-path}/war/WEB-INF/classes" />
 		<mkdir dir="${result.classes}" />
@@ -54,7 +54,7 @@
 	</target>
 
 	<!-- Compile client-side Java -->
-	<target name="widgetset" depends="init">
+	<target name="widgetset" depends="init" description="Compiles the add-on widgetset.">
 		<echo>Compiling widgetset...</echo>
 		<java classname="com.vaadin.tools.WidgetsetCompiler" failonerror="yes" fork="yes" maxmemory="512m">
 			<arg value="-out" />
@@ -88,104 +88,104 @@
 	<!-- ================================================================== -->
 
 	<!-- Create javadoc -->
-	<target name='javadoc'>
+	<target name='javadoc' description="Creates Javadoc for the add-on.">
 		<javadoc use='true' author='true' version='true' access='package' sourcepath='src' packagenames='*.*' destdir='${build-path}/javadoc' windowtitle='${addon.title} ${version}' noqualifier='java.*:javax.*:com.sun.*' linksource='true'>
 			<classpath refid='compile.classpath' />
 			<link href='http://java.sun.com/javase/6/docs/api/' />
 			<header>
 				<![CDATA[<h1>${app.name} ${app.version}</h1>]]></header>
-		</javadoc>
-	</target>
-	
-	<!-- Create sources JAR -->
-	<target name="sources-jar">
-		<jar basedir="src" destfile="${result-path}/${addon.name}-${version}-sources.jar" />
-	</target>
+	</javadoc>
+</target>
 
-	<!-- Create the JAR package [Note: JAR is not functional by itself]. -->
-	<target name="package-jar" depends="compile" unless="run.no-package-jar">
-		<echo>Creating ${addon.title} JAR...</echo>
-		<jar jarfile="${jar.path}" compress="true">
-			<manifest>
-				<attribute name="Vaadin-Package-Version" value="1" />
-				<attribute name="Vaadin-Widgetsets" value="${addon.widgetset}" />
-				<attribute name="Implementation-Title" value="${addon.title}" />
-				<attribute name="Implementation-Version" value="${version}" />
-				<attribute name="Implementation-Vendor" value="${addon.vendor}" />
-			</manifest>
-			<!-- The built server-side classes and the widget set class are here. -->
-			<fileset dir="${result.classes}">
-				<patternset>
-					<include name="${src.customscrolltable.dir}/**/*" />
-					<include name="${src.customtable.dir}/**/*" />
-					<include name="${src.package.dir}/**/*" />
-					<exclude name="**/demo/**" />
-				</patternset>
-			</fileset>
-			<!-- Include sources. -->
-			<fileset dir="src">
-				<patternset>
-					<include name="${src.customscrolltable.dir}/**/*" />
-					<include name="${src.customtable.dir}/**/*" />
-					<include name="${src.package.dir}/**/*" />
-					<exclude name="**/demo/**" />
-				</patternset>
-			</fileset>
-			<fileset dir="WebContent">
-				<patternset>
-					<exclude name="**/VAADIN/**" />
-					<exclude name="**/WEB-INF/**" />
-				</patternset>
-			</fileset>
-		</jar>
-	</target>
+<!-- Create sources JAR -->
+<target name="sources-jar" description="Creates a JAR file containing the sources of the add-on.">
+	<jar basedir="src" destfile="${result-path}/${addon.name}-${version}-sources.jar" />
+</target>
 
-	<!-- Create the ZIP distribution package. -->
-	<target name="package-zip" depends="package-jar">
-		<echo>Creating ${addon.title} ZIP...</echo>
-		<property name="zip.name" value="${result-path}/${addon.name}-${version}.zip" />
-		<!-- Make the zip manifest -->
-		<mkdir dir="${result-path}/META-INF" />
-		<echo file="${result-path}/META-INF/MANIFEST.MF">Vaadin-Addon: ${addon.name}-${version}/${jar.name}
+<!-- Create the JAR package [Note: JAR is not functional by itself]. -->
+<target name="package-jar" depends="compile" unless="run.no-package-jar" description="Creates the add-on JAR package.">
+	<echo>Creating ${addon.title} JAR...</echo>
+	<jar jarfile="${jar.path}" compress="true">
+		<manifest>
+			<attribute name="Vaadin-Package-Version" value="1" />
+			<attribute name="Vaadin-Widgetsets" value="${addon.widgetset}" />
+			<attribute name="Implementation-Title" value="${addon.title}" />
+			<attribute name="Implementation-Version" value="${version}" />
+			<attribute name="Implementation-Vendor" value="${addon.vendor}" />
+		</manifest>
+		<!-- The built server-side classes and the widget set class are here. -->
+		<fileset dir="${result.classes}">
+			<patternset>
+				<include name="${src.customscrolltable.dir}/**/*" />
+				<include name="${src.customtable.dir}/**/*" />
+				<include name="${src.package.dir}/**/*" />
+				<exclude name="**/demo/**" />
+			</patternset>
+		</fileset>
+		<!-- Include sources. -->
+		<fileset dir="src">
+			<patternset>
+				<include name="${src.customscrolltable.dir}/**/*" />
+				<include name="${src.customtable.dir}/**/*" />
+				<include name="${src.package.dir}/**/*" />
+				<exclude name="**/demo/**" />
+			</patternset>
+		</fileset>
+		<fileset dir="WebContent">
+			<patternset>
+				<exclude name="**/VAADIN/**" />
+				<exclude name="**/WEB-INF/**" />
+			</patternset>
+		</fileset>
+	</jar>
+</target>
+
+<!-- Create the ZIP distribution package. -->
+<target name="package-zip" depends="package-jar" description="Creates the add-on ZIP package which includes the add-on JAR, javadocs and the PopupButton dependency JAR.">
+	<echo>Creating ${addon.title} ZIP...</echo>
+	<property name="zip.name" value="${result-path}/${addon.name}-${version}.zip" />
+	<!-- Make the zip manifest -->
+	<mkdir dir="${result-path}/META-INF" />
+	<echo file="${result-path}/META-INF/MANIFEST.MF">Vaadin-Addon: ${addon.name}-${version}/${jar.name}
 Vaadin-Package-Version: 1
 Implementation-Title: ${addon.title}
 Implementation-Version: ${version}
 Implementation-Vendor: ${addon.vendor}
 Vaadin-Dependency: ${dependency.popupbutton}
 	       </echo>
-		<zip destfile="${zip.name}">
-			<zipfileset dir="${result-path}" includes="META-INF/MANIFEST.MF" />
-			<!-- The add-on library itself -->
-			<zipfileset prefix="${addon.name}-${version}" file="${result-path}/${jar.name}" />
-			<!-- Dependency: PopupButton -->
-			<zipfileset file="${dependency.popupbutton.dir}/${dependency.popupbutton}" />
-			<!-- Javadoc -->
-			<zipfileset prefix="javadoc" dir="${build-path}/javadoc" />
-			<!-- Sources -->
-			<zipfileset file="${result-path}/${addon.name}-${version}-sources.jar" />
-		</zip>
-	</target>
-	
-	<!-- Create demo application WAR -->
-	<target name="demo.war" depends="package-jar">
-		<echo>Creating ${addon.title} Demo Application WAR...</echo>
-		<property name="war.path" value="${result-path}/${addon.name}.war" />
-		<war destfile="${war.path}" webxml="WebContent/WEB-INF/web.xml">
-			<classes dir="${result.classes}" />
-			<lib dir="WebContent/WEB-INF/lib" excludes="*src*" />
-			<lib file="${jar.path}" />
-			<fileset dir="WebContent">
-				<patternset>
-					<include name="VAADIN/widgetsets/${addon.widgetset}/**/*" />
-					<include name="VAADIN/themes/**/*" />
-				</patternset>
-			</fileset>
-		</war>
-	</target>
-	
-	<target name="cleanup">
-		<delete dir="${build-path}/javadoc" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
-		<delete dir="${result-path}/war" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
-		<delete dir="${result-path}/META-INF" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
-	</target>
+	<zip destfile="${zip.name}">
+		<zipfileset dir="${result-path}" includes="META-INF/MANIFEST.MF" />
+		<!-- The add-on library itself -->
+		<zipfileset prefix="${addon.name}-${version}" file="${result-path}/${jar.name}" />
+		<!-- Dependency: PopupButton -->
+		<zipfileset file="${dependency.popupbutton.dir}/${dependency.popupbutton}" />
+		<!-- Javadoc -->
+		<zipfileset prefix="javadoc" dir="${build-path}/javadoc" />
+		<!-- Sources -->
+		<zipfileset file="${result-path}/${addon.name}-${version}-sources.jar" />
+	</zip>
+</target>
+
+<!-- Create demo application WAR -->
+<target name="demo.war" depends="package-jar" description="Creates the demo application WAR file.">
+	<echo>Creating ${addon.title} Demo Application WAR...</echo>
+	<property name="war.path" value="${result-path}/${addon.name}.war" />
+	<war destfile="${war.path}" webxml="WebContent/WEB-INF/web.xml">
+		<classes dir="${result.classes}" />
+		<lib dir="WebContent/WEB-INF/lib" excludes="*src*" />
+		<lib file="${jar.path}" />
+		<fileset dir="WebContent">
+			<patternset>
+				<include name="VAADIN/widgetsets/${addon.widgetset}/**/*" />
+				<include name="VAADIN/themes/**/*" />
+			</patternset>
+		</fileset>
+	</war>
+</target>
+
+<target name="cleanup" description="Deletes temporary files created during the build process.">
+	<delete dir="${build-path}/javadoc" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+	<delete dir="${result-path}/war" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+	<delete dir="${result-path}/META-INF" followsymlinks="false" includeemptydirs="true" defaultexcludes="false" failonerror="false" />
+</target>
 </project>
