@@ -6709,7 +6709,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
      */
     protected int containerHeight;
 
-    private void setContainerHeight() {
+    public void setContainerHeight() {
         if (!isDynamicHeight()) {
 
             /*

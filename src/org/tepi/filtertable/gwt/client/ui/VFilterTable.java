@@ -41,6 +41,7 @@ public class VFilterTable extends VCustomScrollTable {
         filters.getElement().getStyle().setDisplay(Display.NONE);
     }
 
+    @Override
     public void setContainerHeight() {
         if (!isDynamicHeight()) {
 
