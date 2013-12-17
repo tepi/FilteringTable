@@ -43,17 +43,16 @@ import com.vaadin.ui.treetable.Collapsible;
 import com.vaadin.ui.treetable.HierarchicalContainerOrderedWrapper;
 
 /**
- * CustomTreeTable extends the {@link Table} component so that it can also
- * visualize a hierarchy of its Items in a similar manner that {@link Tree}
- * does. The tree hierarchy is always displayed in the first actual column of
- * the CustomTreeTable.
+ * TreeTable extends the {@link Table} component so that it can also visualize a
+ * hierarchy of its Items in a similar manner that {@link Tree} does. The tree
+ * hierarchy is always displayed in the first actual column of the TreeTable.
  * <p>
- * The CustomTreeTable supports the usual {@link Table} features like lazy
- * loading, so it should be no problem to display lots of items at once. Only
- * required rows and some cache rows are sent to the client.
+ * The TreeTable supports the usual {@link Table} features like lazy loading, so
+ * it should be no problem to display lots of items at once. Only required rows
+ * and some cache rows are sent to the client.
  * <p>
- * CustomTreeTable supports standard {@link Hierarchical} container interfaces,
- * but also a more fine tuned version - {@link Collapsible}. A container
+ * TreeTable supports standard {@link Hierarchical} container interfaces, but
+ * also a more fine tuned version - {@link Collapsible}. A container
  * implementing the {@link Collapsible} interface stores the collapsed/expanded
  * state internally and can this way scale better on the server side than with
  * standard Hierarchical implementations. Developer must however note that
@@ -299,17 +298,17 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     }
 
     /**
-     * Creates an empty CustomTreeTable with a default container.
+     * Creates an empty TreeTable with a default container.
      */
     public CustomTreeTable() {
         super(null, new HierarchicalContainer());
     }
 
     /**
-     * Creates an empty CustomTreeTable with a default container.
+     * Creates an empty TreeTable with a default container.
      * 
      * @param caption
-     *            the caption for the CustomTreeTable
+     *            the caption for the TreeTable
      */
     public CustomTreeTable(String caption) {
         this();
@@ -317,7 +316,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     }
 
     /**
-     * Creates a CustomTreeTable instance with given captions and data source.
+     * Creates a TreeTable instance with given captions and data source.
      * 
      * @param caption
      *            the caption for the component
@@ -699,7 +698,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     }
 
     /**
-     * Explicitly sets the column in which the CustomTreeTable visualizes the
+     * Explicitly sets the column in which the TreeTable visualizes the
      * hierarchy. If hierarchyColumnId is not set, the hierarchy is visualized
      * in the first visible column.
      * 
@@ -801,7 +800,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     }
 
     private static final Logger getLogger() {
-        return Logger.getLogger(CustomTreeTable.class.getName());
+        return Logger.getLogger(TreeTable.class.getName());
     }
 
 }

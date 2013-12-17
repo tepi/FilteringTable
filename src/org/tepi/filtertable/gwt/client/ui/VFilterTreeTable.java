@@ -45,9 +45,10 @@ import com.vaadin.terminal.gwt.client.RenderSpace;
 import com.vaadin.terminal.gwt.client.UIDL;
 import com.vaadin.terminal.gwt.client.Util;
 import com.vaadin.terminal.gwt.client.ui.FocusableScrollPanel;
-import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable.VCustomScrollTableBody.VCustomScrollTableRow;
+import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable;
+import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 
-public class VFilterTreeTable extends VFilterTable {
+public class VFilterTreeTable extends VCustomScrollTable {
 
     private static class PendingNavigationEvent {
         private final int keycode;
@@ -78,7 +79,7 @@ public class VFilterTreeTable extends VFilterTable {
     private boolean selectionPending;
     private int colIndexOfHierarchy;
     private String collapsedRowKey;
-    protected VTreeTableScrollBody scrollBody;
+    private VTreeTableScrollBody scrollBody;
     private boolean animationsEnabled;
     private LinkedList<PendingNavigationEvent> pendingNavigationEvents = new LinkedList<VFilterTreeTable.PendingNavigationEvent>();
     private boolean focusParentResponsePending;
@@ -88,7 +89,7 @@ public class VFilterTreeTable extends VFilterTable {
         FocusableScrollPanel widget = null;
         int scrollPosition = 0;
         if (collapseRequest) {
-            widget = (FocusableScrollPanel) getWidget(2);
+            widget = (FocusableScrollPanel) getWidget(1);
             scrollPosition = widget.getScrollPosition();
         }
         animationsEnabled = uidl.getBooleanAttribute("animate");
@@ -99,7 +100,7 @@ public class VFilterTreeTable extends VFilterTable {
         super.updateFromUIDL(uidl, client);
         if (collapseRequest) {
             if (collapsedRowKey != null && scrollBody != null) {
-                VCustomScrollTableRow row = getRenderedRowByKey(collapsedRowKey);
+                VScrollTableRow row = getRenderedRowByKey(collapsedRowKey);
                 if (row != null) {
                     setRowFocus(row);
                     focus();
@@ -151,7 +152,7 @@ public class VFilterTreeTable extends VFilterTable {
     }
 
     @Override
-    protected VCustomScrollTableBody createScrollBody() {
+    protected VScrollTableBody createScrollBody() {
         scrollBody = new VTreeTableScrollBody();
         return scrollBody;
     }
@@ -186,17 +187,21 @@ public class VFilterTreeTable extends VFilterTable {
         return !(bi.isIE6() || bi.isIE7() || bi.isSafari4());
     }
 
-    public class VTreeTableScrollBody
-            extends
-            com.vaadin.terminal.gwt.client.ui.VCustomScrollTable.VCustomScrollTableBody {
+    @Override
+    protected int getHierarchyColumnIndex() {
+        return colIndexOfHierarchy + (showRowHeaders ? 1 : 0);
+    }
+
+    class VTreeTableScrollBody extends VCustomScrollTable.VScrollTableBody {
         private int indentWidth = -1;
+        private int maxIndent = 0;
 
         VTreeTableScrollBody() {
             super();
         }
 
         @Override
-        protected VCustomScrollTableRow createRow(UIDL uidl, char[] aligns2) {
+        protected VScrollTableRow createRow(UIDL uidl, char[] aligns2) {
             if (uidl.hasAttribute("gen_html")) {
                 // This is a generated row.
                 return new VTreeTableGeneratedRow(uidl, aligns2);
@@ -204,7 +209,8 @@ public class VFilterTreeTable extends VFilterTable {
             return new VTreeTableRow(uidl, aligns2);
         }
 
-        class VTreeTableRow extends VCustomScrollTableRow {
+        class VTreeTableRow extends
+                VCustomScrollTable.VScrollTableBody.VScrollTableRow {
 
             private boolean isTreeCellAdded = false;
             private SpanElement treeSpacer;
@@ -297,6 +303,11 @@ public class VFilterTreeTable extends VFilterTable {
                     treeSpacer.getParentElement().getStyle()
                             .setPaddingLeft(getIndent(), Unit.PX);
                     treeSpacer.getStyle().setWidth(getIndent(), Unit.PX);
+                    int colWidth = getColWidth(getHierarchyColumnIndex());
+                    if (colWidth > 0 && getIndent() > colWidth) {
+                        VFilterTreeTable.this.setColWidth(
+                                getHierarchyColumnIndex(), getIndent(), false);
+                    }
                 }
             }
 
@@ -365,14 +376,10 @@ public class VFilterTreeTable extends VFilterTable {
                     // hierarchy column
                     int indent = getIndent();
                     if (indent != -1) {
-                        width = Math.max(width - getIndent(), 0);
+                        width = Math.max(width - indent, 0);
                     }
                 }
                 super.setCellWidth(cellIx, width);
-            }
-
-            private int getHierarchyColumnIndex() {
-                return colIndexOfHierarchy + (showRowHeaders ? 1 : 0);
             }
 
             private int getIndent() {
@@ -410,7 +417,8 @@ public class VFilterTreeTable extends VFilterTable {
 
                     public void execute() {
                         if (showRowHeaders) {
-                            setCellWidth(0, tHead.getHeaderCell(0).getWidth());
+                            setCellWidth(0, tHead.getHeaderCell(0)
+                                    .getWidthWithIndent());
                             calcAndSetSpanWidthOnCell(1);
                         } else {
                             calcAndSetSpanWidthOnCell(0);
@@ -508,6 +516,22 @@ public class VFilterTreeTable extends VFilterTable {
             return indentWidth;
         }
 
+        @Override
+        protected int getMaxIndent() {
+            return maxIndent;
+        }
+
+        @Override
+        protected void calculateMaxIndent() {
+            int maxIndent = 0;
+            Iterator<Widget> iterator = iterator();
+            while (iterator.hasNext()) {
+                VTreeTableRow next = (VTreeTableRow) iterator.next();
+                maxIndent = Math.max(maxIndent, next.getIndent());
+            }
+            this.maxIndent = maxIndent;
+        }
+
         private void detectIndent(VTreeTableRow vTreeTableRow) {
             indentWidth = vTreeTableRow.treeSpacer.getOffsetWidth();
             if (indentWidth == 0) {
@@ -519,13 +543,14 @@ public class VFilterTreeTable extends VFilterTable {
                 VTreeTableRow next = (VTreeTableRow) iterator.next();
                 next.setIndent();
             }
+            calculateMaxIndent();
         }
 
         protected void unlinkRowsAnimatedAndUpdateCacheWhenFinished(
                 final int firstIndex, final int rows) {
-            List<VCustomScrollTableRow> rowsToDelete = new ArrayList<VCustomScrollTableRow>();
+            List<VScrollTableRow> rowsToDelete = new ArrayList<VScrollTableRow>();
             for (int ix = firstIndex; ix < firstIndex + rows; ix++) {
-                VCustomScrollTableRow row = getRowByRowIndex(ix);
+                VScrollTableRow row = getRowByRowIndex(ix);
                 if (row != null) {
                     rowsToDelete.add(row);
                 }
@@ -549,15 +574,16 @@ public class VFilterTreeTable extends VFilterTable {
             }
         }
 
-        protected List<VCustomScrollTableRow> insertRowsAnimated(UIDL rowData,
+        protected List<VScrollTableRow> insertRowsAnimated(UIDL rowData,
                 int firstIndex, int rows) {
-            List<VCustomScrollTableRow> insertedRows = insertAndReindexRows(
-                    rowData, firstIndex, rows);
+            List<VScrollTableRow> insertedRows = insertAndReindexRows(rowData,
+                    firstIndex, rows);
             if (!insertedRows.isEmpty()) {
                 // Only animate if there's something to animate (#8810)
                 RowExpandAnimation anim = new RowExpandAnimation(insertedRows);
                 anim.run(150);
             }
+            scrollBody.calculateMaxIndent();
             return insertedRows;
         }
 
@@ -576,14 +602,14 @@ public class VFilterTreeTable extends VFilterTable {
 
             public void prepareTableForAnimation() {
                 int ix = lastItemIx;
-                VCustomScrollTableRow row = null;
+                VScrollTableRow row = null;
                 while ((row = getRowByRowIndex(ix)) != null) {
                     copyTRBackgroundsToTDs(row);
                     --ix;
                 }
             }
 
-            private void copyTRBackgroundsToTDs(VCustomScrollTableRow row) {
+            private void copyTRBackgroundsToTDs(VScrollTableRow row) {
                 Element tr = row.getElement();
                 ComputedStyle cs = new ComputedStyle(tr);
                 String backgroundAttachment = cs
@@ -619,7 +645,7 @@ public class VFilterTreeTable extends VFilterTable {
 
             public void restoreTableAfterAnimation() {
                 int ix = lastItemIx;
-                VCustomScrollTableRow row = null;
+                VScrollTableRow row = null;
                 while ((row = getRowByRowIndex(ix)) != null) {
                     restoreStyleForTDsInRow(row);
 
@@ -627,7 +653,7 @@ public class VFilterTreeTable extends VFilterTable {
                 }
             }
 
-            private void restoreStyleForTDsInRow(VCustomScrollTableRow row) {
+            private void restoreStyleForTDsInRow(VScrollTableRow row) {
                 Element tr = row.getElement();
                 for (int ix = 0; ix < tr.getChildCount(); ix++) {
                     Element td = tr.getChild(ix).cast();
@@ -675,7 +701,7 @@ public class VFilterTreeTable extends VFilterTable {
          */
         private class RowExpandAnimation extends Animation {
 
-            private final List<VCustomScrollTableRow> rows;
+            private final List<VScrollTableRow> rows;
             private Element cloneDiv;
             private Element cloneTable;
             private AnimationPreparator preparator;
@@ -684,12 +710,12 @@ public class VFilterTreeTable extends VFilterTable {
              * @param rows
              *            List of rows to animate. Must not be empty.
              */
-            public RowExpandAnimation(List<VCustomScrollTableRow> rows) {
+            public RowExpandAnimation(List<VScrollTableRow> rows) {
                 this.rows = rows;
                 buildAndInsertAnimatingDiv();
                 preparator = new AnimationPreparator(rows.get(0).getIndex() - 1);
                 preparator.prepareTableForAnimation();
-                for (VCustomScrollTableRow row : rows) {
+                for (VScrollTableRow row : rows) {
                     cloneAndAppendRow(row);
                     row.addStyleName("v-table-row-animating");
                     setCellWrapperDivsToDisplayNone(row);
@@ -701,7 +727,7 @@ public class VFilterTreeTable extends VFilterTable {
                 return "0px";
             }
 
-            private void cloneAndAppendRow(VCustomScrollTableRow row) {
+            private void cloneAndAppendRow(VScrollTableRow row) {
                 Element clonedTR = null;
                 clonedTR = row.getElement().cloneNode(true).cast();
                 clonedTR.getStyle().setVisibility(Visibility.VISIBLE);
@@ -766,7 +792,7 @@ public class VFilterTreeTable extends VFilterTable {
             @Override
             protected void onComplete() {
                 preparator.restoreTableAfterAnimation();
-                for (VCustomScrollTableRow row : rows) {
+                for (VScrollTableRow row : rows) {
                     resetCellWrapperDivsDisplayProperty(row);
                     row.removeStyleName("v-table-row-animating");
                 }
@@ -775,8 +801,7 @@ public class VFilterTreeTable extends VFilterTable {
                 tableBodyParent.removeChild(cloneDiv);
             }
 
-            private void setCellWrapperDivsToDisplayNone(
-                    VCustomScrollTableRow row) {
+            private void setCellWrapperDivsToDisplayNone(VScrollTableRow row) {
                 Element tr = row.getElement();
                 for (int ix = 0; ix < tr.getChildCount(); ix++) {
                     getWrapperDiv(tr, ix).getStyle().setDisplay(Display.NONE);
@@ -788,8 +813,7 @@ public class VFilterTreeTable extends VFilterTable {
                 return td.getChild(0).cast();
             }
 
-            private void resetCellWrapperDivsDisplayProperty(
-                    VCustomScrollTableRow row) {
+            private void resetCellWrapperDivsDisplayProperty(VScrollTableRow row) {
                 Element tr = row.getElement();
                 for (int ix = 0; ix < tr.getChildCount(); ix++) {
                     getWrapperDiv(tr, ix).getStyle().clearProperty("display");
@@ -804,13 +828,13 @@ public class VFilterTreeTable extends VFilterTable {
          */
         private class RowCollapseAnimation extends RowExpandAnimation {
 
-            private final List<VCustomScrollTableRow> rows;
+            private final List<VScrollTableRow> rows;
 
             /**
              * @param rows
              *            List of rows to animate. Must not be empty.
              */
-            public RowCollapseAnimation(List<VCustomScrollTableRow> rows) {
+            public RowCollapseAnimation(List<VScrollTableRow> rows) {
                 super(rows);
                 this.rows = rows;
             }
