@@ -45,7 +45,11 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
     }
 
     public HorizontalLayout createControls() {
-        Label itemsPerPageLabel = new Label("Items per page:");
+        return createControls("Items per page:","Page:&nbsp;");
+    }
+
+    public HorizontalLayout createControls(String itemsPerPageLabelCaption, String pageLabelCaption) {
+        Label itemsPerPageLabel = new Label(itemsPerPageLabelCaption, ContentMode.HTML);
         itemsPerPageLabel.setSizeUndefined();
         final ComboBox itemsPerPageSelect = new ComboBox();
 
@@ -69,7 +73,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
             }
         });
         itemsPerPageSelect.select("25");
-        Label pageLabel = new Label("Page:&nbsp;", ContentMode.HTML);
+        Label pageLabel = new Label(pageLabelCaption, ContentMode.HTML);
         final TextField currentPageTextField = new TextField();
         currentPageTextField.setValue(String.valueOf(getCurrentPage()));
         currentPageTextField.setConverter(new StringToIntegerConverter() {
