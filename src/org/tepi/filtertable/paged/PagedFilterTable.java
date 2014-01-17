@@ -79,7 +79,9 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         currentPageTextField.setConverter(new StringToIntegerConverter() {
             @Override
             protected NumberFormat getFormat(Locale locale) {
-                return super.getFormat(UI.getCurrent().getLocale());
+                NumberFormat result = super.getFormat(UI.getCurrent().getLocale()); 
+                result.setGroupingUsed(false);
+                return result;
             }
         });
         Label separatorLabel = new Label("&nbsp;/&nbsp;", ContentMode.HTML);
