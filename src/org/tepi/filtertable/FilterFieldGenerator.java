@@ -468,7 +468,7 @@ class FilterFieldGenerator implements Serializable {
 
                 // Check if the filter is already set
                 Filter possiblyExistingFilter = filters.get(propertyId);
-                if (possiblyExistingFilter != null
+                if (possiblyExistingFilter != null && newFilter != null
                         && possiblyExistingFilter.equals(newFilter)) {
                     return;
                 }
