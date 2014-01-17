@@ -21,8 +21,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.tepi.filtertable.gwt.client.ui.VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow;
-
 import com.google.gwt.animation.client.Animation;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
@@ -797,7 +795,7 @@ public class VFilterTreeTable extends VFilterTable {
             return true;
         }
 
-        VTreeTableRow focusedRow = (VTreeTableRow) getFocusedRow();
+        VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow focusedRow = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) getFocusedRow();
         if (focusedRow != null) {
             if (focusedRow.canHaveChildren
                     && ((keycode == KeyCodes.KEY_RIGHT && !focusedRow.open) || (keycode == KeyCodes.KEY_LEFT && focusedRow.open))) {
@@ -814,11 +812,11 @@ public class VFilterTreeTable extends VFilterTable {
                 VTreeTableScrollBody body = (VTreeTableScrollBody) focusedRow
                         .getParent();
                 Iterator<Widget> iterator = body.iterator();
-                VTreeTableRow next = null;
+                VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow next = null;
                 while (iterator.hasNext()) {
-                    next = (VTreeTableRow) iterator.next();
+                    next = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) iterator.next();
                     if (next == focusedRow) {
-                        next = (VTreeTableRow) iterator.next();
+                        next = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) iterator.next();
                         break;
                     }
                 }
