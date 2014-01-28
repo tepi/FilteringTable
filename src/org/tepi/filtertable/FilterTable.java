@@ -333,7 +333,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
             }
         }
         super.setVisibleColumns(visibleColumns);
-        resetFilters();
     }
 
     @Override
