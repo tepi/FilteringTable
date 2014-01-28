@@ -24,8 +24,8 @@
 }
 
 /* TextField within the Filter panel*/
-.reindeer.v-app .v-table .filters-panel input.v-textfield.v-widget, 
-.reindeer .v-window .v-table .filters-panel input.v-textfield.v-widget {
+.v-app .v-table .filters-panel input.v-textfield.v-widget, 
+.v-window .v-table .filters-panel input.v-textfield.v-widget {
 	height: 23px;
 	border-radius: 0px;
 	-webkit-border-radius: 0px;
