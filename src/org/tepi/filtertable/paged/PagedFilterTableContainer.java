@@ -39,7 +39,11 @@ public class PagedFilterTableContainer<T extends Container.Indexed & Container.F
     }
 
     public void setStartIndex(int startIndex) {
-        this.startIndex = startIndex;
+        if (startIndex < 0) {
+            this.startIndex = 0;
+        } else {
+            this.startIndex = startIndex;
+        }
     }
 
     /*
