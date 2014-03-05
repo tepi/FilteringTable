@@ -203,6 +203,16 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
                 Alignment.MIDDLE_CENTER);
         controlBar.setWidth(100, Unit.PERCENTAGE);
         controlBar.setExpandRatio(pageSize, 1);
+        
+        if (container != null) {
+            first.setEnabled(container.getStartIndex() > 0);
+            previous.setEnabled(container.getStartIndex() > 0);
+            next.setEnabled(container.getStartIndex() < container.getRealSize()
+                    - getPageLength());
+            last.setEnabled(container.getStartIndex() < container.getRealSize()
+                    - getPageLength());
+        }
+        
         addListener(new PageChangeListener() {
             private boolean inMiddleOfValueChange;
 
@@ -228,7 +238,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
         });
         return controlBar;
     }
-
+    
     @Override
     public PagedFilterTableContainer<T> getContainerDataSource() {
         return container;
