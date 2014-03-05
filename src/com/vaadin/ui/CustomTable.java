@@ -2166,7 +2166,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (items instanceof Container.Indexed) {
             // more efficient implementation for containers supporting access by
             // index
-
             List<?> itemIds = getItemIds(firstIndex, rows);
             for (int i = 0; i < rows && i < itemIds.size(); i++) {
                 Object id = itemIds.get(i);

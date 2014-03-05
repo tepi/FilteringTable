@@ -132,9 +132,6 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
 
         getWidget().updateSortingProperties(uidl);
 
-        boolean keyboardSelectionOverRowFetchInProgress = getWidget()
-                .selectSelectedRows(uidl);
-
         getWidget().updateActionMap(uidl);
 
         getWidget().updateColumnProperties(uidl);
@@ -205,6 +202,9 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
                 }
             }
         }
+
+        boolean keyboardSelectionOverRowFetchInProgress = getWidget()
+                .selectSelectedRows(uidl);
 
         // If a row had an open context menu before the update, and after the
         // update there's a row with the same key as that row, restore the
@@ -471,4 +471,5 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
             ConnectorHierarchyChangeEvent connectorHierarchyChangeEvent) {
         // TODO Move code from updateFromUIDL to this method
     }
+
 }
