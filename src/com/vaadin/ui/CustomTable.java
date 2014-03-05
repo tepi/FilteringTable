@@ -3966,11 +3966,11 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     private Object[][] getVisibleCells() {
         if (pageBuffer == null) {
             boolean isRefreshingEnabled = isContentRefreshesEnabled;
-            try{
+            try {
                 enableContentRefreshing(false);
                 refreshRenderedCells();
-            }finally{
-                if (!isRefreshingEnabled){
+            } finally {
+                if (!isRefreshingEnabled) {
                     disableContentRefreshing();
                 }
             }
