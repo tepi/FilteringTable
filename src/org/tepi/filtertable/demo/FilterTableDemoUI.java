@@ -8,6 +8,7 @@ import java.util.Random;
 
 import org.tepi.filtertable.FilterTable;
 import org.tepi.filtertable.FilterTreeTable;
+import org.tepi.filtertable.paged.PagedFilterControlConfig;
 import org.tepi.filtertable.paged.PagedFilterTable;
 
 import com.vaadin.annotations.PreserveOnRefresh;
@@ -184,7 +185,7 @@ public class FilterTableDemoUI extends UI {
         mainLayout.setSpacing(true);
         mainLayout.setMargin(true);
         mainLayout.addComponent(pagedFilterTable);
-        mainLayout.addComponent(pagedFilterTable.createControls());
+        mainLayout.addComponent(pagedFilterTable.createControls(new PagedFilterControlConfig()));
         mainLayout.addComponent(buildButtons(pagedFilterTable));
         return mainLayout;
     }
