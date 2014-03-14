@@ -170,6 +170,10 @@ public class VFilterTable extends VCustomScrollTable {
                             index);
                     w = Util.getRequiredWidth(cell);
                 }
+                MeasuredSize measuredSize = new MeasuredSize();
+                measuredSize.measure(p.getElement());
+                int margins = measuredSize.getMarginLeft() + measuredSize.getMarginRight();
+                w -= margins;
                 /* Ensure no negative widths are set */
                 w = w > 0 ? w : 0;
                 p.setWidth(w + "px");
