@@ -15,6 +15,7 @@ import com.google.gwt.user.client.ui.FocusWidget;
 import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.BrowserInfo;
 import com.vaadin.client.Focusable;
+import com.vaadin.client.MeasuredSize;
 import com.vaadin.client.Util;
 import com.vaadin.client.ui.VCustomScrollTable;
 import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
@@ -172,7 +173,8 @@ public class VFilterTable extends VCustomScrollTable {
                 }
                 MeasuredSize measuredSize = new MeasuredSize();
                 measuredSize.measure(p.getElement());
-                int margins = measuredSize.getMarginLeft() + measuredSize.getMarginRight();
+                int margins = measuredSize.getMarginLeft()
+                        + measuredSize.getMarginRight();
                 w -= margins;
                 /* Ensure no negative widths are set */
                 w = w > 0 ? w : 0;
