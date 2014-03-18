@@ -21,8 +21,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.tepi.filtertable.gwt.client.ui.VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow;
-
 import com.google.gwt.animation.client.Animation;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
@@ -46,7 +44,6 @@ import com.vaadin.terminal.gwt.client.UIDL;
 import com.vaadin.terminal.gwt.client.Util;
 import com.vaadin.terminal.gwt.client.ui.FocusableScrollPanel;
 import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable;
-import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 
 public class VFilterTreeTable extends VCustomScrollTable {
 
@@ -100,7 +97,7 @@ public class VFilterTreeTable extends VCustomScrollTable {
         super.updateFromUIDL(uidl, client);
         if (collapseRequest) {
             if (collapsedRowKey != null && scrollBody != null) {
-                VScrollTableRow row = getRenderedRowByKey(collapsedRowKey);
+                VCustomScrollTable.VScrollTableBody.VScrollTableRow row = getRenderedRowByKey(collapsedRowKey);
                 if (row != null) {
                     setRowFocus(row);
                     focus();
@@ -890,7 +887,7 @@ public class VFilterTreeTable extends VCustomScrollTable {
             return true;
         }
 
-        VTreeTableRow focusedRow = (VTreeTableRow) getFocusedRow();
+        VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow focusedRow = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) getFocusedRow();
         if (focusedRow != null) {
             if (focusedRow.canHaveChildren
                     && ((keycode == KeyCodes.KEY_RIGHT && !focusedRow.open) || (keycode == KeyCodes.KEY_LEFT && focusedRow.open))) {
@@ -907,11 +904,11 @@ public class VFilterTreeTable extends VCustomScrollTable {
                 VTreeTableScrollBody body = (VTreeTableScrollBody) focusedRow
                         .getParent();
                 Iterator<Widget> iterator = body.iterator();
-                VTreeTableRow next = null;
+                VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow next = null;
                 while (iterator.hasNext()) {
-                    next = (VTreeTableRow) iterator.next();
+                    next = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) iterator.next();
                     if (next == focusedRow) {
-                        next = (VTreeTableRow) iterator.next();
+                        next = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) iterator.next();
                         break;
                     }
                 }
