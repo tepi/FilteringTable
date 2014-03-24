@@ -44,6 +44,9 @@ public class FilterTable extends CustomTable implements IFilterTable {
     private final boolean initDone;
     /* Force-render filter fields */
     private boolean reRenderFilterFields;
+    
+    /* Wrap filters with additional div for styling? */
+    private boolean wrapFilters = false;
 
     /**
      * Creates a new empty FilterTable
@@ -71,6 +74,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
         target.startTag("filters");
         target.addAttribute("filtersvisible", filtersVisible);
         target.addAttribute("forceRender", reRenderFilterFields);
+        target.addAttribute("wrapFilters", wrapFilters);
         reRenderFilterFields = false;
         if (filtersVisible) {
             for (Object key : getColumnIdToFilterMap().keySet()) {
@@ -342,4 +346,14 @@ public class FilterTable extends CustomTable implements IFilterTable {
         else
             disableContentRefreshing();
     }
+    
+    public void setWrapFilters(boolean wrapFilters) {
+		this.wrapFilters = wrapFilters;
+		reRenderFilterFields = true;
+	}
+
+    public boolean isWrapFilters() {
+    	return this.wrapFilters;
+    }
+    
 }

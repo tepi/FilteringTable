@@ -164,7 +164,7 @@ public class FilterTableDemoUI extends UI {
 
         filterTable.setVisibleColumns((Object[]) new String[] { "name", "id",
                 "state", "date", "validated", "checked" });
-
+        
         filterTable.setItemDescriptionGenerator(new ItemDescriptionGenerator() {
 
             @Override

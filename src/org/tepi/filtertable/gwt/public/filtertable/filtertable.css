@@ -3,7 +3,6 @@
 	background-color: #D4D7D9;
 	width: 90000px;
 	overflow: hidden;
-	height: 23px;
 }
 
 .filters-panel > div,
@@ -136,4 +135,13 @@
 	font-size: 12px;
 	font-weight: normal;
 	font-size: 12px;
+}
+.filterwrapper {
+	overflow: hidden !important;
+}
+.filterwrapper-first {
+	overflow: hidden !important;
+}
+.fiterwrapper-last {
+	overflow: hidden !important;
 }
