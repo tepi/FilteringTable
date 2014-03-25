@@ -334,4 +334,9 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
         else
             disableContentRefreshing();
     }
+
+	@Override
+	public boolean isFiltersRunOnDemand() {
+		throw new UnsupportedOperationException("This method should never be called for " + getClass().getCanonicalName());
+	}
 }
