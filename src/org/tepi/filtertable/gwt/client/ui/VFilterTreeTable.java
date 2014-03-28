@@ -814,9 +814,11 @@ public class VFilterTreeTable extends VFilterTable {
                 Iterator<Widget> iterator = body.iterator();
                 VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow next = null;
                 while (iterator.hasNext()) {
-                    next = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) iterator.next();
+                    next = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) iterator
+                            .next();
                     if (next == focusedRow) {
-                        next = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) iterator.next();
+                        next = (VFilterTreeTable.VTreeTableScrollBody.VTreeTableRow) iterator
+                                .next();
                         break;
                     }
                 }
