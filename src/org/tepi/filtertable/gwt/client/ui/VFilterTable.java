@@ -12,6 +12,7 @@ import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.FocusWidget;
+import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.BrowserInfo;
 import com.vaadin.client.Focusable;
@@ -120,6 +121,9 @@ public class VFilterTable extends VCustomScrollTable {
         /* Actual container for the filter components */
         FlowPanel container = new FlowPanel();
 
+        /* Wrap filters with additional div for styling? */
+        boolean wrapFilters = false;
+
         public FilterPanel() {
             container.setStyleName("filters-panel");
             DOM.setStyleAttribute(wrap.getElement(), "overflow", "hidden");
@@ -132,6 +136,14 @@ public class VFilterTable extends VCustomScrollTable {
 
         void reRenderFilterComponents() {
             container.clear();
+            if (!wrapFilters) {
+                reRenderNotWrappedFilterComponents();
+            } else {
+                reRenderWrappedFilterComponents();
+            }
+        }
+
+        private void reRenderNotWrappedFilterComponents() {
             for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
                 String key = getColKeyByIndex(i);
                 if (key == null) {
@@ -154,11 +166,62 @@ public class VFilterTable extends VCustomScrollTable {
             }
         }
 
+        private void reRenderWrappedFilterComponents() {
+            // Remember height
+            MeasuredSize ms = new MeasuredSize();
+            ms.measure(container.getElement());
+            int height = ms.getInnerHeight();
+
+            int visibleCellCount = tHead.getVisibleCellCount();
+            for (int i = 0; i < visibleCellCount; i++) {
+                String key = getColKeyByIndex(i);
+                if (key == null) {
+                    continue;
+                }
+                Widget widget = filters.get(key);
+                SimplePanel wrapper = new SimplePanel();
+                wrapper.addStyleName("filterwrapper");
+
+                if (0 == i) {
+                    wrapper.addStyleName("filterwrapper-first");
+                }
+                if (visibleCellCount - 1 == i) {
+                    wrapper.addStyleName("filterwrapper-last");
+                }
+
+                if (widget == null) {
+                    /* No filter defined */
+                    /* Use a place holder of the correct width */
+                    Widget placeHolder = new FlowPanel();
+                    placeHolder.addStyleName("filterplaceholder");
+                    wrapper.setWidget(placeHolder);
+                    container.add(wrapper);
+                    filters.put(key, placeHolder);
+                    setWrappedFilterWidth(i);
+                } else {
+                    wrapper.setWidget(widget);
+                    container.add(wrapper);
+                    setWrappedFilterWidth(i);
+                }
+
+                // deal with wrapper height
+                MeasuredSize wrapperSize = new MeasuredSize();
+                wrapperSize.measure(wrapper.getElement());
+                int correction = wrapperSize.getMarginHeight()
+                        + wrapperSize.getBorderHeight()
+                        + wrapperSize.getPaddingHeight();
+                int wrapperHeight = height - correction;
+                // ensure no negative heights
+                wrapperHeight = wrapperHeight > 0 ? wrapperHeight : 0;
+                wrapper.setHeight(wrapperHeight + "px");
+            }
+        }
+
         public void setScrollLeft(int scrollLeft) {
             wrap.getElement().setScrollLeft(scrollLeft);
         }
 
-        private void setFilterWidth(int index) {
+        private void setNotWrappedFilterWidth(int index) {
             Widget p = filters.get(getColKeyByIndex(index));
             if (p != null) {
                 /* Try to get width from header cell */
@@ -173,12 +236,43 @@ public class VFilterTable extends VCustomScrollTable {
                 }
                 MeasuredSize measuredSize = new MeasuredSize();
                 measuredSize.measure(p.getElement());
-                int margins = measuredSize.getMarginLeft()
-                        + measuredSize.getMarginRight();
-                w -= margins;
+                w -= measuredSize.getMarginWidth();
                 /* Ensure no negative widths are set */
                 w = w > 0 ? w : 0;
                 p.setWidth(w + "px");
+            }
+        }
+
+        private void setWrappedFilterWidth(int index) {
+            Widget widget = filters.get(getColKeyByIndex(index));
+            if (null != widget) {
+                Widget wrapper = widget.getParent();
+                int wrapperWidth = Util.getRequiredWidth(tHead
+                        .getHeaderCell(index));
+                if (wrapperWidth <= 0) {
+                    VScrollTableRow firstRow = scrollBody
+                            .getRowByRowIndex(scrollBody.getFirstRendered());
+                    final Element cell = DOM.getChild(firstRow.getElement(),
+                            index);
+                    wrapperWidth = Util.getRequiredWidth(cell);
+                }
+                MeasuredSize wrapperSize = new MeasuredSize();
+                wrapperSize.measure(wrapper.getElement());
+                int wrapperCorrections = wrapperSize.getMarginWidth()
+                        + wrapperSize.getBorderWidth()
+                        + wrapperSize.getPaddingWidth();
+                wrapperWidth = wrapperWidth - wrapperCorrections;
+                wrapperWidth = wrapperWidth > 0 ? wrapperWidth : 0;
+                wrapper.setWidth(wrapperWidth + "px");
+
+                if (0 < wrapperWidth) {
+                    int widgetWidth = wrapperWidth;
+                    MeasuredSize widgetSize = new MeasuredSize();
+                    widgetSize.measure(widget.getElement());
+                    widgetWidth -= widgetSize.getMarginWidth();
+                    widgetWidth = widgetWidth > 0 ? widgetWidth : 0;
+                    widget.setWidth(widgetWidth + "px");
+                }
             }
         }
 
@@ -205,6 +299,14 @@ public class VFilterTable extends VCustomScrollTable {
         public void resetFilterWidths() {
             for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
                 setFilterWidth(i);
+            }
+        }
+
+        private void setFilterWidth(int index) {
+            if (!wrapFilters) {
+                setNotWrappedFilterWidth(index);
+            } else {
+                setWrappedFilterWidth(index);
             }
         }
     }

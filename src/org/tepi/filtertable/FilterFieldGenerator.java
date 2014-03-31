@@ -4,10 +4,12 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.tepi.filtertable.datefilter.DateFilterPopup;
@@ -50,8 +52,12 @@ class FilterFieldGenerator implements Serializable {
     private final Map<DateFilterPopup, Object> dates = new HashMap<DateFilterPopup, Object>();
     private final Map<NumberFilterPopup, Object> numbers = new HashMap<NumberFilterPopup, Object>();
 
+    private And lastOnDemandFilter;
+
     /* ValueChangeListener for filter components */
     private final ValueChangeListener listener = initializeListener();
+
+    private boolean runFiltersOnDemand;
 
     FilterFieldGenerator(IFilterTable owner) {
         this.owner = owner;
@@ -68,6 +74,23 @@ class FilterFieldGenerator implements Serializable {
             }
         }
         /* Remove listeners */
+        removeValueChangeListeners();
+        /* Clear the data related to filters */
+        customFields.clear();
+        filters.clear();
+        texts.clear();
+        enums.clear();
+        booleans.clear();
+        dates.clear();
+        numbers.clear();
+
+        owner.setRefreshingEnabled(true);
+
+        /* also clear on-demand data */
+        owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
+    }
+
+    public void removeValueChangeListeners() {
         for (AbstractField<?> af : customFields.keySet()) {
             af.removeValueChangeListener(listener);
         }
@@ -86,16 +109,6 @@ class FilterFieldGenerator implements Serializable {
         for (NumberFilterPopup nfp : numbers.keySet()) {
             nfp.removeValueChangeListener(listener);
         }
-        /* Clear the data related to filters */
-        customFields.clear();
-        filters.clear();
-        texts.clear();
-        enums.clear();
-        booleans.clear();
-        dates.clear();
-        numbers.clear();
-
-        owner.setRefreshingEnabled(true);
     }
 
     void initializeFilterFields() {
@@ -103,11 +116,19 @@ class FilterFieldGenerator implements Serializable {
         if (owner.getFilterable() != null) {
             for (Object property : owner.getVisibleColumns()) {
                 if (owner.getContainerPropertyIds().contains(property)) {
-                    Component filter = createField(property, owner
+                    AbstractField<?> filter = createField(property, owner
                             .getContainerDataSource().getType(property));
+                    if (!owner.isFiltersRunOnDemand()) {
+                        filter.addValueChangeListener(listener);
+                    }
+                    filter.addValueChangeListener(listener);
                     addFilterColumn(property, filter);
                 } else {
-                    addFilterColumn(property, createField(property, null));
+                    AbstractField<?> filter = createField(property, null);
+                    if (!owner.isFiltersRunOnDemand()) {
+                        filter.addValueChangeListener(listener);
+                    }
+                    addFilterColumn(property, filter);
                 }
             }
         }
@@ -190,7 +211,7 @@ class FilterFieldGenerator implements Serializable {
 
         Method valueOf;
 
-        // We use reflection to get the vaueOf method of the container
+        // We use reflection to get the valueOf method of the container
         // datatype
         valueOf = clazz.getMethod("valueOf", String.class);
         if (eqValue != null) {
@@ -283,22 +304,22 @@ class FilterFieldGenerator implements Serializable {
         filters.put(propertyId, filter);
     }
 
-    private Component createField(Object property, Class<?> type) {
-        AbstractField<?> component = null;
+    private AbstractField<?> createField(Object property, Class<?> type) {
+        AbstractField<?> field = null;
         if (owner.getFilterGenerator() != null) {
-            component = owner.getFilterGenerator().getCustomFilterComponent(
+            field = owner.getFilterGenerator().getCustomFilterComponent(
                     property);
         }
-        if (component != null) {
-            customFields.put(component, property);
+        if (field != null) {
+            customFields.put(field, property);
         } else if (type == null) {
-            component = new TextField();
-            component.setWidth(100, Unit.PERCENTAGE);
-            return component;
+            field = new TextField();
+            field.setWidth(100, Unit.PERCENTAGE);
+            return field;
         } else if (type == boolean.class || type == Boolean.class) {
-            component = createBooleanField(property);
+            field = createBooleanField(property);
         } else if (type.isEnum()) {
-            component = createEnumField(type, property);
+            field = createEnumField(type, property);
         } else if (type == Date.class || type == Timestamp.class
                 || type == java.sql.Date.class) {
             DateFilterPopup dfp = createDateField(property);
@@ -321,12 +342,12 @@ class FilterFieldGenerator implements Serializable {
             nfp.addValueChangeListener(listener);
             return nfp;
         } else {
-            component = createTextField(property);
+            field = createTextField(property);
         }
-        component.setWidth(null);
-        component.setImmediate(true);
-        component.addValueChangeListener(listener);
-        return component;
+        field.setWidth(null);
+        field.setImmediate(true);
+        field.addValueChangeListener(listener);
+        return field;
     }
 
     private AbstractField<?> createTextField(Object propertyId) {
@@ -445,58 +466,120 @@ class FilterFieldGenerator implements Serializable {
                     return;
                 }
                 Property<?> field = event.getProperty();
-                Object value = field.getValue();
-                Object propertyId = null;
-                if (customFields.containsKey(field)) {
-                    propertyId = customFields.get(field);
-                } else if (texts.containsKey(field)) {
-                    propertyId = texts.get(field);
-                } else if (dates.containsKey(field)) {
-                    propertyId = dates.get(field);
-                } else if (numbers.containsKey(field)) {
-                    propertyId = numbers.get(field);
-                } else if (enums.containsKey(field)) {
-                    propertyId = enums.get(field);
-                } else if (booleans.containsKey(field)) {
-                    propertyId = booleans.get(field);
-                }
-
-                owner.setRefreshingEnabled(false);
-
-                // Generate a new filter
-                Filter newFilter = generateFilter(field, propertyId, value);
-
-                // Check if the filter is already set
-                Filter possiblyExistingFilter = filters.get(propertyId);
-                if (possiblyExistingFilter != null && newFilter != null
-                        && possiblyExistingFilter.equals(newFilter)) {
-                    return;
-                }
-
-                /* Remove the old filter and set the new filter */
-                removeFilter(propertyId);
-                if (newFilter != null) {
-                    setFilter(newFilter, propertyId);
-                    if (owner.getFilterGenerator() != null) {
-                        owner.getFilterGenerator().filterAdded(propertyId,
-                                newFilter.getClass(), value);
-                    }
-                } else {
-                    if (owner.getFilterGenerator() != null) {
-                        owner.getFilterGenerator().filterRemoved(propertyId);
-                    }
-                }
-
-                /*
-                 * If the owner is a PagedFilteringTable, move to the first page
-                 */
-                if (owner instanceof PagedFilterTable<?>) {
-                    ((PagedFilterTable<?>) owner).setCurrentPage(1);
-                }
-
-                owner.setRefreshingEnabled(true);
+                updateFilterForField(field);
             }
         };
+    }
+
+    private void updateFilterForField(Property<?> field) {
+        Object value = field.getValue();
+        Object propertyId = null;
+        if (customFields.containsKey(field)) {
+            propertyId = customFields.get(field);
+        } else if (texts.containsKey(field)) {
+            propertyId = texts.get(field);
+        } else if (dates.containsKey(field)) {
+            propertyId = dates.get(field);
+        } else if (numbers.containsKey(field)) {
+            propertyId = numbers.get(field);
+        } else if (enums.containsKey(field)) {
+            propertyId = enums.get(field);
+        } else if (booleans.containsKey(field)) {
+            propertyId = booleans.get(field);
+        }
+
+        owner.setRefreshingEnabled(false);
+
+        // Generate a new filter
+        Filter newFilter = generateFilter(field, propertyId, value);
+
+        // Check if the filter is already set
+        Filter possiblyExistingFilter = filters.get(propertyId);
+        if (possiblyExistingFilter != null && newFilter != null
+                && possiblyExistingFilter.equals(newFilter)) {
+            return;
+        }
+
+        /* Remove the old filter and set the new filter */
+        removeFilter(propertyId);
+        if (newFilter != null) {
+            setFilter(newFilter, propertyId);
+            if (owner.getFilterGenerator() != null) {
+                owner.getFilterGenerator().filterAdded(propertyId,
+                        newFilter.getClass(), value);
+            }
+        } else {
+            if (owner.getFilterGenerator() != null) {
+                owner.getFilterGenerator().filterRemoved(propertyId);
+            }
+        }
+
+        /*
+         * If the owner is a PagedFilteringTable, move to the first page
+         */
+        if (owner instanceof PagedFilterTable<?>) {
+            ((PagedFilterTable<?>) owner).setCurrentPage(1);
+        }
+
+        owner.setRefreshingEnabled(true);
+    }
+
+    private Filter generateFilterForField(Property<?> field) {
+        Object value = field.getValue();
+        Object propertyId = null;
+        if (customFields.containsKey(field)) {
+            propertyId = customFields.get(field);
+        } else if (texts.containsKey(field)) {
+            propertyId = texts.get(field);
+        } else if (dates.containsKey(field)) {
+            propertyId = dates.get(field);
+        } else if (numbers.containsKey(field)) {
+            propertyId = numbers.get(field);
+        } else if (enums.containsKey(field)) {
+            propertyId = enums.get(field);
+        } else if (booleans.containsKey(field)) {
+            propertyId = booleans.get(field);
+        }
+
+        return generateFilter(field, propertyId, value);
+    }
+
+    public void runFiltersNow() {
+        owner.setRefreshingEnabled(false);
+        owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
+
+        List<Filter> filters = new ArrayList<Filter>();
+        for (AbstractField<?> f : customFields.keySet()) {
+            addNonNullFilter(filters, f);
+        }
+        for (AbstractField<?> f : texts.keySet()) {
+            addNonNullFilter(filters, f);
+        }
+        for (AbstractField<?> f : dates.keySet()) {
+            addNonNullFilter(filters, f);
+        }
+        for (AbstractField<?> f : numbers.keySet()) {
+            addNonNullFilter(filters, f);
+        }
+        for (AbstractField<?> f : enums.keySet()) {
+            addNonNullFilter(filters, f);
+        }
+        for (AbstractField<?> f : booleans.keySet()) {
+            addNonNullFilter(filters, f);
+        }
+
+        Filter[] filtersArray = filters.toArray(new Filter[0]);
+        lastOnDemandFilter = new And(filtersArray);
+        owner.getFilterable().addContainerFilter(lastOnDemandFilter);
+        owner.setRefreshingEnabled(true);
+
+    }
+
+    private void addNonNullFilter(List<Filter> filters, AbstractField<?> f) {
+        Filter filter = generateFilterForField(f);
+        if (null != filter) {
+            filters.add(filter);
+        }
     }
 
     interface IFilterTable {
@@ -523,5 +606,20 @@ class FilterFieldGenerator implements Serializable {
 
         public void setRefreshingEnabled(boolean enabled);
 
+        public boolean isFiltersRunOnDemand();
+
+    }
+
+    public void switchToOnDemandMode() {
+        runFiltersOnDemand = true;
+        clearFilterData();
+        initializeFilterFields();
+        removeValueChangeListeners();
+    }
+
+    public void switchToOnlineMode() {
+        runFiltersOnDemand = false;
+        clearFilterData();
+        initializeFilterFields();
     }
 }

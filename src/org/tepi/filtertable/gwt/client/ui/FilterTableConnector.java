@@ -313,6 +313,8 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         getWidget().filters.filtersVisible = uidl
                 .hasAttribute("filtersvisible") ? uidl
                 .getBooleanAttribute("filtersvisible") : false;
+        getWidget().filters.wrapFilters = uidl.hasAttribute("wrapFilters") ? uidl
+                .getBooleanAttribute("wrapFilters") : false;
 
         /* If filters are not set visible, clear and hide filter panel */
         getWidget().filters.setVisible(getWidget().filters.filtersVisible);

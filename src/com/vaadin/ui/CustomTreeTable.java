@@ -29,6 +29,7 @@ import java.util.logging.Logger;
 import com.vaadin.data.Collapsible;
 import com.vaadin.data.Container;
 import com.vaadin.data.Container.Hierarchical;
+import com.vaadin.data.Container.ItemSetChangeEvent;
 import com.vaadin.data.util.ContainerHierarchicalWrapper;
 import com.vaadin.data.util.HierarchicalContainer;
 import com.vaadin.data.util.HierarchicalContainerOrderedWrapper;

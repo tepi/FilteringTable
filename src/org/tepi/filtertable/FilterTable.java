@@ -45,6 +45,12 @@ public class FilterTable extends CustomTable implements IFilterTable {
     /* Force-render filter fields */
     private boolean reRenderFilterFields;
 
+    /* Wrap filters with additional div for styling? */
+    private boolean wrapFilters = false;
+
+    /* Are filters run immediately, or only on demand? */
+    private boolean filtersRunOnDemand = false;
+
     /**
      * Creates a new empty FilterTable
      */
@@ -71,6 +77,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
         target.startTag("filters");
         target.addAttribute("filtersvisible", filtersVisible);
         target.addAttribute("forceRender", reRenderFilterFields);
+        target.addAttribute("wrapFilters", wrapFilters);
         reRenderFilterFields = false;
         if (filtersVisible) {
             for (Object key : getColumnIdToFilterMap().keySet()) {
@@ -337,9 +344,46 @@ public class FilterTable extends CustomTable implements IFilterTable {
 
     @Override
     public void setRefreshingEnabled(boolean enabled) {
-        if (enabled)
+        if (enabled) {
             enableContentRefreshing(true);
-        else
+        } else {
             disableContentRefreshing();
+        }
     }
+
+    public void setWrapFilters(boolean wrapFilters) {
+        this.wrapFilters = wrapFilters;
+        reRenderFilterFields = true;
+    }
+
+    public boolean isWrapFilters() {
+        return wrapFilters;
+    }
+
+    public void setFiltersRunOnDemand(boolean filtersRunOnDemand) {
+        if (this.filtersRunOnDemand == filtersRunOnDemand) {
+            return;
+        }
+        this.filtersRunOnDemand = filtersRunOnDemand;
+
+        if (filtersRunOnDemand) {
+            generator.switchToOnDemandMode();
+        } else {
+            generator.switchToOnlineMode();
+        }
+    }
+
+    @Override
+    public boolean isFiltersRunOnDemand() {
+        return filtersRunOnDemand;
+    }
+
+    public void runFilters() {
+        if (!filtersRunOnDemand) {
+            throw new IllegalStateException(
+                    "Can't run filters on demand when filtersRunOnDemand is set to false");
+        }
+        generator.runFiltersNow();
+    }
+
 }

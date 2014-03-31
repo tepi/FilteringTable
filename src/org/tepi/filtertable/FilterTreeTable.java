@@ -329,9 +329,17 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
 
     @Override
     public void setRefreshingEnabled(boolean enabled) {
-        if (enabled)
+        if (enabled) {
             enableContentRefreshing(true);
-        else
+        } else {
             disableContentRefreshing();
+        }
+    }
+
+    @Override
+    public boolean isFiltersRunOnDemand() {
+        throw new UnsupportedOperationException(
+                "This method should never be called for "
+                        + getClass().getCanonicalName());
     }
 }

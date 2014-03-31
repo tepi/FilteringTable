@@ -137,3 +137,12 @@
 	font-weight: normal;
 	font-size: 12px;
 }
+.filterwrapper {
+	overflow: hidden !important;
+}
+.filterwrapper-first {
+	overflow: hidden !important;
+}
+.fiterwrapper-last {
+	overflow: hidden !important;
+}

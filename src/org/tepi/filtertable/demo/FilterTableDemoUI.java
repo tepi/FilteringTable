@@ -138,7 +138,7 @@ public class FilterTableDemoUI extends UI {
 
         return filterTable;
     }
-    
+
     private FilterTable buildFilterTable() {
         FilterTable filterTable = new FilterTable();
         filterTable.setSizeFull();
@@ -185,7 +185,8 @@ public class FilterTableDemoUI extends UI {
         mainLayout.setSpacing(true);
         mainLayout.setMargin(true);
         mainLayout.addComponent(pagedFilterTable);
-        mainLayout.addComponent(pagedFilterTable.createControls(new PagedFilterControlConfig()));
+        mainLayout.addComponent(pagedFilterTable
+                .createControls(new PagedFilterControlConfig()));
         mainLayout.addComponent(buildButtons(pagedFilterTable));
         return mainLayout;
     }
@@ -263,6 +264,7 @@ public class FilterTableDemoUI extends UI {
         filterTable.setContainerDataSource(buildHierarchicalContainer());
 
         filterTable.addGeneratedColumn("foo", new ColumnGenerator() {
+            @Override
             public Object generateCell(CustomTable source, Object itemId,
                     Object columnId) {
                 return "testing";
@@ -354,6 +356,7 @@ public class FilterTableDemoUI extends UI {
         showFilters.setImmediate(true);
         showFilters.addValueChangeListener(new Property.ValueChangeListener() {
 
+            @Override
             public void valueChange(ValueChangeEvent event) {
                 relatedFilterTable.setFilterBarVisible((Boolean) event
                         .getProperty().getValue());
@@ -366,6 +369,7 @@ public class FilterTableDemoUI extends UI {
         Button setVal = new Button("Set the State filter to 'Processed'");
         setVal.addClickListener(new Button.ClickListener() {
 
+            @Override
             public void buttonClick(ClickEvent event) {
                 relatedFilterTable
                         .setFilterFieldValue("state", State.PROCESSED);
@@ -376,6 +380,7 @@ public class FilterTableDemoUI extends UI {
         Button reset = new Button("Reset");
         reset.addClickListener(new Button.ClickListener() {
 
+            @Override
             public void buttonClick(ClickEvent event) {
                 relatedFilterTable.resetFilters();
             }
@@ -502,6 +507,7 @@ public class FilterTableDemoUI extends UI {
         toggle.setImmediate(true);
         toggle.addValueChangeListener(new Property.ValueChangeListener() {
 
+            @Override
             public void valueChange(ValueChangeEvent event) {
                 relatedFilterTable.setFilterFieldVisible(propId,
                         !relatedFilterTable.isFilterFieldVisible(propId));
