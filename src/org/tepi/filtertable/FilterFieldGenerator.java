@@ -90,7 +90,7 @@ class FilterFieldGenerator implements Serializable {
         owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
     }
 
-    public void removeValueChangeListeners() {
+    private void removeValueChangeListeners() {
         for (AbstractField<?> af : customFields.keySet()) {
             af.removeValueChangeListener(listener);
         }
@@ -111,6 +111,27 @@ class FilterFieldGenerator implements Serializable {
         }
     }
 
+    private void addValueChangeListeners() {
+        for (AbstractField<?> af : customFields.keySet()) {
+            af.addValueChangeListener(listener);
+        }
+        for (TextField tf : texts.keySet()) {
+            tf.addValueChangeListener(listener);
+        }
+        for (ComboBox cb : enums.keySet()) {
+            cb.addValueChangeListener(listener);
+        }
+        for (ComboBox cb : booleans.keySet()) {
+            cb.addValueChangeListener(listener);
+        }
+        for (DateFilterPopup dfp : dates.keySet()) {
+            dfp.addValueChangeListener(listener);
+        }
+        for (NumberFilterPopup nfp : numbers.keySet()) {
+            nfp.addValueChangeListener(listener);
+        }
+    }
+
     void initializeFilterFields() {
         /* Create new filters only if Filterable */
         if (owner.getFilterable() != null) {
@@ -118,18 +139,14 @@ class FilterFieldGenerator implements Serializable {
                 if (owner.getContainerPropertyIds().contains(property)) {
                     AbstractField<?> filter = createField(property, owner
                             .getContainerDataSource().getType(property));
-                    if (!owner.isFiltersRunOnDemand()) {
-                        filter.addValueChangeListener(listener);
-                    }
-                    filter.addValueChangeListener(listener);
                     addFilterColumn(property, filter);
                 } else {
                     AbstractField<?> filter = createField(property, null);
-                    if (!owner.isFiltersRunOnDemand()) {
-                        filter.addValueChangeListener(listener);
-                    }
                     addFilterColumn(property, filter);
                 }
+            }
+            if (!runFiltersOnDemand) {
+                addValueChangeListeners();
             }
         }
     }
@@ -325,7 +342,6 @@ class FilterFieldGenerator implements Serializable {
             DateFilterPopup dfp = createDateField(property);
             dfp.setWidth(100, Unit.PERCENTAGE);
             dfp.setImmediate(true);
-            dfp.addValueChangeListener(listener);
             return dfp;
         } else if ((type == Integer.class || type == Long.class
                 || type == Float.class || type == Double.class
@@ -339,14 +355,12 @@ class FilterFieldGenerator implements Serializable {
             NumberFilterPopup nfp = createNumericField(type, property);
             nfp.setWidth(100, Unit.PERCENTAGE);
             nfp.setImmediate(true);
-            nfp.addValueChangeListener(listener);
             return nfp;
         } else {
             field = createTextField(property);
         }
         field.setWidth(null);
         field.setImmediate(true);
-        field.addValueChangeListener(listener);
         return field;
     }
 
@@ -606,18 +620,15 @@ class FilterFieldGenerator implements Serializable {
 
         public void setRefreshingEnabled(boolean enabled);
 
-        public boolean isFiltersRunOnDemand();
-
     }
 
-    public void switchToOnDemandMode() {
+    void switchToOnDemandMode() {
         runFiltersOnDemand = true;
         clearFilterData();
         initializeFilterFields();
-        removeValueChangeListeners();
     }
 
-    public void switchToOnlineMode() {
+    void switchToOnlineMode() {
         runFiltersOnDemand = false;
         clearFilterData();
         initializeFilterFields();

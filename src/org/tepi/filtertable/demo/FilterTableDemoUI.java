@@ -16,6 +16,7 @@ import com.vaadin.annotations.Title;
 import com.vaadin.data.Container;
 import com.vaadin.data.Property;
 import com.vaadin.data.Property.ValueChangeEvent;
+import com.vaadin.data.Property.ValueChangeListener;
 import com.vaadin.data.util.HierarchicalContainer;
 import com.vaadin.data.util.IndexedContainer;
 import com.vaadin.server.VaadinRequest;
@@ -309,6 +310,31 @@ public class FilterTableDemoUI extends UI {
         buttonLayout.addComponent(showFilters);
         buttonLayout.setComponentAlignment(showFilters, Alignment.MIDDLE_RIGHT);
         buttonLayout.setExpandRatio(showFilters, 1);
+
+        final Button runNow = new Button("Filter now");
+        runNow.addClickListener(new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(ClickEvent event) {
+                relatedFilterTable.runFilters();
+            }
+        });
+
+        CheckBox runOnDemand = new CheckBox("Filter lazily");
+        runOnDemand.setValue(relatedFilterTable.isFiltersRunOnDemand());
+        runNow.setEnabled(relatedFilterTable.isFiltersRunOnDemand());
+        runOnDemand.setImmediate(true);
+        runOnDemand.addValueChangeListener(new ValueChangeListener() {
+
+            @Override
+            public void valueChange(ValueChangeEvent event) {
+                boolean value = (Boolean) event.getProperty().getValue();
+                relatedFilterTable.setFiltersRunOnDemand(value);
+                runNow.setEnabled(value);
+            }
+        });
+        buttonLayout.addComponent(runOnDemand);
+        buttonLayout.addComponent(runNow);
 
         Button setVal = new Button("Set the State filter to 'Processed'");
         setVal.addClickListener(new Button.ClickListener() {

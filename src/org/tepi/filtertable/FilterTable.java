@@ -365,7 +365,7 @@ public class FilterTable extends CustomTable implements IFilterTable {
             return;
         }
         this.filtersRunOnDemand = filtersRunOnDemand;
-
+        reRenderFilterFields = true;
         if (filtersRunOnDemand) {
             generator.switchToOnDemandMode();
         } else {
@@ -373,7 +373,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
         }
     }
 
-    @Override
     public boolean isFiltersRunOnDemand() {
         return filtersRunOnDemand;
     }

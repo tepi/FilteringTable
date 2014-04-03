@@ -121,6 +121,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
      */
     public void resetFilters() {
         if (initDone) {
+            disableContentRefreshing();
             for (Component c : columnIdToFilterMap.values()) {
                 c.setParent(null);
             }
@@ -129,6 +130,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
             generator.clearFilterData();
             generator.initializeFilterFields();
             reRenderFilterFields = true;
+            enableContentRefreshing(true);
         }
     }
 
@@ -336,10 +338,7 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
         }
     }
 
-    @Override
     public boolean isFiltersRunOnDemand() {
-        throw new UnsupportedOperationException(
-                "This method should never be called for "
-                        + getClass().getCanonicalName());
+        return false; // No support yet
     }
 }
