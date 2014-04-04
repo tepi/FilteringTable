@@ -45,7 +45,7 @@ import com.vaadin.terminal.gwt.client.Util;
 import com.vaadin.terminal.gwt.client.ui.FocusableScrollPanel;
 import com.vaadin.terminal.gwt.client.ui.VCustomScrollTable;
 
-public class VFilterTreeTable extends VCustomScrollTable {
+public class VFilterTreeTable extends VFilterTable {
 
     private static class PendingNavigationEvent {
         private final int keycode;
