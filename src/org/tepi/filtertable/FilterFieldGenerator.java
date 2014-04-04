@@ -622,15 +622,13 @@ class FilterFieldGenerator implements Serializable {
 
     }
 
-    void switchToOnDemandMode() {
-        runFiltersOnDemand = true;
-        clearFilterData();
-        initializeFilterFields();
-    }
-
-    void switchToOnlineMode() {
-        runFiltersOnDemand = false;
-        clearFilterData();
-        initializeFilterFields();
+    void setFilterOnDemandMode(boolean filterOnDemand) {
+        if (runFiltersOnDemand == filterOnDemand) {
+            return;
+        } else {
+            runFiltersOnDemand = filterOnDemand;
+            clearFilterData();
+            initializeFilterFields();
+        }
     }
 }

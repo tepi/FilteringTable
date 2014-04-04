@@ -44,10 +44,8 @@ public class FilterTable extends CustomTable implements IFilterTable {
     private final boolean initDone;
     /* Force-render filter fields */
     private boolean reRenderFilterFields;
-
     /* Wrap filters with additional div for styling? */
     private boolean wrapFilters = false;
-
     /* Are filters run immediately, or only on demand? */
     private boolean filtersRunOnDemand = false;
 
@@ -352,28 +350,31 @@ public class FilterTable extends CustomTable implements IFilterTable {
     }
 
     public void setWrapFilters(boolean wrapFilters) {
-        this.wrapFilters = wrapFilters;
-        reRenderFilterFields = true;
+        if (this.wrapFilters == wrapFilters) {
+            return;
+        } else {
+            this.wrapFilters = wrapFilters;
+            reRenderFilterFields = true;
+            markAsDirty();
+        }
     }
 
     public boolean isWrapFilters() {
         return wrapFilters;
     }
 
-    public void setFiltersRunOnDemand(boolean filtersRunOnDemand) {
-        if (this.filtersRunOnDemand == filtersRunOnDemand) {
+    public void setFilterOnDemand(boolean filterOnDemand) {
+        if (filtersRunOnDemand == filterOnDemand) {
             return;
-        }
-        this.filtersRunOnDemand = filtersRunOnDemand;
-        reRenderFilterFields = true;
-        if (filtersRunOnDemand) {
-            generator.switchToOnDemandMode();
         } else {
-            generator.switchToOnlineMode();
+            filtersRunOnDemand = filterOnDemand;
+            reRenderFilterFields = true;
+            generator.setFilterOnDemandMode(filtersRunOnDemand);
         }
+
     }
 
-    public boolean isFiltersRunOnDemand() {
+    public boolean isFilterOnDemand() {
         return filtersRunOnDemand;
     }
 
