@@ -1,7 +1,7 @@
-#Mon Jul 08 12:53:26 EEST 2013
+com.vaadin.integration.eclipse.previousCompileAction=widgetset
 com.vaadin.integration.eclipse.useLatestNightly=false
 com.vaadin.integration.eclipse.widgetsetBuildsSuspended=true
-com.vaadin.integration.eclipse.widgetsetCompilationEta=95574
+com.vaadin.integration.eclipse.widgetsetCompilationEta=80237
 com.vaadin.integration.eclipse.widgetsetDirty=true
 com.vaadin.integration.eclipse.widgetsetStyle=OBF
 com.vaadin.integration.eclipse.widgetsetVerbose=true
