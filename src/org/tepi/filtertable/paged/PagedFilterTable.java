@@ -66,8 +66,12 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
                 setPageLength((Integer) event.getProperty().getValue());
             }
         });
-        itemsPerPageSelect.select(itemsPerPageSelect.getItemIds().iterator()
-                .next());
+        if (itemsPerPageSelect.containsId(getPageLength())) {
+            itemsPerPageSelect.select(getPageLength());
+        } else {
+            itemsPerPageSelect.select(itemsPerPageSelect.getItemIds()
+                    .iterator().next());
+        }
         Label pageLabel = new Label(config.getPage(), ContentMode.HTML);
         final TextField currentPageTextField = new TextField();
         currentPageTextField.setValue(String.valueOf(getCurrentPage()));
@@ -228,7 +232,7 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
                     totalPagesLabel.setValue(Integer
                             .toString(getTotalAmountOfPages()));
                     itemsPerPageSelect
-                            .setValue(String.valueOf(getPageLength()));
+                            .setValue(getPageLength());
                     inMiddleOfValueChange = false;
                 }
             }
