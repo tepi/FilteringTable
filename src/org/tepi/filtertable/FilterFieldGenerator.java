@@ -67,8 +67,10 @@ class FilterFieldGenerator implements Serializable {
         owner.setRefreshingEnabled(false);
         /* Remove all filters from container */
         for (Object propertyId : filters.keySet()) {
-            owner.getFilterable()
-                    .removeContainerFilter(filters.get(propertyId));
+            if (owner.getFilterable() != null) {
+                owner.getFilterable().removeContainerFilter(
+                        filters.get(propertyId));
+            }
             if (owner.getFilterGenerator() != null) {
                 owner.getFilterGenerator().filterRemoved(propertyId);
             }
@@ -87,7 +89,9 @@ class FilterFieldGenerator implements Serializable {
         owner.setRefreshingEnabled(true);
 
         /* also clear on-demand data */
-        owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
+        if (owner.getFilterable() != null) {
+            owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
+        }
     }
 
     private void removeValueChangeListeners() {
@@ -310,14 +314,18 @@ class FilterFieldGenerator implements Serializable {
 
     private void removeFilter(Object propertyId) {
         if (filters.get(propertyId) != null) {
-            owner.getFilterable()
-                    .removeContainerFilter(filters.get(propertyId));
+            if (owner.getFilterable() != null) {
+                owner.getFilterable().removeContainerFilter(
+                        filters.get(propertyId));
+            }
             filters.remove(propertyId);
         }
     }
 
     private void setFilter(Filter filter, Object propertyId) {
-        owner.getFilterable().addContainerFilter(filter);
+        if (owner.getFilterable() != null) {
+            owner.getFilterable().addContainerFilter(filter);
+        }
         filters.put(propertyId, filter);
     }
 
@@ -560,8 +568,9 @@ class FilterFieldGenerator implements Serializable {
 
     public void runFiltersNow() {
         owner.setRefreshingEnabled(false);
-        owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
-
+        if (owner.getFilterable() != null) {
+            owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
+        }
         List<Filter> filters = new ArrayList<Filter>();
         for (AbstractField<?> f : customFields.keySet()) {
             addNonNullFilter(filters, f);
@@ -584,7 +593,9 @@ class FilterFieldGenerator implements Serializable {
 
         Filter[] filtersArray = filters.toArray(new Filter[0]);
         lastOnDemandFilter = new And(filtersArray);
-        owner.getFilterable().addContainerFilter(lastOnDemandFilter);
+        if (owner.getFilterable() != null) {
+            owner.getFilterable().addContainerFilter(lastOnDemandFilter);
+        }
         owner.setRefreshingEnabled(true);
 
     }
