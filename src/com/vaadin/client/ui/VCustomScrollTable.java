@@ -2333,7 +2333,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             deferRowFetch(250);
         }
 
-        public boolean isRunning() {
+        public boolean isHandlerRunning() {
             return isRunning;
         }
 
