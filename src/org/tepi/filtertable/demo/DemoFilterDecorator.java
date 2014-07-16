@@ -1,10 +1,9 @@
 package org.tepi.filtertable.demo;
 
 import java.io.Serializable;
-import java.text.DateFormat;
-import java.util.Locale;
 
 import org.tepi.filtertable.FilterDecorator;
+import org.tepi.filtertable.datefilter.DateFilterPopupConfig;
 import org.tepi.filtertable.demo.FilterTableDemoUI.State;
 import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
@@ -71,28 +70,6 @@ class DemoFilterDecorator implements FilterDecorator, Serializable {
     }
 
     @Override
-    public String getFromCaption() {
-        return "Start date:";
-    }
-
-    @Override
-    public String getToCaption() {
-        return "End date:";
-    }
-
-    @Override
-    public String getSetCaption() {
-        // use default caption
-        return null;
-    }
-
-    @Override
-    public String getClearCaption() {
-        // use default caption
-        return null;
-    }
-
-    @Override
     public boolean isTextFilterImmediate(Object propertyId) {
         // use text change events for all the text fields
         return true;
@@ -110,36 +87,23 @@ class DemoFilterDecorator implements FilterDecorator, Serializable {
     }
 
     @Override
-    public Resolution getDateFieldResolution(Object propertyId) {
-        return Resolution.DAY;
-    }
-
-    public DateFormat getDateFormat(Object propertyId) {
-        return DateFormat.getDateInstance(DateFormat.SHORT, new Locale("fi",
-                "FI"));
-    }
-
-    @Override
     public boolean usePopupForNumericProperty(Object propertyId) {
         // TODO Auto-generated method stub
         return true;
     }
 
     @Override
-    public String getDateFormatPattern(Object propertyId) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Locale getLocale() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public NumberFilterPopupConfig getNumberFilterPopupConfig() {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public DateFilterPopupConfig getDateFilterPopupConfig() {
+        DateFilterPopupConfig cfg = new DateFilterPopupConfig();
+        cfg.setResolution(Resolution.DAY);
+        cfg.setFromCaption("Start date:");
+        cfg.setToCaption("End date:");
+        return cfg;
     }
 }

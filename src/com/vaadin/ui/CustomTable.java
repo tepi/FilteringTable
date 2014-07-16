@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2013 Vaadin Ltd.
+ * Copyright 2000-2014 Vaadin Ltd.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.tepi.filtertable.paged.PagedFilterTableContainer;
 
 import com.vaadin.data.Container;
 import com.vaadin.data.Item;
@@ -86,7 +84,7 @@ import com.vaadin.shared.ui.table.TableConstants;
  * @author Vaadin Ltd.
  * @since 3.0
  */
-@SuppressWarnings({ "deprecation", "serial" })
+@SuppressWarnings({ "deprecation" })
 public class CustomTable extends AbstractSelect implements Action.Container,
         Container.Ordered, Container.Sortable, ItemClickNotifier, DragSource,
         DropTarget, HasComponents {
@@ -2166,6 +2164,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (items instanceof Container.Indexed) {
             // more efficient implementation for containers supporting access by
             // index
+
             List<?> itemIds = getItemIds(firstIndex, rows);
             for (int i = 0; i < rows && i < itemIds.size(); i++) {
                 Object id = itemIds.get(i);
@@ -2215,7 +2214,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         return cells;
     }
 
-    @SuppressWarnings("unchecked")
     protected List<Object> getItemIds(int firstIndex, int rows) {
         return (List<Object>) ((Container.Indexed) items).getItemIds(
                 firstIndex, rows);
@@ -2238,12 +2236,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (headmode != ROW_HEADER_MODE_HIDDEN) {
             switch (headmode) {
             case INDEX:
-                int val = 0;
-                if (items != null && items instanceof PagedFilterTableContainer) {
-                    val = ((PagedFilterTableContainer) items).getStartIndex();
-                }
-                cells[CELL_HEADER][i] = String
-                        .valueOf(val + i + firstIndex + 1);
+                cells[CELL_HEADER][i] = String.valueOf(i + firstIndex + 1);
                 break;
             default:
                 try {
@@ -2579,7 +2572,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      *            given id.
      * @return Returns item id for the new row. Returns null if operation fails.
      */
-    @SuppressWarnings("unchecked")
     public Object addItem(Object[] cells, Object itemId)
             throws UnsupportedOperationException {
 
@@ -2653,8 +2645,12 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * <br>
      * All rows and columns are generated as visible using this method. If the
      * new container contains properties that are not meant to be shown you
-     * should use {@link Table#setContainerDataSource(Container, Collection)}
+     * should use {@link CustomTable#setContainerDataSource(Container, Collection)}
      * instead, especially if the table is editable.
+     * <p>
+     * Keeps propertyValueConverters if the corresponding id exists in the new
+     * data source and is of a compatible type.
+     * </p>
      * 
      * @param newDataSource
      *            the new data source.
@@ -2689,9 +2685,14 @@ public class CustomTable extends AbstractSelect implements Action.Container,
     /**
      * Sets the container data source and the columns that will be visible.
      * Columns are shown in the collection's iteration order.
+     * <p>
+     * Keeps propertyValueConverters if the corresponding id exists in the new
+     * data source and is of a compatible type.
+     * </p>
      * 
-     * @see Table#setContainerDataSource(Container)
-     * @see Table#setVisibleColumns(Object[])
+     * @see CustomTable#setContainerDataSource(Container)
+     * @see CustomTable#setVisibleColumns(Object[])
+     * @see Table#setConverter(Object, Converter<String, ?>)
      * 
      * @param newDataSource
      *            the new data source.
@@ -2708,6 +2709,26 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         }
         if (visibleIds == null) {
             visibleIds = new ArrayList<Object>();
+        }
+
+        // Retain propertyValueConverters if their corresponding ids are
+        // properties of the new
+        // data source and are of a compatible type
+        if (propertyValueConverters != null) {
+            Collection<?> newPropertyIds = newDataSource
+                    .getContainerPropertyIds();
+            LinkedList<Object> retainableValueConverters = new LinkedList<Object>();
+            for (Object propertyId : newPropertyIds) {
+                Converter<String, ?> converter = getConverter(propertyId);
+                if (converter != null) {
+                    if (typeIsCompatible(converter.getModelType(),
+                            newDataSource.getType(propertyId))) {
+                        retainableValueConverters.add(propertyId);
+                    }
+                }
+            }
+            propertyValueConverters.keySet().retainAll(
+                    retainableValueConverters);
         }
 
         // Assures that the data source is ordered by making unordered
@@ -2743,6 +2764,20 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         resetPageBuffer();
 
         enableContentRefreshing(true);
+    }
+
+    /**
+     * Checks if class b can be safely assigned to class a.
+     * 
+     * @param a
+     * @param b
+     * @return
+     */
+    private boolean typeIsCompatible(Class<?> a, Class<?> b) {
+        // TODO Implement this check properly
+        // Basically we need to do a a.isAssignableFrom(b)
+        // with special considerations for primitive types.
+        return true;
     }
 
     /**
@@ -2922,12 +2957,19 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                 if (value != null) {
                     reqFirstRowToPaint = value.intValue();
                 }
+
                 value = (Integer) variables.get("reqrows");
                 if (value != null) {
                     reqRowsToPaint = value.intValue();
+                    int size = size();
                     // sanity check
-                    if (reqFirstRowToPaint + reqRowsToPaint > size()) {
-                        reqRowsToPaint = size() - reqFirstRowToPaint;
+
+                    if (reqFirstRowToPaint >= size) {
+                        reqFirstRowToPaint = size;
+                    }
+
+                    if (reqFirstRowToPaint + reqRowsToPaint > size) {
+                        reqRowsToPaint = size - reqFirstRowToPaint;
                     }
                 }
             }
@@ -3964,16 +4006,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      */
     private Object[][] getVisibleCells() {
         if (pageBuffer == null) {
-            boolean isRefreshingEnabled = isContentRefreshesEnabled;
-            try {
-                enableContentRefreshing(false);
-                refreshRenderedCells();
-            } finally {
-                if (!isRefreshingEnabled) {
-                    disableContentRefreshing();
-                }
-            }
-
+            refreshRenderedCells();
         }
         return pageBuffer;
     }
@@ -3994,7 +4027,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @return Object Either formatted value or Component for field.
      * @see #setTableFieldFactory(TableFieldFactory)
      */
-    @SuppressWarnings("rawtypes")
     protected Object getPropertyValue(Object rowId, Object colId,
             Property property) {
         if (isEditable() && fieldFactory != null) {
@@ -4024,7 +4056,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param field
      * @since 6.7.3
      */
-    @SuppressWarnings("rawtypes")
     protected void bindPropertyToField(Object rowId, Object colId,
             Property property, Field field) {
         // check if field has a property that is Viewer set. In that case we
@@ -4053,7 +4084,6 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @return the String representation of property and its value.
      * @since 3.1
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     protected String formatPropertyValue(Object rowId, Object colId,
             Property<?> property) {
         if (property == null) {
@@ -4249,6 +4279,8 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         columnIcons.remove(propertyId);
         columnHeaders.remove(propertyId);
         columnFooters.remove(propertyId);
+        // If a propertyValueConverter was defined for the property, remove it.
+        propertyValueConverters.remove(propertyId);
 
         return super.removeContainerProperty(propertyId);
     }
@@ -4726,7 +4758,15 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             if (refreshingPreviouslyEnabled) {
                 enableContentRefreshing(true);
             }
-
+            if (propertyId.length > 0 && ascending.length > 0) {
+                // The first propertyId is the primary sorting criterion,
+                // therefore the sort indicator should be there
+                sortAscending = ascending[0];
+                sortContainerPropertyId = propertyId[0];
+            } else {
+                sortAscending = true;
+                sortContainerPropertyId = null;
+            }
         } else if (c != null) {
             throw new UnsupportedOperationException(
                     "Underlying Data does not allow sorting");
@@ -5859,22 +5899,18 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      * @param converter
      *            The converter to use for the property id
      */
-    @SuppressWarnings("unchecked")
     public void setConverter(Object propertyId, Converter<String, ?> converter) {
         if (!getContainerPropertyIds().contains(propertyId)) {
             throw new IllegalArgumentException("PropertyId " + propertyId
                     + " must be in the container");
         }
-        // FIXME: This check should be here but primitive types like Boolean
-        // formatter for boolean property must be handled
 
-        // if (!converter.getSourceType().isAssignableFrom(getType(propertyId)))
-        // {
-        // throw new IllegalArgumentException("Property type ("
-        // + getType(propertyId)
-        // + ") must match converter source type ("
-        // + converter.getSourceType() + ")");
-        // }
+        if (!typeIsCompatible(converter.getModelType(), getType(propertyId))) {
+            throw new IllegalArgumentException("Property type ("
+                    + getType(propertyId)
+                    + ") must match converter source type ("
+                    + converter.getModelType() + ")");
+        }
         propertyValueConverters.put(propertyId,
                 (Converter<String, Object>) converter);
         refreshRowCache();
@@ -5933,7 +5969,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
     private final Logger getLogger() {
         if (logger == null) {
-            logger = Logger.getLogger(Table.class.getName());
+            logger = Logger.getLogger(CustomTable.class.getName());
         }
         return logger;
     }

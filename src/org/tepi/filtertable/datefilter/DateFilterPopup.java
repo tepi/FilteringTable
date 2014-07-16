@@ -41,7 +41,6 @@ public class DateFilterPopup extends CustomField<DateInterval> {
     private boolean cancelReset;
     private FilterDecorator decorator;
     private Button set, clear;
-    private final Object propertyId;
     private String dateFormatPattern;
 
     private static final String DEFAULT_FROM_CAPTION = "From";
@@ -52,7 +51,6 @@ public class DateFilterPopup extends CustomField<DateInterval> {
 
     public DateFilterPopup(FilterDecorator decorator, Object propertyId) {
         this.decorator = decorator;
-        this.propertyId = propertyId;
         /* This call is needed for the value setting to function before attach */
         getContent();
     }
@@ -134,24 +132,24 @@ public class DateFilterPopup extends CustomField<DateInterval> {
                 DateFormat.SHORT, DateFormat.SHORT, getLocaleFailsafe()))
                 .toPattern();
 
-        if (decorator != null) {
-            if (decorator.getFromCaption() != null) {
-                fromCaption = decorator.getFromCaption();
+        if (decorator != null && decorator.getDateFilterPopupConfig() != null) {
+            DateFilterPopupConfig cfg = decorator.getDateFilterPopupConfig();
+            if (cfg.getFromCaption() != null) {
+                fromCaption = cfg.getFromCaption();
             }
-            if (decorator.getToCaption() != null) {
-                toCaption = decorator.getToCaption();
+            if (cfg.getToCaption() != null) {
+                toCaption = cfg.getToCaption();
             }
-            if (decorator.getSetCaption() != null) {
-                setCaption = decorator.getSetCaption();
+            if (cfg.getSetCaption() != null) {
+                setCaption = cfg.getSetCaption();
             }
-            if (decorator.getClearCaption() != null) {
-                clearCaption = decorator.getClearCaption();
+            if (cfg.getClearCaption() != null) {
+                clearCaption = cfg.getClearCaption();
             }
-            if (decorator.getDateFieldResolution(propertyId) != null) {
-                resolution = decorator.getDateFieldResolution(propertyId);
+            if (cfg.getResolution() != null) {
+                resolution = cfg.getResolution();
             }
-            String dateFormatPattern = decorator
-                    .getDateFormatPattern(propertyId);
+            String dateFormatPattern = cfg.getDateFormatPattern();
             if (dateFormatPattern != null) {
                 this.dateFormatPattern = dateFormatPattern;
             }
@@ -194,8 +192,10 @@ public class DateFilterPopup extends CustomField<DateInterval> {
             cancelReset = true;
         }
         /* Truncate the from and to dates */
-        Resolution res = decorator != null ? decorator
-                .getDateFieldResolution(propertyId) : DEFAULT_RESOLUTION;
+        Resolution res = (decorator != null && decorator
+                .getDateFilterPopupConfig() != null) ? decorator
+                .getDateFilterPopupConfig().getResolution()
+                : DEFAULT_RESOLUTION;
         if (res == null) {
             res = DEFAULT_RESOLUTION;
         }
@@ -232,8 +232,9 @@ public class DateFilterPopup extends CustomField<DateInterval> {
 
     private Locale getLocaleFailsafe() {
         /* First try the locale provided by the decorator */
-        if (decorator != null && decorator.getLocale() != null) {
-            return decorator.getLocale();
+        if (decorator != null && decorator.getDateFilterPopupConfig() != null
+                && decorator.getDateFilterPopupConfig().getLocale() != null) {
+            return decorator.getDateFilterPopupConfig().getLocale();
         }
         /* Then try application locale */
         if (super.getLocale() != null) {

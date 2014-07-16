@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2013 Vaadin Ltd.
+ * Copyright 2000-2014 Vaadin Ltd.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -59,7 +59,7 @@ import com.vaadin.ui.Tree.ExpandListener;
  * {@link Collapsible} containers can not be shared among several users as they
  * share UI state in the container.
  */
-@SuppressWarnings({ "serial", "deprecation" })
+@SuppressWarnings({ "serial" })
 public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     private interface ContainerStrategy extends Serializable {
@@ -869,7 +869,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     }
 
     private static final Logger getLogger() {
-        return Logger.getLogger(TreeTable.class.getName());
+        return Logger.getLogger(CustomTreeTable.class.getName());
     }
 
     @Override

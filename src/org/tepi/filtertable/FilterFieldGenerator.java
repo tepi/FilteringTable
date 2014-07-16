@@ -143,9 +143,11 @@ class FilterFieldGenerator implements Serializable {
                 if (owner.getContainerPropertyIds().contains(property)) {
                     AbstractField<?> filter = createField(property, owner
                             .getContainerDataSource().getType(property));
+                    filter.setImmediate(!runFiltersOnDemand);
                     addFilterColumn(property, filter);
                 } else {
                     AbstractField<?> filter = createField(property, null);
+                    filter.setImmediate(!runFiltersOnDemand);
                     addFilterColumn(property, filter);
                 }
             }
@@ -375,7 +377,9 @@ class FilterFieldGenerator implements Serializable {
     private AbstractField<?> createTextField(Object propertyId) {
         final TextField textField = new TextField();
         if (owner.getFilterDecorator() != null) {
-            if (owner.getFilterDecorator().isTextFilterImmediate(propertyId)) {
+            if (!runFiltersOnDemand
+                    && owner.getFilterDecorator().isTextFilterImmediate(
+                            propertyId)) {
                 textField.addTextChangeListener(new TextChangeListener() {
 
                     @Override

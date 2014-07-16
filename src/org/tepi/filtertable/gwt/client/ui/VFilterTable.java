@@ -222,56 +222,60 @@ public class VFilterTable extends VCustomScrollTable {
         }
 
         private void setNotWrappedFilterWidth(int index) {
-            Widget p = filters.get(getColKeyByIndex(index));
-            if (p != null) {
-                /* Try to get width from header cell */
-                int w = Util.getRequiredWidth(tHead.getHeaderCell(index));
-                if (w <= 0) {
-                    /* Header not available, try first rendered row */
-                    VScrollTableRow firstRow = scrollBody
-                            .getRowByRowIndex(scrollBody.getFirstRendered());
-                    final Element cell = DOM.getChild(firstRow.getElement(),
-                            index);
-                    w = Util.getRequiredWidth(cell);
+            if (!headerChangedDuringUpdate) {
+                Widget p = filters.get(getColKeyByIndex(index));
+                if (p != null) {
+                    /* Try to get width from header cell */
+                    int w = Util.getRequiredWidth(tHead.getHeaderCell(index));
+                    if (w <= 0) {
+                        /* Header not available, try first rendered row */
+                        VScrollTableRow firstRow = scrollBody
+                                .getRowByRowIndex(scrollBody.getFirstRendered());
+                        final Element cell = DOM.getChild(
+                                firstRow.getElement(), index);
+                        w = Util.getRequiredWidth(cell);
+                    }
+                    MeasuredSize measuredSize = new MeasuredSize();
+                    measuredSize.measure(p.getElement());
+                    w -= measuredSize.getMarginWidth();
+                    /* Ensure no negative widths are set */
+                    w = w > 0 ? w : 0;
+                    p.setWidth(w + "px");
                 }
-                MeasuredSize measuredSize = new MeasuredSize();
-                measuredSize.measure(p.getElement());
-                w -= measuredSize.getMarginWidth();
-                /* Ensure no negative widths are set */
-                w = w > 0 ? w : 0;
-                p.setWidth(w + "px");
             }
         }
 
         private void setWrappedFilterWidth(int index) {
-            Widget widget = filters.get(getColKeyByIndex(index));
-            if (null != widget) {
-                Widget wrapper = widget.getParent();
-                int wrapperWidth = Util.getRequiredWidth(tHead
-                        .getHeaderCell(index));
-                if (wrapperWidth <= 0) {
-                    VScrollTableRow firstRow = scrollBody
-                            .getRowByRowIndex(scrollBody.getFirstRendered());
-                    final Element cell = DOM.getChild(firstRow.getElement(),
-                            index);
-                    wrapperWidth = Util.getRequiredWidth(cell);
-                }
-                MeasuredSize wrapperSize = new MeasuredSize();
-                wrapperSize.measure(wrapper.getElement());
-                int wrapperCorrections = wrapperSize.getMarginWidth()
-                        + wrapperSize.getBorderWidth()
-                        + wrapperSize.getPaddingWidth();
-                wrapperWidth = wrapperWidth - wrapperCorrections;
-                wrapperWidth = wrapperWidth > 0 ? wrapperWidth : 0;
-                wrapper.setWidth(wrapperWidth + "px");
+            if (!headerChangedDuringUpdate) {
+                Widget widget = filters.get(getColKeyByIndex(index));
+                if (null != widget) {
+                    Widget wrapper = widget.getParent();
+                    int wrapperWidth = Util.getRequiredWidth(tHead
+                            .getHeaderCell(index));
+                    if (wrapperWidth <= 0) {
+                        VScrollTableRow firstRow = scrollBody
+                                .getRowByRowIndex(scrollBody.getFirstRendered());
+                        final Element cell = DOM.getChild(
+                                firstRow.getElement(), index);
+                        wrapperWidth = Util.getRequiredWidth(cell);
+                    }
+                    MeasuredSize wrapperSize = new MeasuredSize();
+                    wrapperSize.measure(wrapper.getElement());
+                    int wrapperCorrections = wrapperSize.getMarginWidth()
+                            + wrapperSize.getBorderWidth()
+                            + wrapperSize.getPaddingWidth();
+                    wrapperWidth = wrapperWidth - wrapperCorrections;
+                    wrapperWidth = wrapperWidth > 0 ? wrapperWidth : 0;
+                    wrapper.setWidth(wrapperWidth + "px");
 
-                if (0 < wrapperWidth) {
-                    int widgetWidth = wrapperWidth;
-                    MeasuredSize widgetSize = new MeasuredSize();
-                    widgetSize.measure(widget.getElement());
-                    widgetWidth -= widgetSize.getMarginWidth();
-                    widgetWidth = widgetWidth > 0 ? widgetWidth : 0;
-                    widget.setWidth(widgetWidth + "px");
+                    if (0 < wrapperWidth) {
+                        int widgetWidth = wrapperWidth;
+                        MeasuredSize widgetSize = new MeasuredSize();
+                        widgetSize.measure(widget.getElement());
+                        widgetWidth -= widgetSize.getMarginWidth();
+                        widgetWidth = widgetWidth > 0 ? widgetWidth : 0;
+                        widget.setWidth(widgetWidth + "px");
+                    }
                 }
             }
         }

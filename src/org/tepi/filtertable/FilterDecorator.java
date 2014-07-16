@@ -1,14 +1,12 @@
 package org.tepi.filtertable;
 
 import java.io.Serializable;
-import java.util.Locale;
 
+import org.tepi.filtertable.datefilter.DateFilterPopupConfig;
 import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
 import com.vaadin.server.Resource;
-import com.vaadin.shared.ui.datefield.Resolution;
 import com.vaadin.ui.AbstractTextField.TextChangeEventMode;
-import com.vaadin.ui.DateField;
 
 /**
  * Interface for decorating the UI of the filter components contained in
@@ -86,67 +84,6 @@ public interface FilterDecorator extends Serializable {
     public int getTextChangeTimeout(Object propertyId);
 
     /**
-     * Return display caption for the From field
-     * 
-     * @return caption for From field
-     */
-    public String getFromCaption();
-
-    /**
-     * Return display caption for the To field
-     * 
-     * @return caption for To field
-     */
-    public String getToCaption();
-
-    /**
-     * Return display caption for the Set button
-     * 
-     * @return caption for Set button
-     */
-    public String getSetCaption();
-
-    /**
-     * Return display caption for the Clear button
-     * 
-     * @return caption for Clear button
-     */
-    public String getClearCaption();
-
-    /**
-     * Return DateField resolution for the Date filtering of the property ID.
-     * This will only be called for Date -typed properties. Filtering values
-     * output by the FilteringTable will also be truncated to this resolution.
-     * 
-     * @param propertyId
-     *            ID of the property the resolution will be applied to
-     * @return A resolution defined in {@link DateField}
-     */
-    public Resolution getDateFieldResolution(Object propertyId);
-
-    /**
-     * Returns a date format pattern to be used for formatting the date/time
-     * values shown in the filtering field of the given property ID. Note that
-     * this is completely independent from the resolution set for the property,
-     * and is used for display purposes only.
-     * 
-     * See SimpleDateFormat for the pattern definition
-     * 
-     * @param propertyId
-     *            ID of the property the format will be applied to
-     * @return A date format pattern or null to use the default formatting
-     */
-    public String getDateFormatPattern(Object propertyId);
-
-    /**
-     * Returns the locale to be used with Date filters. If none is provided,
-     * reverts to default locale of the system.
-     * 
-     * @return Desired locale for the dates
-     */
-    public Locale getLocale();
-
-    /**
      * Return the string that should be used as an "input prompt" when no
      * filtering is made on a filter component.
      * 
@@ -155,9 +92,16 @@ public interface FilterDecorator extends Serializable {
     public String getAllItemsVisibleString();
 
     /**
+     * Return configuration for the Date filter popup
+     * 
+     * @return Configuration for Date filters
+     */
+    public DateFilterPopupConfig getDateFilterPopupConfig();
+
+    /**
      * Return configuration for the numeric filter field popup
      * 
-     * @return Configuration for numeric filter
+     * @return Configuration for numeric filters
      */
     public NumberFilterPopupConfig getNumberFilterPopupConfig();
 

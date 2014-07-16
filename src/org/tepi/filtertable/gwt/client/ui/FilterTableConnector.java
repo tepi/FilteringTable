@@ -27,6 +27,7 @@ import com.vaadin.client.ui.PostLayoutListener;
 import com.vaadin.client.ui.VCustomScrollTable;
 import com.vaadin.client.ui.VCustomScrollTable.ContextMenuDetails;
 import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
+import com.vaadin.client.ui.VScrollTable.VScrollTableDropHandler;
 import com.vaadin.shared.ui.Connect;
 import com.vaadin.shared.ui.table.TableConstants;
 import com.vaadin.shared.ui.table.TableState;
@@ -254,7 +255,7 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
 
         if (getWidget().focusedRow != null) {
             if (!getWidget().focusedRow.isAttached()
-                    && !getWidget().rowRequestHandler.isHandlerRunning()) {
+                    && !getWidget().rowRequestHandler.isRequestHandlerRunning()) {
                 // focused row has been orphaned, can't focus
                 if (getWidget().selectedRowKeys.contains(getWidget().focusedRow
                         .getKey())) {
@@ -293,7 +294,13 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         getWidget().tabIndex = getState().tabIndex;
         getWidget().setProperTabIndex();
 
-        getWidget().resizeSortedColumnForSortIndicator();
+        Scheduler.get().scheduleFinally(new ScheduledCommand() {
+
+            @Override
+            public void execute() {
+                getWidget().resizeSortedColumnForSortIndicator();
+            }
+        });
 
         // Remember this to detect situations where overflow hack might be
         // needed during scrolling
