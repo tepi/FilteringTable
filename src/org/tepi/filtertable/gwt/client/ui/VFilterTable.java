@@ -303,6 +303,9 @@ public class VFilterTable extends VCustomScrollTable {
         }
 
         private void setFilterWidth(int index) {
+            if (headerChangedDuringUpdate) {
+                return;
+            }
             if (!wrapFilters) {
                 setNotWrappedFilterWidth(index);
             } else {
