@@ -17,6 +17,10 @@
 	height: 23px;
 }
 
+.filters-panel .v-checkbox {
+	padding-top: 2px;
+}
+
 .filters-wrap {
 	border-left: 1px solid #C2C3C4;
 	border-right: 1px solid #C2C3C4;
@@ -145,4 +149,67 @@
 }
 .fiterwrapper-last {
 	overflow: hidden !important;
+}
+
+/* Runo theme styling */
+.runo .filters-panel {
+	background-color: #E7E9EA;
+}
+
+.runo .filters-panel .v-button-wrap {
+	border: none !important;
+	box-shadow: none !important;
+}
+
+.runo .filters-panel .v-checkbox {
+	padding-top: 1px;
+}
+
+.runo .filters-panel .v-icon+.v-filterselect-input {
+	margin-right: -16px;
+	padding-right: 16px;
+}
+
+/* Valo theme styling */
+.valo .filters-panel {
+	background-color: #EFEFEF;
+	height: 37px;
+}
+.v-app.valo .v-table .filters-panel input.v-textfield.v-widget {
+	height: 37px;	
+}
+
+.valo .datefilterpopup .v-popupbutton,
+.valo .datefilterpopup .v-popupbutton:focus,
+.valo .datefilterpopup .v-popupbutton:active,
+.valo .datefilterpopup .v-popupbutton.v-pressed {
+	height: 37px;
+	border-radius: 0;
+}
+
+.valo .numberfilterpopup .v-popupbutton,
+.valo .numberfilterpopup .v-popupbutton:focus,
+.valo .numberfilterpopup .v-popupbutton:active,
+.valo .numberfilterpopup .v-popupbutton.v-pressed {
+	height: 37px;
+	border-radius: 0;
+}
+
+.valo .numberfilterpopup .v-popup-indicator,
+.valo .datefilterpopup .v-popup-indicator {
+	margin-top: 7px;
+}
+
+.valo .numberfilterpopup .v-button-caption,
+.valo .datefilterpopup .v-button-caption {
+	font-size: 16px;
+}
+
+.valo .filters-panel .v-checkbox {
+	margin-top: 9px;
+	margin-left: 14px;
+}
+
+.valo .filters-panel .v-filterselect.v-widget {
+	border-radius: 0;
 }

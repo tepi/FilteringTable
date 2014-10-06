@@ -11,8 +11,12 @@ import org.tepi.filtertable.FilterTreeTable;
 import org.tepi.filtertable.paged.PagedFilterControlConfig;
 import org.tepi.filtertable.paged.PagedFilterTable;
 
+import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.Title;
 import com.vaadin.data.Container;
+import com.vaadin.data.Container.Filter;
+import com.vaadin.data.Container.Filterable;
+import com.vaadin.data.Item;
 import com.vaadin.data.Property;
 import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.data.Property.ValueChangeListener;
@@ -24,6 +28,7 @@ import com.vaadin.ui.AbstractSelect.ItemDescriptionGenerator;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
+import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomTable;
@@ -40,6 +45,7 @@ import com.vaadin.ui.themes.Reindeer;
 
 @SuppressWarnings("serial")
 @Title("FilterTable Demo Application")
+@Theme("valo")
 public class FilterTableDemoUI extends UI {
 
     /**
@@ -72,13 +78,39 @@ public class FilterTableDemoUI extends UI {
 
     private Component buildTableTab() {
         /* Create FilterTable */
-        Table normalFilterTable = buildTable();
+        final Table normalFilterTable = buildTable();
         final VerticalLayout mainLayout = new VerticalLayout();
         mainLayout.setSizeFull();
         mainLayout.setSpacing(true);
         mainLayout.setMargin(true);
         mainLayout.addComponent(normalFilterTable);
         mainLayout.setExpandRatio(normalFilterTable, 1);
+
+        Button addFilter = new Button("Add a filter");
+        addFilter.addClickListener(new ClickListener() {
+
+            @Override
+            public void buttonClick(ClickEvent event) {
+                Filterable f = ((Filterable) normalFilterTable
+                        .getContainerDataSource());
+                f.addContainerFilter(new Filter() {
+
+                    @Override
+                    public boolean passesFilter(Object itemId, Item item)
+                            throws UnsupportedOperationException {
+                        return item != null
+                                && ((String) item.getItemProperty("name")
+                                        .getValue()).contains("5");
+                    }
+
+                    @Override
+                    public boolean appliesToProperty(Object propertyId) {
+                        return "name".equals(propertyId);
+                    }
+                });
+            }
+        });
+        mainLayout.addComponent(addFilter);
 
         Panel p = new Panel();
         p.setStyleName(Reindeer.PANEL_LIGHT);
@@ -141,7 +173,6 @@ public class FilterTableDemoUI extends UI {
     private FilterTable buildFilterTable() {
         FilterTable filterTable = new FilterTable();
         filterTable.setSizeFull();
-
         filterTable.setFilterDecorator(new DemoFilterDecorator());
         filterTable.setFilterGenerator(new DemoFilterGenerator());
 
