@@ -20,8 +20,17 @@ import com.vaadin.client.MeasuredSize;
 import com.vaadin.client.Util;
 import com.vaadin.client.ui.VCustomScrollTable;
 import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
+import com.vaadin.client.ui.dd.VLazyInitItemIdentifiers;
+import com.vaadin.shared.ui.dd.AcceptCriterion;
+import com.vaadin.ui.CustomTable;
 
 public class VFilterTable extends VCustomScrollTable {
+
+    @AcceptCriterion(CustomTable.TableDropCriterion.class)
+    final public static class VTableLazyInitItemIdentifiers extends
+            VLazyInitItemIdentifiers {
+        // all logic in superclass
+    }
 
     /* Custom FlowPanel for the column filters */
     FilterPanel filters;

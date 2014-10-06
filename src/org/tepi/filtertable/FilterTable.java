@@ -147,10 +147,19 @@ public class FilterTable extends CustomTable implements IFilterTable {
             }
             collapsedColumnIds.clear();
             columnIdToFilterMap.clear();
-            generator.clearFilterData();
+            generator.destroyFilterComponents();
             generator.initializeFilterFields();
             reRenderFilterFields = true;
             enableContentRefreshing(true);
+        }
+    }
+
+    /**
+     * Clears all filters without recreating the filter fields.
+     */
+    public void clearFilters() {
+        if (initDone) {
+            generator.clearFilterData();
         }
     }
 

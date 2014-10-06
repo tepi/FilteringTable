@@ -272,6 +272,16 @@ public class VFilterTreeTable extends VFilterTable {
                 }
             }
 
+            private int getHierarchyAndIconWidth() {
+                int consumedSpace = treeSpacer.getOffsetWidth();
+                if (treeSpacer.getParentElement().getChildCount() > 2) {
+                    // icon next to tree spacer
+                    consumedSpace += ((com.google.gwt.dom.client.Element) treeSpacer
+                            .getNextSibling()).getOffsetWidth();
+                }
+                return consumedSpace;
+            }
+
             @Override
             protected void setCellWidth(int cellIx, int width) {
                 if (cellIx == getHierarchyColumnIndex()) {

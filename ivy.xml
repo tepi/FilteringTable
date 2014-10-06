@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE ivy-module [
-	<!ENTITY vaadin.version "7.1.11">
+	<!ENTITY vaadin.version "7.3.2">
 ]>
 <ivy-module version="2.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -32,7 +32,7 @@
 		<dependency org="com.vaadin" name="vaadin-client-compiler"
 			rev="&vaadin.version;" conf="widgetset-compile->default" />
 			
-		<dependency org="org.vaadin.addons" name="popupbutton" rev="2.2.1" />
+		<dependency org="org.vaadin.addons" name="popupbutton" rev="2.4.1" />
 	</dependencies>
 </ivy-module>
     

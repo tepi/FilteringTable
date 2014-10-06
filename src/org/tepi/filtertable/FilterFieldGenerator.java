@@ -63,7 +63,7 @@ class FilterFieldGenerator implements Serializable {
         this.owner = owner;
     }
 
-    void clearFilterData() {
+    void destroyFilterComponents() {
         owner.setRefreshingEnabled(false);
         /* Remove all filters from container */
         for (Object propertyId : filters.keySet()) {
@@ -86,12 +86,54 @@ class FilterFieldGenerator implements Serializable {
         dates.clear();
         numbers.clear();
 
+        /* also clear on-demand data */
+        if (owner.getFilterable() != null) {
+            owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
+        }
+
         owner.setRefreshingEnabled(true);
+    }
+
+    void clearFilterData() {
+        owner.setRefreshingEnabled(false);
+        /* Remove all filters from container */
+        for (Object propertyId : filters.keySet()) {
+            if (owner.getFilterable() != null) {
+                owner.getFilterable().removeContainerFilter(
+                        filters.get(propertyId));
+            }
+            if (owner.getFilterGenerator() != null) {
+                owner.getFilterGenerator().filterRemoved(propertyId);
+            }
+        }
+
+        filters.clear();
+
+        for (AbstractField<?> f : customFields.keySet()) {
+            f.setValue(null);
+        }
+        for (AbstractField<?> f : texts.keySet()) {
+            f.setValue(null);
+        }
+        for (AbstractField<?> f : enums.keySet()) {
+            f.setValue(null);
+        }
+        for (AbstractField<?> f : booleans.keySet()) {
+            f.setValue(null);
+        }
+        for (AbstractField<?> f : dates.keySet()) {
+            f.setValue(null);
+        }
+        for (AbstractField<?> f : numbers.keySet()) {
+            f.setValue(null);
+        }
 
         /* also clear on-demand data */
         if (owner.getFilterable() != null) {
             owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
         }
+
+        owner.setRefreshingEnabled(true);
     }
 
     private void removeValueChangeListeners() {
@@ -339,8 +381,8 @@ class FilterFieldGenerator implements Serializable {
             customFields.put(field, property);
         } else if (type == null) {
             field = new TextField();
-            field.setWidth(100, Unit.PERCENTAGE);
-            return field;
+            ((TextField) field).setNullRepresentation("");
+            texts.put(((TextField) field), property);
         } else if (type == boolean.class || type == Boolean.class) {
             field = createBooleanField(property);
         } else if (type.isEnum()) {
@@ -391,6 +433,7 @@ class FilterFieldGenerator implements Serializable {
                         .getAllItemsVisibleString());
             }
         }
+        textField.setNullRepresentation("");
         texts.put(textField, propertyId);
         return textField;
     }
@@ -638,7 +681,7 @@ class FilterFieldGenerator implements Serializable {
             return;
         } else {
             runFiltersOnDemand = filterOnDemand;
-            clearFilterData();
+            destroyFilterComponents();
             initializeFilterFields();
         }
     }

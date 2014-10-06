@@ -95,7 +95,7 @@ class DemoFilterDecorator implements FilterDecorator, Serializable {
     @Override
     public boolean isTextFilterImmediate(Object propertyId) {
         // use text change events for all the text fields
-        return true;
+        return false;//true;
     }
 
     @Override

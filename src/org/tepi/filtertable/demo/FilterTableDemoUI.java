@@ -370,6 +370,16 @@ public class FilterTableDemoUI extends UI {
         });
         buttonLayout.addComponent(reset);
 
+        Button clear = new Button("Clear");
+        clear.addClickListener(new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(ClickEvent event) {
+                relatedFilterTable.clearFilters();
+            }
+        });
+        buttonLayout.addComponent(clear);
+
         return buttonLayout;
     }
 
@@ -465,6 +475,16 @@ public class FilterTableDemoUI extends UI {
             }
         });
         buttonLayout.addComponent(reset);
+
+        Button clear = new Button("Clear");
+        clear.addClickListener(new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(ClickEvent event) {
+                relatedFilterTable.clearFilters();
+            }
+        });
+        buttonLayout.addComponent(clear);
 
         return buttonLayout;
     }

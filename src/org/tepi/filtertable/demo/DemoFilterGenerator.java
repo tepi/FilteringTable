@@ -18,6 +18,8 @@ class DemoFilterGenerator implements FilterGenerator, Serializable {
 
     @Override
     public Filter generateFilter(Object propertyId, Object value) {
+        System.err.println("Custom Filter Requested (with value) for PropId: "
+                + propertyId);
         if ("id".equals(propertyId)) {
             /* Create an 'equals' filter for the ID field */
             if (value != null && value instanceof String) {
@@ -44,12 +46,16 @@ class DemoFilterGenerator implements FilterGenerator, Serializable {
 
     @Override
     public Filter generateFilter(Object propertyId, Field<?> originatingField) {
+        System.err.println("Custom Filter Requested (with field) for PropId: "
+                + propertyId);
         // Use the default filter
         return null;
     }
 
     @Override
     public AbstractField<?> getCustomFilterComponent(Object propertyId) {
+        System.err.println("Custom Filter Component Requested for PropId: "
+                + propertyId);
         // removed custom filter component for id
         if ("checked".equals(propertyId)) {
             CheckBox box = new CheckBox();

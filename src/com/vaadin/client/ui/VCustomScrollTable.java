@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2013 Vaadin Ltd.
+ * Copyright 2000-2014 Vaadin Ltd.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,11 +25,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.dom.client.NodeList;
@@ -37,6 +40,7 @@ import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.dom.client.Style.Overflow;
 import com.google.gwt.dom.client.Style.Position;
+import com.google.gwt.dom.client.Style.TextAlign;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Style.Visibility;
 import com.google.gwt.dom.client.TableCellElement;
@@ -45,8 +49,6 @@ import com.google.gwt.dom.client.TableSectionElement;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.BlurEvent;
 import com.google.gwt.event.dom.client.BlurHandler;
-import com.google.gwt.event.dom.client.ContextMenuEvent;
-import com.google.gwt.event.dom.client.ContextMenuHandler;
 import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.event.dom.client.FocusHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
@@ -61,25 +63,29 @@ import com.google.gwt.event.dom.client.ScrollHandler;
 import com.google.gwt.event.logical.shared.CloseEvent;
 import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
+import com.google.gwt.regexp.shared.MatchResult;
+import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.DOM;
-import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Event;
+import com.google.gwt.user.client.Event.NativePreviewEvent;
+import com.google.gwt.user.client.Event.NativePreviewHandler;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HasWidgets;
 import com.google.gwt.user.client.ui.Panel;
 import com.google.gwt.user.client.ui.PopupPanel;
-import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.UIObject;
 import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.ApplicationConnection;
 import com.vaadin.client.BrowserInfo;
 import com.vaadin.client.ComponentConnector;
 import com.vaadin.client.ConnectorMap;
+import com.vaadin.client.DeferredWorker;
 import com.vaadin.client.Focusable;
 import com.vaadin.client.MouseEventDetailsBuilder;
+import com.vaadin.client.StyleConstants;
 import com.vaadin.client.TooltipInfo;
 import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
@@ -99,10 +105,10 @@ import com.vaadin.shared.ui.dd.VerticalDropLocation;
 import com.vaadin.shared.ui.table.TableConstants;
 
 /**
- * VScrollTable
+ * VCustomScrollTable
  * 
- * VScrollTable is a FlowPanel having two widgets in it: * TableHead component *
- * ScrollPanel
+ * VCustomScrollTable is a FlowPanel having two widgets in it: * TableHead
+ * component * ScrollPanel
  * 
  * TableHead contains table's header and widgets + logic for resizing,
  * reordering and hiding columns.
@@ -114,8 +120,8 @@ import com.vaadin.shared.ui.table.TableConstants;
  * This way we can use seamlessly traditional scrollbars and scrolling to fetch
  * more rows instead of "paging".
  * 
- * In VScrollTable we listen to scroll events. On horizontal scrolling we also
- * update TableHeads scroll position which has its scrollbars hidden. On
+ * In VCustomScrollTable we listen to scroll events. On horizontal scrolling we
+ * also update TableHeads scroll position which has its scrollbars hidden. On
  * vertical scroll events we will check if we are reaching the end of area where
  * we have rows rendered and
  * 
@@ -124,7 +130,138 @@ import com.vaadin.shared.ui.table.TableConstants;
 @SuppressWarnings("deprecation")
 public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         ScrollHandler, VHasDropHandler, FocusHandler, BlurHandler, Focusable,
-        ActionOwner {
+        ActionOwner, SubPartAware, DeferredWorker {
+
+    /**
+     * Simple interface for parts of the table capable of owning a context menu.
+     * 
+     * @since 7.2
+     * @author Vaadin Ltd
+     */
+    private interface ContextMenuOwner {
+        public void showContextMenu(Event event);
+    }
+
+    /**
+     * Handles showing context menu on "long press" from a touch screen.
+     * 
+     * @since 7.2
+     * @author Vaadin Ltd
+     */
+    private class TouchContextProvider {
+        private static final int TOUCH_CONTEXT_MENU_TIMEOUT = 500;
+        private Timer contextTouchTimeout;
+
+        private Event touchStart;
+        private int touchStartY;
+        private int touchStartX;
+
+        private ContextMenuOwner target;
+
+        /**
+         * Initializes a handler for a certain context menu owner.
+         * 
+         * @param target
+         *            the owner of the context menu
+         */
+        public TouchContextProvider(ContextMenuOwner target) {
+            this.target = target;
+        }
+
+        /**
+         * Cancels the current context touch timeout.
+         */
+        public void cancel() {
+            if (contextTouchTimeout != null) {
+                contextTouchTimeout.cancel();
+                contextTouchTimeout = null;
+            }
+            touchStart = null;
+        }
+
+        /**
+         * A function to handle touch context events in a table.
+         * 
+         * @param event
+         *            browser event to handle
+         */
+        public void handleTouchEvent(final Event event) {
+            int type = event.getTypeInt();
+
+            switch (type) {
+            case Event.ONCONTEXTMENU:
+                target.showContextMenu(event);
+                break;
+            case Event.ONTOUCHSTART:
+                // save position to fields, touches in events are same
+                // instance during the operation.
+                touchStart = event;
+
+                Touch touch = event.getChangedTouches().get(0);
+                touchStartX = touch.getClientX();
+                touchStartY = touch.getClientY();
+
+                if (contextTouchTimeout == null) {
+                    contextTouchTimeout = new Timer() {
+
+                        @Override
+                        public void run() {
+                            if (touchStart != null) {
+                                // Open the context menu if finger
+                                // is held in place long enough.
+                                target.showContextMenu(touchStart);
+                                event.preventDefault();
+                                touchStart = null;
+                            }
+                        }
+                    };
+                }
+                contextTouchTimeout.schedule(TOUCH_CONTEXT_MENU_TIMEOUT);
+                break;
+            case Event.ONTOUCHCANCEL:
+            case Event.ONTOUCHEND:
+                cancel();
+                break;
+            case Event.ONTOUCHMOVE:
+                if (isSignificantMove(event)) {
+                    // Moved finger before the context menu timer
+                    // expired, so let the browser handle the event.
+                    cancel();
+                }
+            }
+        }
+
+        /**
+         * Calculates how many pixels away the user's finger has traveled. This
+         * reduces the chance of small non-intentional movements from canceling
+         * the long press detection.
+         * 
+         * @param event
+         *            the Event for which to check the move distance
+         * @return true if this is considered an intentional move by the user
+         */
+        protected boolean isSignificantMove(Event event) {
+            if (touchStart == null) {
+                // no touch start
+                return false;
+            }
+
+            // Calculate the distance between touch start and the current touch
+            // position
+            Touch touch = event.getChangedTouches().get(0);
+            int deltaX = touch.getClientX() - touchStartX;
+            int deltaY = touch.getClientY() - touchStartY;
+            int delta = deltaX * deltaX + deltaY * deltaY;
+
+            // Compare to the square of the significant move threshold to remove
+            // the need for a square root
+            if (delta > TouchScrollDelegate.SIGNIFICANT_MOVE_THRESHOLD
+                    * TouchScrollDelegate.SIGNIFICANT_MOVE_THRESHOLD) {
+                return true;
+            }
+            return false;
+        }
+    }
 
     public static final String STYLENAME = "v-table";
 
@@ -192,6 +329,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
     /** For internal use only. May be removed or replaced in the future. */
     public boolean immediate;
+
+    private boolean updatedReqRows = true;
 
     private boolean nullSelectionAllowed = true;
 
@@ -325,13 +464,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             ArrayList<SelectionRange> ranges = new ArrayList<SelectionRange>(2);
 
             int endOfFirstRange = row.getIndex() - 1;
-            if (!(endOfFirstRange - startRow.getIndex() < 0)) {
+            if (endOfFirstRange >= startRow.getIndex()) {
                 // create range of first part unless its length is < 1
                 ranges.add(new SelectionRange(startRow, endOfFirstRange
                         - startRow.getIndex() + 1));
             }
             int startOfSecondRange = row.getIndex() + 1;
-            if (!(getEndIndex() - startOfSecondRange < 0)) {
+            if (getEndIndex() >= startOfSecondRange) {
                 // create range of second part unless its length is < 1
                 VScrollTableRow startOfRange = scrollBody
                         .getRowByRowIndex(startOfSecondRange);
@@ -347,7 +486,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             return startRow.getIndex() + length - 1;
         }
 
-    };
+    }
 
     private final HashSet<SelectionRange> selectedRowRanges = new HashSet<SelectionRange>();
 
@@ -367,8 +506,49 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
     /** For internal use only. May be removed or replaced in the future. */
     public final TableFooter tFoot = new TableFooter();
 
+    /** Handles context menu for table body */
+    private ContextMenuOwner contextMenuOwner = new ContextMenuOwner() {
+
+        @Override
+        public void showContextMenu(Event event) {
+            int left = Util.getTouchOrMouseClientX(event);
+            int top = Util.getTouchOrMouseClientY(event);
+            boolean menuShown = handleBodyContextMenu(left, top);
+            if (menuShown) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+        }
+    };
+
+    /** Handles touch events to display a context menu for table body */
+    private TouchContextProvider touchContextProvider = new TouchContextProvider(
+            contextMenuOwner);
+
+    /**
+     * For internal use only. May be removed or replaced in the future.
+     * 
+     * Overwrites onBrowserEvent function on FocusableScrollPanel to give event
+     * access to touchContextProvider. Has to be public to give TableConnector
+     * access to the scrollBodyPanel field.
+     * 
+     * @since 7.2
+     * @author Vaadin Ltd
+     */
+    public class FocusableScrollContextPanel extends FocusableScrollPanel {
+        @Override
+        public void onBrowserEvent(Event event) {
+            super.onBrowserEvent(event);
+            touchContextProvider.handleTouchEvent(event);
+        };
+
+        public FocusableScrollContextPanel(boolean useFakeFocusElement) {
+            super(useFakeFocusElement);
+        }
+    }
+
     /** For internal use only. May be removed or replaced in the future. */
-    public final FocusableScrollPanel scrollBodyPanel = new FocusableScrollPanel(
+    public final FocusableScrollContextPanel scrollBodyPanel = new FocusableScrollContextPanel(
             true);
 
     private KeyPressHandler navKeyPressHandler = new KeyPressHandler() {
@@ -586,6 +766,53 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
     private boolean hadScrollBars = false;
 
+    private HandlerRegistration addCloseHandler;
+
+    /**
+     * Changes to manage mouseDown and mouseUp
+     */
+    /**
+     * The element where the last mouse down event was registered.
+     */
+    private Element lastMouseDownTarget;
+
+    /**
+     * Set to true by {@link #mouseUpPreviewHandler} if it gets a mouseup at the
+     * same element as {@link #lastMouseDownTarget}.
+     */
+    private boolean mouseUpPreviewMatched = false;
+
+    private HandlerRegistration mouseUpEventPreviewRegistration;
+
+    /**
+     * Previews events after a mousedown to detect where the following mouseup
+     * hits.
+     */
+    private final NativePreviewHandler mouseUpPreviewHandler = new NativePreviewHandler() {
+
+        @Override
+        public void onPreviewNativeEvent(NativePreviewEvent event) {
+            if (event.getTypeInt() == Event.ONMOUSEUP) {
+                mouseUpEventPreviewRegistration.removeHandler();
+
+                // Event's reported target not always correct if event
+                // capture is in use
+                Element elementUnderMouse = Util.getElementUnderMouse(event
+                        .getNativeEvent());
+                if (lastMouseDownTarget != null
+                        && lastMouseDownTarget.isOrHasChild(elementUnderMouse)) {
+                    mouseUpPreviewMatched = true;
+                } else {
+                    getLogger().log(
+                            Level.FINEST,
+                            "Ignoring mouseup from " + elementUnderMouse
+                                    + " when mousedown was on "
+                                    + lastMouseDownTarget);
+                }
+            }
+        }
+    };
+
     public VCustomScrollTable() {
         setMultiSelectMode(MULTISELECT_MODE_DEFAULT);
 
@@ -606,16 +833,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         }
         scrollBodyPanel.addKeyUpHandler(navKeyUpHandler);
 
-        scrollBodyPanel.sinkEvents(Event.TOUCHEVENTS);
-
-        scrollBodyPanel.sinkEvents(Event.ONCONTEXTMENU);
-        scrollBodyPanel.addDomHandler(new ContextMenuHandler() {
-
-            @Override
-            public void onContextMenu(ContextMenuEvent event) {
-                handleBodyContextMenu(event);
-            }
-        }, ContextMenuEvent.getType());
+        scrollBodyPanel.sinkEvents(Event.TOUCHEVENTS | Event.ONCONTEXTMENU);
 
         setStyleName(STYLENAME);
 
@@ -667,28 +885,33 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         this.client = client;
         // Add a handler to clear saved context menu details when the menu
         // closes. See #8526.
-        client.getContextMenu().addCloseHandler(new CloseHandler<PopupPanel>() {
+        addCloseHandler = client.getContextMenu().addCloseHandler(
+                new CloseHandler<PopupPanel>() {
 
-            @Override
-            public void onClose(CloseEvent<PopupPanel> event) {
-                contextMenu = null;
-            }
-        });
+                    @Override
+                    public void onClose(CloseEvent<PopupPanel> event) {
+                        contextMenu = null;
+                    }
+                });
     }
 
-    private void handleBodyContextMenu(ContextMenuEvent event) {
+    /**
+     * Handles a context menu event on table body.
+     * 
+     * @param left
+     *            left position of the context menu
+     * @param top
+     *            top position of the context menu
+     * @return true if a context menu was shown, otherwise false
+     */
+    private boolean handleBodyContextMenu(int left, int top) {
         if (enabled && bodyActionKeys != null) {
-            int left = Util.getTouchOrMouseClientX(event.getNativeEvent());
-            int top = Util.getTouchOrMouseClientY(event.getNativeEvent());
             top += Window.getScrollTop();
             left += Window.getScrollLeft();
             client.getContextMenu().showAt(this, left, top);
-
-            // Only prevent browser context menu if there are action handlers
-            // registered
-            event.stopPropagation();
-            event.preventDefault();
+            return true;
         }
+        return false;
     }
 
     /**
@@ -861,6 +1084,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             // Send the selected row ranges
             client.updateVariable(paintableId, "selectedRanges",
                     ranges.toArray(new String[selectedRowRanges.size()]), false);
+            selectedRowRanges.clear();
 
             // clean selectedRowKeys so that they don't contain excess values
             for (Iterator<String> iterator = selectedRowKeys.iterator(); iterator
@@ -1079,18 +1303,16 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                         selected = true;
                         keyboardSelectionOverRowFetchInProgress = true;
                     }
+                    if (selected && selectedKeys.size() == 1) {
+                        /*
+                         * If a single item is selected, move focus to the
+                         * selected row. (#10522)
+                         */
+                        setRowFocus(row);
+                    }
+
                     if (selected != row.isSelected()) {
                         row.toggleSelection();
-
-                        if (selected) {
-                            if (focusedRow == null
-                                    || !selectedRowKeys.contains(focusedRow
-                                            .getKey())) {
-                                // The focus is no longer on a selected row,
-                                // move focus to first selected row
-                                setRowFocus(row);
-                            }
-                        }
 
                         if (!isSingleSelectMode() && !selected) {
                             // Update selection range in case a row is
@@ -1099,6 +1321,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                         }
                     }
                 }
+
             }
         }
         unSyncedselectionsBeforeRowFetch = null;
@@ -1130,6 +1353,9 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         // cell to accomodate for the size of the sort arrow.
         HeaderCell sortedHeader = tHead.getHeaderCell(sortColumn);
         if (sortedHeader != null) {
+            // Mark header as sorted now. Any earlier marking would lead to
+            // columns with wrong sizes
+            sortedHeader.setSorted(true);
             tHead.resizeCaptionContainer(sortedHeader);
         }
         // Also recalculate the width of the captionContainer element in the
@@ -1164,7 +1390,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
         @Override
         public void execute() {
-            if (firstvisible > 0) {
+            if (firstvisible >= 0) {
                 firstRowInViewPort = firstvisible;
                 if (firstvisibleOnLastPage > -1) {
                     scrollBodyPanel
@@ -2238,13 +2464,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          * Ensures the column alignments are correct at initial loading. <br/>
          * (child components widths are correct)
          */
-        Scheduler.get().scheduleDeferred(new Command() {
-
-            @Override
-            public void execute() {
-                Util.runWebkitOverflowAutoFix(scrollBodyPanel.getElement());
-            }
-        });
+        Util.runWebkitOverflowAutoFixDeferred(scrollBodyPanel.getElement());
 
         hadScrollBars = willHaveScrollbarz;
     }
@@ -2299,7 +2519,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
     /** For internal use only. May be removed or replaced in the future. */
     public void hideScrollPositionAnnotation() {
         if (scrollPositionElement != null) {
-            DOM.setStyleAttribute(scrollPositionElement, "display", "none");
+            scrollPositionElement.getStyle().setDisplay(Display.NONE);
         }
     }
 
@@ -2315,7 +2535,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
         private int reqFirstRow = 0;
         private int reqRows = 0;
-        private boolean isRunning = false;
+        private boolean isRequestHandlerRunning = false;
 
         public void triggerRowFetch(int first, int rows) {
             setReqFirstRow(first);
@@ -2333,12 +2553,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             deferRowFetch(250);
         }
 
-        public boolean isHandlerRunning() {
-            return isRunning;
+        public boolean isRequestHandlerRunning() {
+            return isRequestHandlerRunning;
         }
 
         public void deferRowFetch(int msec) {
-            isRunning = true;
+            isRequestHandlerRunning = true;
             if (reqRows > 0 && reqFirstRow < totalRows) {
                 schedule(msec);
 
@@ -2384,6 +2604,27 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             if (client.hasActiveRequest() || navKeyDown) {
                 // if client connection is busy, don't bother loading it more
                 VConsole.log("Postponed rowfetch");
+                schedule(250);
+            } else if (!updatedReqRows && allRenderedRowsAreNew()) {
+
+                /*
+                 * If all rows are new, there might have been a server-side call
+                 * to Table.setCurrentPageFirstItemIndex(int) In this case,
+                 * scrolling event takes way too late, and all the rows from
+                 * previous viewport to this one were requested.
+                 * 
+                 * This should prevent requesting unneeded rows by updating
+                 * reqFirstRow and reqRows before needing them. See (#14135)
+                 */
+
+                setReqFirstRow((firstRowInViewPort - (int) (pageLength * cache_rate)));
+                int last = firstRowInViewPort + (int) (cache_rate * pageLength)
+                        + pageLength - 1;
+                if (last >= totalRows) {
+                    last = totalRows - 1;
+                }
+                setReqRows(last - getReqFirstRow() + 1);
+                updatedReqRows = true;
                 schedule(250);
             } else {
 
@@ -2480,7 +2721,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     unSyncedselectionsBeforeRowFetch = new HashSet<Object>(
                             selectedRowKeys);
                 }
-                isRunning = false;
+                isRequestHandlerRunning = false;
             }
         }
 
@@ -2488,7 +2729,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          * Sends request to refresh content at this position.
          */
         public void refreshContent() {
-            isRunning = true;
+            isRequestHandlerRunning = true;
             int first = (int) (firstRowInViewPort - pageLength * cache_rate);
             int reqRows = (int) (2 * pageLength * cache_rate + pageLength);
             if (first < 0) {
@@ -2656,11 +2897,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
             if (width == -1) {
                 // go to default mode, clip content if necessary
-                DOM.setStyleAttribute(captionContainer, "overflow", "");
+                captionContainer.getStyle().clearOverflow();
             }
             width = w;
             if (w == -1) {
-                DOM.setStyleAttribute(captionContainer, "width", "");
+                captionContainer.getStyle().clearWidth();
                 setWidth("");
             } else {
                 tHead.resizeCaptionContainer(this);
@@ -2697,7 +2938,9 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
         public void setUndefinedWidth() {
             definedWidth = false;
-            setWidth(-1, false);
+            if (!isResizing) {
+                setWidth(-1, false);
+            }
         }
 
         /**
@@ -2813,30 +3056,42 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             DOM.setInnerHTML(floatingCopyOfHeaderCell, DOM.getInnerHTML(td));
             floatingCopyOfHeaderCell = DOM
                     .getChild(floatingCopyOfHeaderCell, 2);
-            DOM.setElementProperty(floatingCopyOfHeaderCell, "className",
-                    VCustomScrollTable.this.getStylePrimaryName()
-                            + "-header-drag");
+            // #12714 the shown "ghost element" should be inside
+            // v-overlay-container, and it should contain the same styles as the
+            // table to enable theming (except v-table & v-widget).
+            String stylePrimaryName = VCustomScrollTable.this
+                    .getStylePrimaryName();
+            StringBuilder sb = new StringBuilder();
+            for (String s : VCustomScrollTable.this.getStyleName().split(" ")) {
+                if (!s.equals(StyleConstants.UI_WIDGET)) {
+                    sb.append(s);
+                    if (s.equals(stylePrimaryName)) {
+                        sb.append("-header-drag ");
+                    } else {
+                        sb.append(" ");
+                    }
+                }
+            }
+            floatingCopyOfHeaderCell.setClassName(sb.toString().trim());
             // otherwise might wrap or be cut if narrow column
-            DOM.setStyleAttribute(floatingCopyOfHeaderCell, "width", "auto");
+            floatingCopyOfHeaderCell.getStyle().setProperty("width", "auto");
             updateFloatingCopysPosition(DOM.getAbsoluteLeft(td),
                     DOM.getAbsoluteTop(td));
-            DOM.appendChild(RootPanel.get().getElement(),
+            DOM.appendChild(VOverlay.getOverlayContainer(client),
                     floatingCopyOfHeaderCell);
         }
 
         private void updateFloatingCopysPosition(int x, int y) {
             x -= DOM.getElementPropertyInt(floatingCopyOfHeaderCell,
                     "offsetWidth") / 2;
-            DOM.setStyleAttribute(floatingCopyOfHeaderCell, "left", x + "px");
+            floatingCopyOfHeaderCell.getStyle().setLeft(x, Unit.PX);
             if (y > 0) {
-                DOM.setStyleAttribute(floatingCopyOfHeaderCell, "top", (y + 7)
-                        + "px");
+                floatingCopyOfHeaderCell.getStyle().setTop(y + 7, Unit.PX);
             }
         }
 
         private void hideFloatingCopy() {
-            DOM.removeChild(RootPanel.get().getElement(),
-                    floatingCopyOfHeaderCell);
+            floatingCopyOfHeaderCell.removeFromParent();
             floatingCopyOfHeaderCell = null;
         }
 
@@ -3218,8 +3473,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 table.setPropertyInt("cellSpacing", 0);
             }
 
-            DOM.setStyleAttribute(hTableWrapper, "overflow", "hidden");
-            DOM.setStyleAttribute(columnSelector, "display", "none");
+            hTableWrapper.getStyle().setOverflow(Overflow.HIDDEN);
+            columnSelector.getStyle().setDisplay(Display.NONE);
 
             DOM.appendChild(table, headerTableBody);
             DOM.appendChild(headerTableBody, tr);
@@ -3331,11 +3586,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
                 if (col.hasAttribute("sortable")) {
                     c.setSortable(true);
-                    if (cid.equals(sortColumn)) {
-                        c.setSorted(true);
-                    } else {
-                        c.setSorted(false);
-                    }
+                    c.setSorted(false);
                 } else {
                     c.setSortable(false);
                 }
@@ -3346,7 +3597,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     c.setAlign(ALIGN_LEFT);
 
                 }
-                if (col.hasAttribute("width")) {
+                if (col.hasAttribute("width") && !c.isResizing) {
                     // Make sure to accomodate for the sort indicator if
                     // necessary.
                     int width = col.getIntAttribute("width");
@@ -3778,7 +4029,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             setText(headerText);
 
             // ensure no clipping initially (problem on column additions)
-            DOM.setStyleAttribute(captionContainer, "overflow", "visible");
+            captionContainer.getStyle().setOverflow(Overflow.VISIBLE);
 
             DOM.sinkEvents(captionContainer, Event.MOUSEEVENTS);
 
@@ -3822,15 +4073,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             if (align != c) {
                 switch (c) {
                 case ALIGN_CENTER:
-                    DOM.setStyleAttribute(captionContainer, "textAlign",
-                            "center");
+                    captionContainer.getStyle().setTextAlign(TextAlign.CENTER);
                     break;
                 case ALIGN_RIGHT:
-                    DOM.setStyleAttribute(captionContainer, "textAlign",
-                            "right");
+                    captionContainer.getStyle().setTextAlign(TextAlign.RIGHT);
                     break;
                 default:
-                    DOM.setStyleAttribute(captionContainer, "textAlign", "");
+                    captionContainer.getStyle().setTextAlign(TextAlign.LEFT);
                     break;
                 }
             }
@@ -3868,11 +4117,11 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
             if (width == -1) {
                 // go to default mode, clip content if necessary
-                DOM.setStyleAttribute(captionContainer, "overflow", "");
+                captionContainer.getStyle().clearOverflow();
             }
             width = w;
             if (w == -1) {
-                DOM.setStyleAttribute(captionContainer, "width", "");
+                captionContainer.getStyle().clearWidth();
                 setWidth("");
             } else {
                 /*
@@ -4131,7 +4380,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
         public TableFooter() {
 
-            DOM.setStyleAttribute(hTableWrapper, "overflow", "hidden");
+            hTableWrapper.getStyle().setOverflow(Overflow.HIDDEN);
 
             DOM.appendChild(table, headerTableBody);
             DOM.appendChild(headerTableBody, tr);
@@ -4258,7 +4507,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
                 }
                 if (col.hasAttribute("width")) {
-                    if (scrollBody == null) {
+                    if (scrollBody == null || isNewBody) {
                         // Already updated by setColWidth called from
                         // TableHeads.updateCellsFromUIDL in case of a server
                         // side resize
@@ -4356,15 +4605,14 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          * Disable browser measurement of the table width
          */
         public void disableBrowserIntelligence() {
-            DOM.setStyleAttribute(hTableContainer, "width", WRAPPER_WIDTH
-                    + "px");
+            hTableContainer.getStyle().setWidth(WRAPPER_WIDTH, Unit.PX);
         }
 
         /**
          * Enable browser measurement of the table width
          */
         public void enableBrowserIntelligence() {
-            DOM.setStyleAttribute(hTableContainer, "width", "");
+            hTableContainer.getStyle().clearWidth();
         }
 
         /**
@@ -4867,8 +5115,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          */
         private void setContainerHeight() {
             fixSpacers();
-            DOM.setStyleAttribute(container, "height",
-                    measureRowHeightOffset(totalRows) + "px");
+            container.getStyle().setHeight(measureRowHeightOffset(totalRows),
+                    Unit.PX);
         }
 
         private void fixSpacers() {
@@ -5008,7 +5256,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
          * removed or replaced in the future.</br> </br> Returns the maximum
          * indent of the hierarcyColumn, if applicable.
          * 
-         * @see {@link VScrollTable#getHierarchyColumnIndex()}
+         * @see {@link VCustomScrollTable#getHierarchyColumnIndex()}
          * 
          * @return maximum indent in pixels
          */
@@ -5086,7 +5334,22 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
         }
 
-        public class VScrollTableRow extends Panel implements ActionOwner {
+        public int indexOf(Widget row) {
+            int relIx = -1;
+            for (int ix = 0; ix < renderedRows.size(); ix++) {
+                if (renderedRows.get(ix) == row) {
+                    relIx = ix;
+                    break;
+                }
+            }
+            if (relIx >= 0) {
+                return firstRendered + relIx;
+            }
+            return -1;
+        }
+
+        public class VScrollTableRow extends Panel implements ActionOwner,
+                ContextMenuOwner {
 
             private static final int TOUCHSCROLL_TIMEOUT = 100;
             private static final int DRAGMODE_MULTIROW = 2;
@@ -5104,6 +5367,10 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             private Timer dragTouchTimeout;
             private int touchStartY;
             private int touchStartX;
+
+            private TouchContextProvider touchContextProvider = new TouchContextProvider(
+                    this);
+
             private TooltipInfo tooltipInfo = null;
             private Map<TableCellElement, TooltipInfo> cellToolTips = new HashMap<TableCellElement, TooltipInfo>();
             private boolean isDragging = false;
@@ -5132,7 +5399,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
                 String rowDescription = uidl.getStringAttribute("rowdescr");
                 if (rowDescription != null && !rowDescription.equals("")) {
-                    tooltipInfo = new TooltipInfo(rowDescription);
+                    tooltipInfo = new TooltipInfo(rowDescription, null, this);
                 } else {
                     tooltipInfo = null;
                 }
@@ -5276,17 +5543,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
              */
             public boolean isInViewPort() {
                 int absoluteTop = getAbsoluteTop();
-                int scrollPosition = scrollBodyPanel.getAbsoluteTop()
-                        + scrollBodyPanel.getScrollPosition();
-                if (absoluteTop < scrollPosition) {
-                    return false;
-                }
-                int maxVisible = scrollPosition
-                        + scrollBodyPanel.getOffsetHeight() - getOffsetHeight();
-                if (absoluteTop > maxVisible) {
-                    return false;
-                }
-                return true;
+                int absoluteBottom = absoluteTop + getOffsetHeight();
+                int viewPortTop = scrollBodyPanel.getAbsoluteTop();
+                int viewPortBottom = viewPortTop
+                        + scrollBodyPanel.getOffsetHeight();
+                return absoluteBottom > viewPortTop
+                        && absoluteTop < viewPortBottom;
             }
 
             /**
@@ -5381,17 +5643,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 } else {
                     container.setInnerText(text);
                 }
-                if (align != ALIGN_LEFT) {
-                    switch (align) {
-                    case ALIGN_CENTER:
-                        container.getStyle().setProperty("textAlign", "center");
-                        break;
-                    case ALIGN_RIGHT:
-                    default:
-                        container.getStyle().setProperty("textAlign", "right");
-                        break;
-                    }
-                }
+                setAlign(align, container);
                 setTooltip(td, description);
 
                 td.appendChild(container);
@@ -5421,12 +5673,27 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
             private void setTooltip(TableCellElement td, String description) {
                 if (description != null && !description.equals("")) {
-                    TooltipInfo info = new TooltipInfo(description);
+                    TooltipInfo info = new TooltipInfo(description, null, this);
                     cellToolTips.put(td, info);
                 } else {
                     cellToolTips.remove(td);
                 }
 
+            }
+
+            private void setAlign(char align, final Element container) {
+                switch (align) {
+                case ALIGN_CENTER:
+                    container.getStyle().setProperty("textAlign", "center");
+                    break;
+                case ALIGN_LEFT:
+                    container.getStyle().setProperty("textAlign", "left");
+                    break;
+                case ALIGN_RIGHT:
+                default:
+                    container.getStyle().setProperty("textAlign", "right");
+                    break;
+                }
             }
 
             protected void initCellWithWidget(Widget w, char align,
@@ -5447,21 +5714,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 td.setClassName(className);
                 container.setClassName(VCustomScrollTable.this
                         .getStylePrimaryName() + "-cell-wrapper");
-                // TODO most components work with this, but not all (e.g.
-                // Select)
-                // Old comment: make widget cells respect align.
-                // text-align:center for IE, margin: auto for others
-                if (align != ALIGN_LEFT) {
-                    switch (align) {
-                    case ALIGN_CENTER:
-                        container.getStyle().setProperty("textAlign", "center");
-                        break;
-                    case ALIGN_RIGHT:
-                    default:
-                        container.getStyle().setProperty("textAlign", "right");
-                        break;
-                    }
-                }
+                setAlign(align, container);
                 td.appendChild(container);
                 getElement().appendChild(td);
                 // ensure widget not attached to another element (possible tBody
@@ -5535,7 +5788,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     com.google.gwt.dom.client.Element target) {
 
                 TooltipInfo info = null;
-                final Element targetTdOrTr = getTdOrTr((Element) target.cast());
+                final Element targetTdOrTr = getTdOrTr(target);
                 if (targetTdOrTr != null
                         && "td".equals(targetTdOrTr.getTagName().toLowerCase())) {
                     TableCellElement td = (TableCellElement) targetTdOrTr
@@ -5560,8 +5813,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 // Iterate upwards until we find the TR element
                 Element element = target;
                 while (element != null
-                        && element.getParentElement().cast() != thisTrElement) {
-                    element = element.getParentElement().cast();
+                        && element.getParentElement() != thisTrElement) {
+                    element = element.getParentElement();
                 }
                 return element;
             }
@@ -5576,6 +5829,8 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 boolean touchEventHandled = false;
 
                 if (enabled && hasNativeTouchScrolling) {
+                    touchContextProvider.handleTouchEvent(event);
+
                     final Element targetTdOrTr = getEventTargetTdOrTr(event);
                     final int type = event.getTypeInt();
 
@@ -5717,114 +5972,134 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                         }
                         break;
                     case Event.ONMOUSEUP:
-                        if (targetCellOrRowFound) {
-                            /*
-                             * Queue here, send at the same time as the
-                             * corresponding value change event - see #7127
-                             */
-                            boolean clickEventSent = handleClickEvent(event,
-                                    targetTdOrTr, false);
+                        /*
+                         * Only fire a click if the mouseup hits the same
+                         * element as the corresponding mousedown. This is first
+                         * checked in the event preview but we can't fire the
+                         * event there as the event might get canceled before it
+                         * gets here.
+                         */
+                        if (mouseUpPreviewMatched
+                                && lastMouseDownTarget != null
+                                && lastMouseDownTarget == getElementTdOrTr(Util
+                                        .getElementUnderMouse(event))) {
+                            // "Click" with left, right or middle button
 
-                            if (event.getButton() == Event.BUTTON_LEFT
-                                    && isSelectable()) {
+                            if (targetCellOrRowFound) {
+                                /*
+                                 * Queue here, send at the same time as the
+                                 * corresponding value change event - see #7127
+                                 */
+                                boolean clickEventSent = handleClickEvent(
+                                        event, targetTdOrTr, false);
 
-                                // Ctrl+Shift click
-                                if ((event.getCtrlKey() || event.getMetaKey())
-                                        && event.getShiftKey()
-                                        && isMultiSelectModeDefault()) {
-                                    toggleShiftSelection(false);
-                                    setRowFocus(this);
+                                if (event.getButton() == Event.BUTTON_LEFT
+                                        && isSelectable()) {
 
-                                    // Ctrl click
-                                } else if ((event.getCtrlKey() || event
-                                        .getMetaKey())
-                                        && isMultiSelectModeDefault()) {
-                                    boolean wasSelected = isSelected();
-                                    toggleSelection();
-                                    setRowFocus(this);
-                                    /*
-                                     * next possible range select must start on
-                                     * this row
-                                     */
-                                    selectionRangeStart = this;
-                                    if (wasSelected) {
-                                        removeRowFromUnsentSelectionRanges(this);
-                                    }
+                                    // Ctrl+Shift click
+                                    if ((event.getCtrlKey() || event
+                                            .getMetaKey())
+                                            && event.getShiftKey()
+                                            && isMultiSelectModeDefault()) {
+                                        toggleShiftSelection(false);
+                                        setRowFocus(this);
 
-                                } else if ((event.getCtrlKey() || event
-                                        .getMetaKey()) && isSingleSelectMode()) {
-                                    // Ctrl (or meta) click (Single selection)
-                                    if (!isSelected()
-                                            || (isSelected() && nullSelectionAllowed)) {
-
-                                        if (!isSelected()) {
-                                            deselectAll();
+                                        // Ctrl click
+                                    } else if ((event.getCtrlKey() || event
+                                            .getMetaKey())
+                                            && isMultiSelectModeDefault()) {
+                                        boolean wasSelected = isSelected();
+                                        toggleSelection();
+                                        setRowFocus(this);
+                                        /*
+                                         * next possible range select must start
+                                         * on this row
+                                         */
+                                        selectionRangeStart = this;
+                                        if (wasSelected) {
+                                            removeRowFromUnsentSelectionRanges(this);
                                         }
 
-                                        toggleSelection();
+                                    } else if ((event.getCtrlKey() || event
+                                            .getMetaKey())
+                                            && isSingleSelectMode()) {
+                                        // Ctrl (or meta) click (Single
+                                        // selection)
+                                        if (!isSelected()
+                                                || (isSelected() && nullSelectionAllowed)) {
+
+                                            if (!isSelected()) {
+                                                deselectAll();
+                                            }
+
+                                            toggleSelection();
+                                            setRowFocus(this);
+                                        }
+
+                                    } else if (event.getShiftKey()
+                                            && isMultiSelectModeDefault()) {
+                                        // Shift click
+                                        toggleShiftSelection(true);
+
+                                    } else {
+                                        // click
+                                        boolean currentlyJustThisRowSelected = selectedRowKeys
+                                                .size() == 1
+                                                && selectedRowKeys
+                                                        .contains(getKey());
+
+                                        if (!currentlyJustThisRowSelected) {
+                                            if (isSingleSelectMode()
+                                                    || isMultiSelectModeDefault()) {
+                                                /*
+                                                 * For default multi select mode
+                                                 * (ctrl/shift) and for single
+                                                 * select mode we need to clear
+                                                 * the previous selection before
+                                                 * selecting a new one when the
+                                                 * user clicks on a row. Only in
+                                                 * multiselect/simple mode the
+                                                 * old selection should remain
+                                                 * after a normal click.
+                                                 */
+                                                deselectAll();
+                                            }
+                                            toggleSelection();
+                                        } else if ((isSingleSelectMode() || isMultiSelectModeSimple())
+                                                && nullSelectionAllowed) {
+                                            toggleSelection();
+                                        }/*
+                                          * else NOP to avoid excessive server
+                                          * visits (selection is removed with
+                                          * CTRL/META click)
+                                          */
+
+                                        selectionRangeStart = this;
                                         setRowFocus(this);
                                     }
 
-                                } else if (event.getShiftKey()
-                                        && isMultiSelectModeDefault()) {
-                                    // Shift click
-                                    toggleShiftSelection(true);
-
-                                } else {
-                                    // click
-                                    boolean currentlyJustThisRowSelected = selectedRowKeys
-                                            .size() == 1
-                                            && selectedRowKeys
-                                                    .contains(getKey());
-
-                                    if (!currentlyJustThisRowSelected) {
-                                        if (isSingleSelectMode()
-                                                || isMultiSelectModeDefault()) {
-                                            /*
-                                             * For default multi select mode
-                                             * (ctrl/shift) and for single
-                                             * select mode we need to clear the
-                                             * previous selection before
-                                             * selecting a new one when the user
-                                             * clicks on a row. Only in
-                                             * multiselect/simple mode the old
-                                             * selection should remain after a
-                                             * normal click.
-                                             */
-                                            deselectAll();
-                                        }
-                                        toggleSelection();
-                                    } else if ((isSingleSelectMode() || isMultiSelectModeSimple())
-                                            && nullSelectionAllowed) {
-                                        toggleSelection();
-                                    }/*
-                                      * else NOP to avoid excessive server
-                                      * visits (selection is removed with
-                                      * CTRL/META click)
-                                      */
-
-                                    selectionRangeStart = this;
-                                    setRowFocus(this);
+                                    // Remove IE text selection hack
+                                    if (BrowserInfo.get().isIE()) {
+                                        ((Element) event.getEventTarget()
+                                                .cast()).setPropertyJSO(
+                                                "onselectstart", null);
+                                    }
+                                    // Queue value change
+                                    sendSelectedRows(false);
                                 }
-
-                                // Remove IE text selection hack
-                                if (BrowserInfo.get().isIE()) {
-                                    ((Element) event.getEventTarget().cast())
-                                            .setPropertyJSO("onselectstart",
-                                                    null);
+                                /*
+                                 * Send queued click and value change events if
+                                 * any If a click event is sent, send value
+                                 * change with it regardless of the immediate
+                                 * flag, see #7127
+                                 */
+                                if (immediate || clickEventSent) {
+                                    client.sendPendingVariableChanges();
                                 }
-                                // Queue value change
-                                sendSelectedRows(false);
-                            }
-                            /*
-                             * Send queued click and value change events if any
-                             * If a click event is sent, send value change with
-                             * it regardless of the immediate flag, see #7127
-                             */
-                            if (immediate || clickEventSent) {
-                                client.sendPendingVariableChanges();
                             }
                         }
+                        mouseUpPreviewMatched = false;
+                        lastMouseDownTarget = null;
                         break;
                     case Event.ONTOUCHEND:
                     case Event.ONTOUCHCANCEL:
@@ -5836,9 +6111,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                             Util.simulateClickFromTouchEvent(touchStart, this);
                             touchStart = null;
                         }
-                        if (contextTouchTimeout != null) {
-                            contextTouchTimeout.cancel();
-                        }
+                        touchContextProvider.cancel();
                         break;
                     case Event.ONTOUCHMOVE:
                         if (isSignificantMove(event)) {
@@ -5853,9 +6126,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                                             .getActiveScrollDelegate() == null)) {
                                 startRowDrag(touchStart, type, targetTdOrTr);
                             }
-                            if (contextTouchTimeout != null) {
-                                contextTouchTimeout.cancel();
-                            }
+                            touchContextProvider.cancel();
                             /*
                              * Avoid clicks and drags by clearing touch start
                              * flag.
@@ -5934,6 +6205,17 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                         }
                         break;
                     case Event.ONMOUSEDOWN:
+                        /*
+                         * When getting a mousedown event, we must detect where
+                         * the corresponding mouseup event if it's on a
+                         * different part of the page.
+                         */
+                        lastMouseDownTarget = getElementTdOrTr(Util
+                                .getElementUnderMouse(event));
+                        mouseUpPreviewMatched = false;
+                        mouseUpEventPreviewRegistration = Event
+                                .addNativePreviewHandler(mouseUpPreviewHandler);
+
                         if (targetCellOrRowFound) {
                             setRowFocus(this);
                             ensureFocus();
@@ -6031,8 +6313,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                         && rowKeyIsSelected(rowKey)) {
 
                     // Create a drag image of ALL rows
-                    ev.createDragImage(
-                            (Element) scrollBody.tBodyElement.cast(), true);
+                    ev.createDragImage(scrollBody.tBodyElement, true);
 
                     // Hide rows which are not selected
                     Element dragImage = ev.getDragImage();
@@ -6069,8 +6350,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
              */
             private Element getEventTargetTdOrTr(Event event) {
                 final Element eventTarget = event.getEventTarget().cast();
-                Widget widget = Util.findWidget(eventTarget, null);
-                final Element thisTrElement = getElement();
+                return getElementTdOrTr(eventTarget);
+            }
+
+            private Element getElementTdOrTr(Element element) {
+
+                Widget widget = Util.findWidget(element, null);
 
                 if (widget != this) {
                     /*
@@ -6090,9 +6375,10 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                         return null;
                     }
                 }
-                return getTdOrTr(eventTarget);
+                return getTdOrTr(element);
             }
 
+            @Override
             public void showContextMenu(Event event) {
                 if (enabled && actionKeys != null) {
                     // Show context menu if there are registered action handlers
@@ -6159,6 +6445,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 VScrollTableRow startRow = selectionRangeStart;
                 if (startRow == null) {
                     startRow = focusedRow;
+                    selectionRangeStart = focusedRow;
                     // If start row is null then we have a multipage selection
                     // from
                     // above
@@ -6630,6 +6917,9 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             int checksum = 0;
             while (headCells.hasNext()) {
                 hCell = (HeaderCell) headCells.next();
+                if (hCell.isResizing) {
+                    continue;
+                }
                 if (!hCell.isDefinedWidth()) {
                     int w = hCell.getNaturalColumnWidth(colIndex);
                     int newSpace;
@@ -6680,7 +6970,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 colIndex = 0;
                 while (headCells.hasNext()) {
                     HeaderCell hc = (HeaderCell) headCells.next();
-                    if (!hc.isDefinedWidth()) {
+                    if (!hc.isResizing && !hc.isDefinedWidth()) {
                         setColWidth(colIndex, hc.getWidthWithIndent() + availW
                                 - checksum, false);
                         break;
@@ -6699,18 +6989,14 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                 }
                 int heightBefore = getOffsetHeight();
                 scrollBodyPanel.setHeight(bodyHeight + "px");
+
                 if (heightBefore != getOffsetHeight()) {
                     Util.notifyParentOfSizeChange(VCustomScrollTable.this,
-                            false);
+                            rendering);
                 }
             }
-            Scheduler.get().scheduleDeferred(new Command() {
 
-                @Override
-                public void execute() {
-                    Util.runWebkitOverflowAutoFix(scrollBodyPanel.getElement());
-                }
-            });
+            Util.runWebkitOverflowAutoFixDeferred(scrollBodyPanel.getElement());
 
             forceRealignColumnHeaders();
         }
@@ -6762,7 +7048,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
      */
     protected int containerHeight;
 
-    public void setContainerHeight() {
+    protected void setContainerHeight() {
         if (!isDynamicHeight()) {
 
             /*
@@ -6809,14 +7095,13 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
     protected int getContentAreaBorderHeight() {
         if (contentAreaBorderHeight < 0) {
 
-            DOM.setStyleAttribute(scrollBodyPanel.getElement(), "overflow",
-                    "hidden");
+            scrollBodyPanel.getElement().getStyle()
+                    .setOverflow(Overflow.HIDDEN);
             int oh = scrollBodyPanel.getOffsetHeight();
             int ch = scrollBodyPanel.getElement()
                     .getPropertyInt("clientHeight");
             contentAreaBorderHeight = oh - ch;
-            DOM.setStyleAttribute(scrollBodyPanel.getElement(), "overflow",
-                    "auto");
+            scrollBodyPanel.getElement().getStyle().setOverflow(Overflow.AUTO);
         }
         return contentAreaBorderHeight;
     }
@@ -6848,13 +7133,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             // We must run the fix as a deferred command to prevent it from
             // overwriting the scroll position with an outdated value, see
             // #7607.
-            Scheduler.get().scheduleDeferred(new Command() {
-
-                @Override
-                public void execute() {
-                    Util.runWebkitOverflowAutoFix(scrollBodyPanel.getElement());
-                }
-            });
+            Util.runWebkitOverflowAutoFixDeferred(scrollBodyPanel.getElement());
         }
 
         triggerLazyColumnAdjustment(false);
@@ -6903,10 +7182,9 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         String s = uidl.hasAttribute("caption") ? uidl
                 .getStringAttribute("caption") : "";
         if (uidl.hasAttribute("icon")) {
-            s = "<img src=\""
-                    + Util.escapeAttribute(client.translateVaadinUri(uidl
-                            .getStringAttribute("icon")))
-                    + "\" alt=\"icon\" class=\"v-icon\">" + s;
+            Icon icon = client.getIcon(uidl.getStringAttribute("icon"));
+            icon.setAlternateText("icon");
+            s = icon.getElement().getString() + s;
         }
         return s;
     }
@@ -7000,8 +7278,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             return;
         }
 
-        if (firstRowInViewPort - pageLength * cache_rate > lastRendered
-                || firstRowInViewPort + pageLength + pageLength * cache_rate < firstRendered) {
+        if (allRenderedRowsAreNew()) {
             // need a totally new set of rows
             rowRequestHandler
                     .setReqFirstRow((firstRowInViewPort - (int) (pageLength * cache_rate)));
@@ -7012,6 +7289,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             }
             rowRequestHandler.setReqRows(last
                     - rowRequestHandler.getReqFirstRow() + 1);
+            updatedReqRows = false;
             rowRequestHandler.deferRowFetch();
             return;
         }
@@ -7032,6 +7310,14 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
                     * cache_rate) - lastRendered);
             rowRequestHandler.triggerRowFetch(lastRendered + 1, reqRows);
         }
+    }
+
+    private boolean allRenderedRowsAreNew() {
+        int firstRowInViewPort = calcFirstRowInViewPort();
+        int firstRendered = scrollBody.getFirstRendered();
+        int lastRendered = scrollBody.getLastRendered();
+        return (firstRowInViewPort - pageLength * cache_rate > lastRendered || firstRowInViewPort
+                + pageLength + pageLength * cache_rate < firstRendered);
     }
 
     protected int calcFirstRowInViewPort() {
@@ -7081,13 +7367,17 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             dropDetails = new TableDDDetails();
             Element elementOver = drag.getElementOver();
 
-            VScrollTableRow row = Util.findWidget(elementOver, getRowClass());
+            Class<? extends Widget> clazz = getRowClass();
+            VScrollTableRow row = null;
+            if (clazz != null) {
+                row = Util.findWidget(elementOver, clazz);
+            }
             if (row != null) {
                 dropDetails.overkey = row.rowKey;
                 Element tr = row.getElement();
                 Element element = elementOver;
                 while (element != null && element.getParentElement() != tr) {
-                    element = (Element) element.getParentElement();
+                    element = element.getParentElement();
                 }
                 int childIndex = DOM.getChildIndex(tr, element);
                 dropDetails.colkey = tHead.getHeaderCell(childIndex)
@@ -7107,7 +7397,12 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         private Class<? extends Widget> getRowClass() {
             // get the row type this way to make dd work in derived
             // implementations
-            return scrollBody.iterator().next().getClass();
+            Iterator<Widget> iterator = scrollBody.iterator();
+            if (iterator.hasNext()) {
+                return iterator.next().getClass();
+            } else {
+                return null;
+            }
         }
 
         @Override
@@ -7147,8 +7442,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
         private void deEmphasis() {
             UIObject.setStyleName(getElement(),
-                    VCustomScrollTable.this.getStylePrimaryName() + "-drag",
-                    false);
+                    getStylePrimaryName() + "-drag", false);
             if (lastEmphasized == null) {
                 return;
             }
@@ -7174,8 +7468,7 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         private void emphasis(TableDDDetails details) {
             deEmphasis();
             UIObject.setStyleName(getElement(),
-                    VCustomScrollTable.this.getStylePrimaryName() + "-drag",
-                    true);
+                    getStylePrimaryName() + "-drag", true);
             // iterate old and new emphasized row
             for (Widget w : scrollBody.renderedRows) {
                 VScrollTableRow row = (VScrollTableRow) w;
@@ -7231,7 +7524,6 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         }
 
         if (row != null) {
-
             // Apply focus style to new selection
             row.addStyleName(getStylePrimaryName() + "-focus");
 
@@ -7265,6 +7557,10 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
             // get odd scrolling here.
             return;
         }
+        /*
+         * FIXME The next line doesn't always do what expected, because if the
+         * row is not in the DOM it won't scroll to it.
+         */
         Util.scrollIntoViewVertically(row.getElement());
     }
 
@@ -7719,7 +8015,6 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
 
     public void lazyRevertFocusToRow(final VScrollTableRow currentlyFocusedRow) {
         Scheduler.get().scheduleFinally(new ScheduledCommand() {
-
             @Override
             public void execute() {
                 if (currentlyFocusedRow != null) {
@@ -7808,4 +8103,122 @@ public class VCustomScrollTable extends FlowPanel implements HasWidgets,
         return this;
     }
 
+    private static final String SUBPART_HEADER = "header";
+    private static final String SUBPART_FOOTER = "footer";
+    private static final String SUBPART_ROW = "row";
+    private static final String SUBPART_COL = "col";
+    /**
+     * Matches header[ix] - used for extracting the index of the targeted header
+     * cell
+     */
+    private static final RegExp SUBPART_HEADER_REGEXP = RegExp
+            .compile(SUBPART_HEADER + "\\[(\\d+)\\]");
+    /**
+     * Matches footer[ix] - used for extracting the index of the targeted footer
+     * cell
+     */
+    private static final RegExp SUBPART_FOOTER_REGEXP = RegExp
+            .compile(SUBPART_FOOTER + "\\[(\\d+)\\]");
+    /** Matches row[ix] - used for extracting the index of the targeted row */
+    private static final RegExp SUBPART_ROW_REGEXP = RegExp.compile(SUBPART_ROW
+            + "\\[(\\d+)]");
+    /** Matches col[ix] - used for extracting the index of the targeted column */
+    private static final RegExp SUBPART_ROW_COL_REGEXP = RegExp
+            .compile(SUBPART_ROW + "\\[(\\d+)\\]/" + SUBPART_COL
+                    + "\\[(\\d+)\\]");
+
+    @Override
+    public com.google.gwt.user.client.Element getSubPartElement(String subPart) {
+        if (SUBPART_ROW_COL_REGEXP.test(subPart)) {
+            MatchResult result = SUBPART_ROW_COL_REGEXP.exec(subPart);
+            int rowIx = Integer.valueOf(result.getGroup(1));
+            int colIx = Integer.valueOf(result.getGroup(2));
+            VScrollTableRow row = scrollBody.getRowByRowIndex(rowIx);
+            if (row != null) {
+                Element rowElement = row.getElement();
+                if (colIx < rowElement.getChildCount()) {
+                    return rowElement.getChild(colIx).getFirstChild().cast();
+                }
+            }
+
+        } else if (SUBPART_ROW_REGEXP.test(subPart)) {
+            MatchResult result = SUBPART_ROW_REGEXP.exec(subPart);
+            int rowIx = Integer.valueOf(result.getGroup(1));
+            VScrollTableRow row = scrollBody.getRowByRowIndex(rowIx);
+            if (row != null) {
+                return row.getElement();
+            }
+
+        } else if (SUBPART_HEADER_REGEXP.test(subPart)) {
+            MatchResult result = SUBPART_HEADER_REGEXP.exec(subPart);
+            int headerIx = Integer.valueOf(result.getGroup(1));
+            HeaderCell headerCell = tHead.getHeaderCell(headerIx);
+            if (headerCell != null) {
+                return headerCell.getElement();
+            }
+
+        } else if (SUBPART_FOOTER_REGEXP.test(subPart)) {
+            MatchResult result = SUBPART_FOOTER_REGEXP.exec(subPart);
+            int footerIx = Integer.valueOf(result.getGroup(1));
+            FooterCell footerCell = tFoot.getFooterCell(footerIx);
+            if (footerCell != null) {
+                return footerCell.getElement();
+            }
+        }
+        // Nothing found.
+        return null;
+    }
+
+    @Override
+    public String getSubPartName(com.google.gwt.user.client.Element subElement) {
+        Widget widget = Util.findWidget(subElement, null);
+        if (widget instanceof HeaderCell) {
+            return SUBPART_HEADER + "[" + tHead.visibleCells.indexOf(widget)
+                    + "]";
+        } else if (widget instanceof FooterCell) {
+            return SUBPART_FOOTER + "[" + tFoot.visibleCells.indexOf(widget)
+                    + "]";
+        } else if (widget instanceof VScrollTableRow) {
+            // a cell in a row
+            VScrollTableRow row = (VScrollTableRow) widget;
+            int rowIx = scrollBody.indexOf(row);
+            if (rowIx >= 0) {
+                int colIx = -1;
+                for (int ix = 0; ix < row.getElement().getChildCount(); ix++) {
+                    if (row.getElement().getChild(ix).isOrHasChild(subElement)) {
+                        colIx = ix;
+                        break;
+                    }
+                }
+                if (colIx >= 0) {
+                    return SUBPART_ROW + "[" + rowIx + "]/" + SUBPART_COL + "["
+                            + colIx + "]";
+                }
+                return SUBPART_ROW + "[" + rowIx + "]";
+            }
+        }
+        // Nothing found.
+        return null;
+    }
+
+    /**
+     * @since 7.2.6
+     */
+    public void onUnregister() {
+        if (addCloseHandler != null) {
+            addCloseHandler.removeHandler();
+        }
+    }
+
+    /*
+     * Return true if component need to perform some work and false otherwise.
+     */
+    @Override
+    public boolean isWorkPending() {
+        return lazyAdjustColumnWidths.isRunning();
+    }
+
+    private static Logger getLogger() {
+        return Logger.getLogger(VCustomScrollTable.class.getName());
+    }
 }

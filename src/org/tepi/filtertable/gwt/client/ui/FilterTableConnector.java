@@ -1,3 +1,18 @@
+/*
+ * Copyright 2000-2014 Vaadin Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package org.tepi.filtertable.gwt.client.ui;
 
 import java.util.HashMap;
@@ -31,7 +46,6 @@ import com.vaadin.shared.ui.Connect;
 import com.vaadin.shared.ui.table.TableConstants;
 import com.vaadin.shared.ui.table.TableState;
 
-@SuppressWarnings({ "deprecation", "serial" })
 @Connect(FilterTable.class)
 public class FilterTableConnector extends AbstractHasComponentsConnector
         implements Paintable, DirectionalManagedLayout, PostLayoutListener {
@@ -40,6 +54,17 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
     protected void init() {
         super.init();
         getWidget().init(getConnection());
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.vaadin.client.ui.AbstractComponentConnector#onUnregister()
+     */
+    @Override
+    public void onUnregister() {
+        super.onUnregister();
+        getWidget().onUnregister();
     }
 
     /*
@@ -254,7 +279,7 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
 
         if (getWidget().focusedRow != null) {
             if (!getWidget().focusedRow.isAttached()
-                    && !getWidget().rowRequestHandler.isHandlerRunning()) {
+                    && !getWidget().rowRequestHandler.isRequestHandlerRunning()) {
                 // focused row has been orphaned, can't focus
                 if (getWidget().selectedRowKeys.contains(getWidget().focusedRow
                         .getKey())) {
@@ -441,9 +466,7 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         TooltipInfo info = null;
 
         if (element != getWidget().getElement()) {
-            Object node = Util.findWidget(
-                    (com.google.gwt.user.client.Element) element,
-                    VScrollTableRow.class);
+            Object node = Util.findWidget(element, VScrollTableRow.class);
 
             if (node != null) {
                 VScrollTableRow row = (VScrollTableRow) node;
