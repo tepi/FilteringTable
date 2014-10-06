@@ -1,5 +1,6 @@
 package org.tepi.filtertable;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -123,6 +124,13 @@ public class FilterTable extends CustomTable implements IFilterTable {
     @Override
     public void setContainerDataSource(Container newDataSource) {
         super.setContainerDataSource(newDataSource);
+        resetFilters();
+    }
+
+    @Override
+    public void setContainerDataSource(Container newDataSource,
+            Collection<?> visibleIds) {
+        super.setContainerDataSource(newDataSource, visibleIds);
         resetFilters();
     }
 
