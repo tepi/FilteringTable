@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.vaadin.addons</groupId>
     <artifactId>filteringtable</artifactId>
-    <version>0.9.10.v7</version>
+    <version>0.9.11.v7</version>
     <dependencies>
         <dependency>
             <groupId>org.vaadin.addons</groupId>
             <artifactId>popupbutton</artifactId>
-            <version>2.2.1</version>
+            <version>2.4.1</version>
         </dependency>
     </dependencies>
 </project> 
