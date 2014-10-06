@@ -607,7 +607,7 @@ class FilterFieldGenerator implements Serializable {
         }
     }
 
-    interface IFilterTable {
+    public interface IFilterTable {
 
         public Filterable getFilterable();
 
