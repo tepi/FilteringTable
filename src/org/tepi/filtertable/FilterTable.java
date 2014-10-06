@@ -78,21 +78,25 @@ public class FilterTable extends CustomTable implements IFilterTable {
         target.addAttribute("forceRender", reRenderFilterFields);
         target.addAttribute("wrapFilters", wrapFilters);
         reRenderFilterFields = false;
-        if (filtersVisible) {
-            for (Object key : getColumnIdToFilterMap().keySet()) {
-                /* Do not paint filters which are not children */
-                if (columnIdToFilterMap.get(key) != null
-                        && columnIdToFilterMap.get(key).getParent() == null) {
-                    continue;
-                }
-                /* Paint the filter field */
-                target.startTag("filtercomponent-" + columnIdMap.key(key));
-                target.addAttribute("columnid", columnIdMap.key(key));
-                Component c = getColumnIdToFilterMap().get(key);
-                LegacyPaint.paint(c, target);
-                target.endTag("filtercomponent-" + columnIdMap.key(key));
+        /* if (filtersVisible) { */
+        for (Object key : getColumnIdToFilterMap().keySet()) {
+            /* Make sure parent is set properly */
+            if (columnIdToFilterMap.get(key) != null
+                    && columnIdToFilterMap.get(key).getParent() == null) {
+                continue;// columnIdToFilterMap.get(key).setParent(this);
             }
+            /* Paint the filter field */
+            target.startTag("filtercomponent-" + columnIdMap.key(key));
+            target.addAttribute("columnid", columnIdMap.key(key));
+            Component c = getColumnIdToFilterMap().get(key);
+            LegacyPaint.paint(c, target);
+            target.endTag("filtercomponent-" + columnIdMap.key(key));
+            // } else {
+            // if (columnIdToFilterMap.get(key) != null) {
+            // columnIdToFilterMap.get(key).setParent(null);
+            // }
         }
+        // }
         target.endTag("filters");
     }
 
@@ -199,6 +203,10 @@ public class FilterTable extends CustomTable implements IFilterTable {
      */
     public void setFilterBarVisible(boolean filtersVisible) {
         this.filtersVisible = filtersVisible;
+        for (Object key : columnIdToFilterMap.keySet()) {
+            columnIdToFilterMap.get(key)
+                    .setParent(filtersVisible ? this : null);
+        }
         reRenderFilterFields = true;
         markAsDirty();
     }
@@ -327,10 +335,10 @@ public class FilterTable extends CustomTable implements IFilterTable {
         if (visibleComponents != null) {
             children.addAll(visibleComponents);
         }
-        if (initDone) {
+        if (initDone && filtersVisible) {
             for (Object key : columnIdToFilterMap.keySet()) {
                 Component filter = columnIdToFilterMap.get(key);
-                if (equals(filter.getParent())) {
+                if (equals(filter.getParent()) && filter.isVisible()) {
                     children.add(filter);
                 }
             }
