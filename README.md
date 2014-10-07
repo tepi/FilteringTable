@@ -13,13 +13,17 @@ FilterTable is an extension of the Table component in Vaadin. FilterTable is ava
 * Provides integration of PagedTable add-on with the filter bar 
 * Provides integration of TreeTable with the filter bar 
 
-**NOTE: The Vaadin 6 version of this addon requires Vaadin 6.8.7 or later, starting from add-on version 0.8.4.**
+**NOTE: The V6 version of FT requires Vaadin 6.8.7 or later, starting from FT version 0.8.4.**
 
-**NOTE: The Vaadin 7 version of this addon requires Vaadin 7.0.1 or later, starting from add-on version 0.8.4.v7.** 
+**NOTE: The V7 version of FT requires Vaadin 7.0.1 or later, starting from FT version 0.8.4.v7.** 
 
-**NOTE: The Vaadin 7 version of this addon requires Vaadin 7.1.0 or later, starting from add-on version 0.9.0.v7.**
+**NOTE: The V7 version of FT requires Vaadin 7.1.0 or later, starting from FT version 0.9.0.v7.**
 
-**NOTE: FilteringTable version starting from 0.9.9.v7 are compatible with Vaadin 7.2+.**
+**NOTE: The V7 version of FT requires Vaadin 7.2.0 or later, starting from FT version 0.9.9.v7.**
+
+**NOTE: The V7 version of FT requires Vaadin 7.3.0 or later, starting from FT version 0.9.11.v7.**
+
+##Please always use the latest version of FilteringTable add-on. Bugfixes will only be done for the latest versions of each branch, and the Vaadin 7 version has priority.
 
 License
 =======
