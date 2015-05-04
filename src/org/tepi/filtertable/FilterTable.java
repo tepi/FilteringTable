@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
 import org.tepi.filtertable.datefilter.DateInterval;
@@ -49,6 +50,8 @@ public class FilterTable extends CustomTable implements IFilterTable {
     private boolean wrapFilters = false;
     /* Are filters run immediately, or only on demand? */
     private boolean filtersRunOnDemand = false;
+    /* Timezone for date filters */
+    private TimeZone timeZone;
 
     /**
      * Creates a new empty FilterTable
@@ -409,6 +412,15 @@ public class FilterTable extends CustomTable implements IFilterTable {
                     "Can't run filters on demand when filtersRunOnDemand is set to false");
         }
         generator.runFiltersNow();
+    }
+
+    public TimeZone getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(TimeZone timeZone) {
+        this.timeZone = timeZone;
+        generator.setTimeZone(timeZone);
     }
 
 }

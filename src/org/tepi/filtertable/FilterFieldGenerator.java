@@ -12,6 +12,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.tepi.filtertable.datefilter.DateFilterPopup;
 import org.tepi.filtertable.datefilter.DateInterval;
@@ -59,6 +60,7 @@ class FilterFieldGenerator implements Serializable {
     private final ValueChangeListener listener = initializeListener();
 
     private boolean runFiltersOnDemand;
+    private TimeZone timeZone;
 
     FilterFieldGenerator(IFilterTable owner) {
         this.owner = owner;
@@ -513,6 +515,7 @@ class FilterFieldGenerator implements Serializable {
         DateFilterPopup dateFilterPopup = new DateFilterPopup(
                 owner.getFilterDecorator(), propertyId);
         dates.put(dateFilterPopup, propertyId);
+        dateFilterPopup.setTimeZone(timeZone);
         return dateFilterPopup;
     }
 
@@ -685,5 +688,13 @@ class FilterFieldGenerator implements Serializable {
             destroyFilterComponents();
             initializeFilterFields();
         }
+    }
+    
+    public TimeZone getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(TimeZone timeZone) {
+        this.timeZone = timeZone;
     }
 }
