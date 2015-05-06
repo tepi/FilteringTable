@@ -2,7 +2,8 @@ package org.tepi.filtertable;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -270,26 +271,42 @@ class FilterFieldGenerator implements Serializable {
         String ltValue = interval.getLessThanValue();
         String gtValue = interval.getGreaterThanValue();
         String eqValue = interval.getEqualsValue();
-        Class<?> clazz = getProperNumericClass(propertyId);
+        Class<?> typeClass = owner.getContainerDataSource().getType(propertyId);;
 
-        Method valueOf;
-
-        // We use reflection to get the valueOf method of the container
-        // datatype
-        valueOf = clazz.getMethod("valueOf", String.class);
         if (eqValue != null) {
-            return new Compare.Equal(propertyId, valueOf.invoke(clazz, eqValue));
+            return new Compare.Equal(propertyId, parseNumberValue(typeClass, eqValue));
         } else if (ltValue != null && gtValue != null) {
-            return new And(new Compare.Less(propertyId, valueOf.invoke(clazz,
-                    ltValue)), new Compare.Greater(propertyId, valueOf.invoke(
-                    clazz, gtValue)));
+            return new And(new Compare.Less(propertyId, parseNumberValue(typeClass,
+                    ltValue)), new Compare.Greater(propertyId, parseNumberValue(
+                    typeClass, gtValue)));
         } else if (ltValue != null) {
-            return new Compare.Less(propertyId, valueOf.invoke(clazz, ltValue));
+            return new Compare.Less(propertyId, parseNumberValue(typeClass, ltValue));
         } else if (gtValue != null) {
-            return new Compare.Greater(propertyId, valueOf.invoke(clazz,
+            return new Compare.Greater(propertyId, parseNumberValue(typeClass,
                     gtValue));
         }
         return null;
+    }
+    
+    private static Object parseNumberValue(Class<?> typeClass, String value) {
+    	if (typeClass == BigDecimal.class)
+    		return new BigDecimal(value);
+    	if (typeClass == BigInteger.class)
+    		return new BigInteger(value);
+    	if (typeClass == byte.class || typeClass == Byte.class)
+    		return Byte.valueOf(value);
+    	if (typeClass == short.class || typeClass == Short.class)
+    		return Short.valueOf(value);
+    	if (typeClass == int.class || typeClass == Integer.class)
+    		return Integer.valueOf(value);
+    	if (typeClass == long.class || typeClass == Long.class)
+    		return Long.valueOf(value);
+    	if (typeClass == float.class || typeClass == Float.class)
+    		return Float.valueOf(value);
+    	if (typeClass == double.class || typeClass == Double.class)
+    		return Double.valueOf(value);
+    	
+    	throw new UnsupportedOperationException("Unsupported number type; " + typeClass.getName());
     }
 
     private Filter generateDateFilter(Property<?> field, Object propertyId,
@@ -330,23 +347,6 @@ class FilterFieldGenerator implements Serializable {
         } else {
             return new Compare.LessOrEqual(propertyId, actualTo);
         }
-    }
-
-    private Class<?> getProperNumericClass(Object propertyId) {
-        Class<?> clazz = owner.getContainerDataSource().getType(propertyId);
-        if (clazz.equals(int.class)) {
-            return Integer.class;
-        }
-        if (clazz.equals(long.class)) {
-            return Long.class;
-        }
-        if (clazz.equals(float.class)) {
-            return Float.class;
-        }
-        if (clazz.equals(double.class)) {
-            return Double.class;
-        }
-        return clazz;
     }
 
     private void addFilterColumn(Object propertyId, Component filter) {
@@ -398,7 +398,8 @@ class FilterFieldGenerator implements Serializable {
                 || type == Short.class || type == Byte.class
                 || type == int.class || type == long.class
                 || type == float.class || type == double.class
-                || type == short.class || type == byte.class)
+                || type == short.class || type == byte.class
+                || type == BigDecimal.class || type == BigInteger.class)
                 && owner.getFilterDecorator() != null
                 && owner.getFilterDecorator().usePopupForNumericProperty(
                         property)) {
