@@ -322,4 +322,16 @@ public class VFilterTable extends VCustomScrollTable {
             }
         }
     }
+
+    public void setColumnHeaderStylenames(String[] columnHeaderStylenames) {
+
+        for (int i = 0; i < tHead.getVisibleCellCount(); i++) {
+            HeaderCell cell = tHead.getHeaderCell(i);
+            String stylename = columnHeaderStylenames[i];
+            if (!stylename.isEmpty()) {
+                cell.addStyleName(columnHeaderStylenames[i]);
+            }
+        }
+
+    }
 }

@@ -329,6 +329,12 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
         getWidget().headerChangedDuringUpdate = false;
 
         updateFiltersFromUIDL(uidl.getChildByTagName("filters"), client);
+
+        if (uidl.hasAttribute("columnheaderstylenames")) {
+            String[] columnHeaderStylenames = uidl
+                    .getStringArrayAttribute("columnheaderstylenames");
+            getWidget().setColumnHeaderStylenames(columnHeaderStylenames);
+        }
     }
 
     public void updateFiltersFromUIDL(UIDL uidl, ApplicationConnection client) {
