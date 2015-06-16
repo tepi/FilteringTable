@@ -44,7 +44,6 @@ public class DateFilterPopup extends CustomField<DateInterval> {
     private Button set, clear;
     private final Object propertyId;
     private String dateFormatPattern;
-    private TimeZone timeZone;
 
     private static final String DEFAULT_FROM_CAPTION = "From";
     private static final String DEFAULT_TO_CAPTION = "To";
@@ -126,7 +125,10 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         /* Set DateField Locale */
         fromField.setLocale(getLocaleFailsafe());
         toField.setLocale(getLocaleFailsafe());
-
+        /* Set DateField TimeZone */
+        fromField.setTimeZone(getTimeZoneFailsafe());
+        toField.setTimeZone(getTimeZoneFailsafe());
+      
         String fromCaption = DEFAULT_FROM_CAPTION;
         String toCaption = DEFAULT_TO_CAPTION;
         String setCaption = DEFAULT_SET_CAPTION;
@@ -180,9 +182,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
             }
         } else {
             SimpleDateFormat sdf = new SimpleDateFormat(dateFormatPattern);
-            if (timeZone != null) {
-                sdf.setTimeZone(timeZone);
-            }
+            sdf.setTimeZone(getTimeZoneFailsafe());
             content.setCaption((fromField.getValue() == null ? "" : sdf
                     .format(fromField.getValue()))
                     + " - "
@@ -248,6 +248,16 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         return Locale.getDefault();
     }
 
+    private TimeZone getTimeZoneFailsafe() {
+        /* First try the time zone provided by the decorator */
+        if (decorator != null && decorator.getTimeZone() != null) {
+            return decorator.getTimeZone();
+        }
+
+        /* Finally revert to system default time zone */
+        return TimeZone.getDefault();
+    }
+
     @Override
     protected Component initContent() {
         if (content == null) {
@@ -288,17 +298,5 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         clear.setEnabled(!readOnly);
         fromField.setEnabled(!readOnly);
         toField.setEnabled(!readOnly);
-    }
-
-    public TimeZone getTimeZone() {
-        return timeZone;
-    }
-
-    public void setTimeZone(TimeZone timeZone) {
-        this.timeZone = timeZone;
-        if (timeZone != null) {
-            fromField.setTimeZone(timeZone);
-            toField.setTimeZone(timeZone);
-        }
     }
 }

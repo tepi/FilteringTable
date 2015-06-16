@@ -2,6 +2,7 @@ package org.tepi.filtertable;
 
 import java.io.Serializable;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
@@ -146,6 +147,15 @@ public interface FilterDecorator extends Serializable {
      */
     public Locale getLocale();
 
+    /**
+     * Returns the time zone to be used with Date filters. If none is provided,
+     * reverts to default time zone of the system.
+     * 
+     * @return Desired time zone for the dates
+     */
+    public TimeZone getTimeZone();
+    
+        
     /**
      * Return the string that should be used as an "input prompt" when no
      * filtering is made on a filter component.

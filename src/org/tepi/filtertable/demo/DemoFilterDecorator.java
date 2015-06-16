@@ -3,6 +3,7 @@ package org.tepi.filtertable.demo;
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import org.tepi.filtertable.FilterDecorator;
 import org.tepi.filtertable.demo.FilterTableDemoUI.State;
@@ -137,6 +138,12 @@ class DemoFilterDecorator implements FilterDecorator, Serializable {
         return null;
     }
 
+    @Override
+    public TimeZone getTimeZone() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
     @Override
     public NumberFilterPopupConfig getNumberFilterPopupConfig() {
         // TODO Auto-generated method stub
