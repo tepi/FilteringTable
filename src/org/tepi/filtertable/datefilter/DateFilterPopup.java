@@ -214,7 +214,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         if (date == null) {
             return null;
         }
-        Calendar cal = Calendar.getInstance(getLocaleFailsafe());
+        Calendar cal = Calendar.getInstance(getTimeZoneFailsafe(), getLocaleFailsafe());
         cal.setTime(date);
         cal.set(Calendar.MILLISECOND, start ? 0 : 999);
         for (Resolution res : Resolution.getResolutionsLowerThan(resolution)) {
