@@ -116,7 +116,6 @@ public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
     @Override
     public void setContainerDataSource(Container newDataSource) {
         super.setContainerDataSource(newDataSource);
-        resetFilters();
     }
 
     @Override
