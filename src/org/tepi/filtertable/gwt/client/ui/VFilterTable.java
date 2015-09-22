@@ -179,7 +179,7 @@ public class VFilterTable extends VCustomScrollTable {
             // Remember height
             MeasuredSize ms = new MeasuredSize();
             ms.measure(container.getElement());
-            int height = ms.getInnerHeight();
+            int height = (int) ms.getInnerHeight();
 
             int visibleCellCount = tHead.getVisibleCellCount();
             for (int i = 0; i < visibleCellCount; i++) {
