@@ -44,6 +44,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
     private Button set, clear;
     private final Object propertyId;
     private String dateFormatPattern;
+    private DateInterval initialInterval;
 
     private static final String DEFAULT_FROM_CAPTION = "From";
     private static final String DEFAULT_TO_CAPTION = "To";
@@ -52,8 +53,13 @@ public class DateFilterPopup extends CustomField<DateInterval> {
     private static final Resolution DEFAULT_RESOLUTION = Resolution.DAY;
 
     public DateFilterPopup(FilterDecorator decorator, Object propertyId) {
+        this(decorator, propertyId, null);
+    }
+    
+    public DateFilterPopup(FilterDecorator decorator, Object propertyId, DateInterval initialInterval) {
         this.decorator = decorator;
         this.propertyId = propertyId;
+        this.initialInterval = initialInterval;
         /* This call is needed for the value setting to function before attach */
         getContent();
     }
@@ -68,15 +74,21 @@ public class DateFilterPopup extends CustomField<DateInterval> {
     public void setValue(DateInterval newFieldValue)
             throws com.vaadin.data.Property.ReadOnlyException,
             ConversionException {
-        if (newFieldValue == null) {
+        if (newFieldValue == null || newFieldValue.isNull()) {
             newFieldValue = new DateInterval(null, null);
+            if (initialInterval != null) {
+                fromField.setValue(initialInterval.getFrom());
+                toField.setValue(initialInterval.getTo());                
+            }
         }
-        fromField.setValue(newFieldValue.getFrom());
-        toField.setValue(newFieldValue.getTo());
+        else {
+            fromField.setValue(newFieldValue.getFrom());
+            toField.setValue(newFieldValue.getTo());
+        }
         super.setValue(newFieldValue);
         updateCaption(newFieldValue.isNull());
     }
-
+    
     private void buildPopup() {
         VerticalLayout content = new VerticalLayout();
         content.setStyleName("datefilterpopupcontent");
@@ -84,8 +96,14 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         content.setMargin(true);
         content.setSizeUndefined();
 
-        fromField = new InlineDateField();
-        toField = new InlineDateField();
+        if (initialInterval != null) {
+            fromField = new InlineDateField(null, initialInterval.getFrom());
+            toField = new InlineDateField(null, initialInterval.getTo());
+        }
+        else { 
+            fromField = new InlineDateField();
+            toField = new InlineDateField();            
+        }
         fromField.setImmediate(true);
         toField.setImmediate(true);
 
@@ -193,8 +211,14 @@ public class DateFilterPopup extends CustomField<DateInterval> {
 
     private void updateValue(boolean nullTheValue) {
         if (nullTheValue) {
-            fromField.setValue(null);
-            toField.setValue(null);
+            if (initialInterval != null) {
+                fromField.setValue(initialInterval.getFrom());
+                toField.setValue(initialInterval.getTo());
+            }
+            else {
+                fromField.setValue(null);
+                toField.setValue(null);
+            }
         } else {
             cancelReset = true;
         }
@@ -203,10 +227,15 @@ public class DateFilterPopup extends CustomField<DateInterval> {
                 .getDateFieldResolution(propertyId) : DEFAULT_RESOLUTION;
         if (res == null) {
             res = DEFAULT_RESOLUTION;
-        }
+        } 
         fromValue = truncateDate(fromField.getValue(), res, true);
         toValue = truncateDate(toField.getValue(), res, false);
-        setValue(new DateInterval(fromValue, toValue));
+        if (nullTheValue) {
+            setValue(null);
+        }
+        else {
+            setValue(new DateInterval(fromValue, toValue));
+        }
         DateFilterPopup.this.content.setPopupVisible(false);
     }
 
