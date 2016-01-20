@@ -34,13 +34,13 @@ import com.vaadin.ui.VerticalLayout;
  */
 @SuppressWarnings("serial")
 public class DateFilterPopup extends CustomField<DateInterval> {
-    private PopupButton content;
+    protected PopupButton content;
 
-    private DateField fromField, toField;
+    protected DateField fromField, toField;
     private Date fromValue, toValue;
     private boolean cancelReset;
     private FilterDecorator decorator;
-    private Button set, clear;
+    protected Button set, clear;
     private final Object propertyId;
     private String dateFormatPattern;
 
@@ -76,7 +76,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         updateCaption(newFieldValue.isNull());
     }
 
-    private void buildPopup() {
+    protected void buildPopup() {
         VerticalLayout content = new VerticalLayout();
         content.setStyleName("datefilterpopupcontent");
         content.setSpacing(true);
@@ -114,7 +114,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         content.addComponent(row);
         content.addComponent(buttonBar);
         content.setComponentAlignment(buttonBar, Alignment.BOTTOM_RIGHT);
-
+        
         this.content.setContent(content);
     }
 
@@ -284,4 +284,5 @@ public class DateFilterPopup extends CustomField<DateInterval> {
         fromField.setEnabled(!readOnly);
         toField.setEnabled(!readOnly);
     }
+    
 }
