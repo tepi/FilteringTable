@@ -3297,8 +3297,13 @@ public class CustomTable extends AbstractSelect implements Action.Container,
          * sync. Otherwise we _might_ have the situation where the client side
          * discards too few or too many rows, causing out of sync issues.
          */
-        int pageBufferLastIndex = pageBufferFirstIndex
-                + pageBuffer[CELL_ITEMID].length - 1;
+        int pageBufferLastIndex;
+        if (pageBuffer != null && pageBuffer.length > 0)
+        {
+        	pageBufferLastIndex = pageBufferFirstIndex + pageBuffer[CELL_ITEMID].length - 1;
+        }
+        else
+        	pageBufferLastIndex = 0;
         target.addAttribute(TableConstants.ATTRIBUTE_PAGEBUFFER_FIRST,
                 pageBufferFirstIndex);
         target.addAttribute(TableConstants.ATTRIBUTE_PAGEBUFFER_LAST,
@@ -3677,7 +3682,15 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (reqFirstRowToPaint != -1 && firstToBeRenderedInClient != -1) {
             start = reqFirstRowToPaint - firstToBeRenderedInClient;
         }
-        int end = cells[0].length;
+        int end;
+        if (cells != null && cells.length > 0)
+        {
+        end = cells[0].length;
+        }
+        else
+        {
+        	end = 0;
+        }
         if (reqRowsToPaint != -1) {
             end = start + reqRowsToPaint;
         }
@@ -3685,11 +3698,18 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (lastToBeRenderedInClient != -1 && lastToBeRenderedInClient < end) {
             end = lastToBeRenderedInClient + 1;
         }
-        if (start > cells[CELL_ITEMID].length || start < 0) {
-            start = 0;
+        if (cells != null && cells.length > 0)
+        {
+        	if (start > cells[CELL_ITEMID].length || start < 0) {
+        		start = 0;
+        	}
         }
-        if (end > cells[CELL_ITEMID].length) {
-            end = cells[CELL_ITEMID].length;
+        if (cells != null && cells.length > 0)
+        {
+
+        	if (end > cells[CELL_ITEMID].length) {
+        		end = cells[CELL_ITEMID].length;
+        	}
         }
 
         for (int indexInRowbuffer = start; indexInRowbuffer < end; indexInRowbuffer++) {
@@ -3763,14 +3783,22 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         if (reqRowsToPaint >= 0) {
             rows = reqRowsToPaint;
         } else {
-            rows = cells[0].length;
-            if (alwaysRecalculateColumnWidths) {
-                // TODO experimental feature for now: tell the client to
-                // recalculate column widths.
-                // We'll only do this for paints that do not originate from
-                // table scroll/cache requests (i.e when reqRowsToPaint<0)
-                target.addAttribute("recalcWidths", true);
-            }
+        	if (cells != null && cells.length > 0)
+        	{
+        		rows = cells[0].length;
+        		if (alwaysRecalculateColumnWidths) {
+        			// TODO experimental feature for now: tell the client to
+        			// recalculate column widths.
+        			// We'll only do this for paints that do not originate from
+        			// table scroll/cache requests (i.e when reqRowsToPaint<0)
+        			target.addAttribute("recalcWidths", true);
+        		}
+        		
+        	}
+        	else
+        	{
+        		rows = 0;
+        	}
         }
         return rows;
     }
@@ -4032,6 +4060,9 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                 }
             }
 
+        }
+        if (pageBuffer == null) {
+        	pageBuffer = new Object[][] { };
         }
         return pageBuffer;
     }
