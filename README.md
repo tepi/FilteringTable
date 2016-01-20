@@ -23,6 +23,8 @@ FilterTable is an extension of the Table component in Vaadin. FilterTable is ava
 
 **NOTE: The V7 version of FT requires Vaadin 7.3.0 or later, starting from FT version 0.9.11.v7.**
 
+**NOTE: The V7 version of FT requires Vaadin 7.6.0 or later, starting from FT version 0.9.14.v7.**
+
 ##Please always use the latest version of FilteringTable add-on. Bugfixes will only be done for the latest versions of each branch, and the Vaadin 7 version has priority.
 
 License

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.vaadin.addons</groupId>
     <artifactId>filteringtable</artifactId>
-    <version>0.9.14.v7</version>
+    <version>0.9.15.v7</version>
     <dependencies>
         <dependency>
             <groupId>org.vaadin.addons</groupId>
