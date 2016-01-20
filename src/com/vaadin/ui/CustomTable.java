@@ -2779,7 +2779,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         // Assure visual refresh
         resetPageBuffer();
 
-        enableContentRefreshing(true);
+        enableContentRefreshing(false);
     }
 
     /**
