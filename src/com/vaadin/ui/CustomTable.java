@@ -2779,7 +2779,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
         // Assure visual refresh
         resetPageBuffer();
 
-        enableContentRefreshing(true);
+        enableContentRefreshing(false);
     }
 
     /**
@@ -4022,7 +4022,16 @@ public class CustomTable extends AbstractSelect implements Action.Container,
      */
     private Object[][] getVisibleCells() {
         if (pageBuffer == null) {
-            refreshRenderedCells();
+            boolean isRefreshingEnabled = isContentRefreshesEnabled;
+            try{
+                enableContentRefreshing(false);
+                refreshRenderedCells();
+            }finally{
+                if (!isRefreshingEnabled){
+                    disableContentRefreshing();
+                }
+            }
+
         }
         return pageBuffer;
     }

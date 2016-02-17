@@ -137,7 +137,6 @@ public class FilterTable extends CustomTable implements IFilterTable {
     @Override
     public void setContainerDataSource(Container newDataSource) {
         super.setContainerDataSource(newDataSource);
-        resetFilters();
     }
 
     @Override
