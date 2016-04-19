@@ -2273,6 +2273,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
                 .generateRow(this, id) : null;
         cells[CELL_GENERATED_ROW][i] = generatedRow;
 
+		Item item=getItem(id);
         for (int j = 0; j < cols; j++) {
             if (isColumnCollapsed(colids[j])) {
                 continue;
@@ -2285,7 +2286,7 @@ public class CustomTable extends AbstractSelect implements Action.Container,
 
             if (!isGenerated) {
                 try {
-                    p = getContainerProperty(id, colids[j]);
+					p = item.getItemProperty(colids[j]);
                 } catch (Exception e) {
                     exceptionsDuringCachePopulation.add(e);
                     value = null;
