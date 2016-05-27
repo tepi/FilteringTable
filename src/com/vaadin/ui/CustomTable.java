@@ -2183,6 +2183,11 @@ public class CustomTable extends AbstractSelect implements Action.Container,
             List<?> itemIds = getItemIds(firstIndex, rows);
             for (int i = 0; i < rows && i < itemIds.size(); i++) {
                 Object id = itemIds.get(i);
+                if (id == null) {
+                    // JPAContainer with generatedColumns might returns nulls, just continue
+                    //throw new IllegalStateException("Null itemId returned from container");
+                    continue;
+                } 
                 // Start by parsing the values, id should already be set
                 parseItemIdToCells(cells, id, i, firstIndex, headmode, cols,
                         colids, firstIndexNotInCache, iscomponent,
