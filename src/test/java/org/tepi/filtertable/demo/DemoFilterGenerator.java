@@ -4,14 +4,14 @@ import java.io.Serializable;
 
 import org.tepi.filtertable.FilterGenerator;
 
-import com.vaadin.data.Container.Filter;
-import com.vaadin.data.util.filter.Compare;
-import com.vaadin.data.util.filter.Or;
 import com.vaadin.server.Page;
-import com.vaadin.ui.AbstractField;
-import com.vaadin.ui.CheckBox;
-import com.vaadin.ui.Field;
 import com.vaadin.ui.Notification;
+import com.vaadin.v7.data.Container.Filter;
+import com.vaadin.v7.data.util.filter.Compare;
+import com.vaadin.v7.data.util.filter.Or;
+import com.vaadin.v7.ui.AbstractField;
+import com.vaadin.v7.ui.CheckBox;
+import com.vaadin.v7.ui.Field;
 
 @SuppressWarnings("serial")
 class DemoFilterGenerator implements FilterGenerator, Serializable {

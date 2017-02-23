@@ -10,10 +10,10 @@ import com.vaadin.client.TooltipInfo;
 import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
 import com.vaadin.client.ui.FocusableScrollPanel;
-import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 import com.vaadin.shared.ui.Connect;
-import com.vaadin.shared.ui.treetable.TreeTableConstants;
-import com.vaadin.shared.ui.treetable.TreeTableState;
+import com.vaadin.v7.shared.ui.treetable.TreeTableConstants;
+import com.vaadin.v7.shared.ui.treetable.TreeTableState;
+import com.vaadin.v7.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 
 @SuppressWarnings({ "serial", "deprecation" })
 @Connect(FilterTreeTable.class)

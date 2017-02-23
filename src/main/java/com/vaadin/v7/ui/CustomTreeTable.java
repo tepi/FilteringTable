@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.vaadin.ui;
+package com.vaadin.v7.ui;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -23,30 +23,39 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.vaadin.data.Collapsible;
-import com.vaadin.data.Container;
-import com.vaadin.data.Container.Hierarchical;
-import com.vaadin.data.util.ContainerHierarchicalWrapper;
-import com.vaadin.data.util.HierarchicalContainer;
-import com.vaadin.data.util.HierarchicalContainerOrderedWrapper;
+import org.jsoup.nodes.Element;
+
 import com.vaadin.server.PaintException;
 import com.vaadin.server.PaintTarget;
 import com.vaadin.server.Resource;
-import com.vaadin.shared.ui.treetable.TreeTableConstants;
-import com.vaadin.ui.Tree.CollapseEvent;
-import com.vaadin.ui.Tree.CollapseListener;
-import com.vaadin.ui.Tree.ExpandEvent;
-import com.vaadin.ui.Tree.ExpandListener;
+import com.vaadin.ui.declarative.DesignAttributeHandler;
+import com.vaadin.ui.declarative.DesignContext;
+import com.vaadin.ui.declarative.DesignException;
+import com.vaadin.v7.data.Collapsible;
+import com.vaadin.v7.data.Container;
+import com.vaadin.v7.data.Container.Hierarchical;
+import com.vaadin.v7.data.Container.ItemSetChangeEvent;
+import com.vaadin.v7.data.util.ContainerHierarchicalWrapper;
+import com.vaadin.v7.data.util.HierarchicalContainer;
+import com.vaadin.v7.data.util.HierarchicalContainerOrderedWrapper;
+import com.vaadin.v7.shared.ui.treetable.TreeTableConstants;
+import com.vaadin.v7.shared.ui.treetable.TreeTableState;
+import com.vaadin.v7.ui.Tree.CollapseEvent;
+import com.vaadin.v7.ui.Tree.CollapseListener;
+import com.vaadin.v7.ui.Tree.ExpandEvent;
+import com.vaadin.v7.ui.Tree.ExpandListener;
 
 /**
- * TreeTable extends the {@link Table} component so that it can also visualize a
+ * CustomTreeTable extends the {@link CustomTable} component so that it can also visualize a
  * hierarchy of its Items in a similar manner that {@link Tree} does. The tree
  * hierarchy is always displayed in the first actual column of the TreeTable.
  * <p>
- * The TreeTable supports the usual {@link Table} features like lazy loading, so
+ * The CustomTreeTable supports the usual {@link CustomTable} features like lazy loading, so
  * it should be no problem to display lots of items at once. Only required rows
  * and some cache rows are sent to the client.
  * <p>
@@ -114,7 +123,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     /**
      * This strategy is used if current container implements {@link Collapsible}
      * .
-     * 
+     *
      * open-collapsed logic diverted to container, otherwise use default
      * implementations.
      */
@@ -181,13 +190,13 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     /**
      * Strategy for Hierarchical but not Collapsible container like
      * {@link HierarchicalContainer}.
-     * 
+     *
      * Store collapsed/open states internally, fool Table to use preorder when
      * accessing items from container via Ordered/Indexed methods.
      */
     private class HierarchicalStrategy extends AbstractStrategy {
 
-        private final HashSet<Object> openItems = new HashSet<Object>();
+        private final HashSet<Object> openItems = new HashSet<>();
 
         @Override
         public boolean isNodeOpen(Object itemId) {
@@ -269,12 +278,12 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
         /**
          * Preorder of ids currently visible
-         * 
+         *
          * @return
          */
         private List<Object> getPreOrder() {
             if (preOrder == null) {
-                preOrder = new ArrayList<Object>();
+                preOrder = new ArrayList<>();
                 Collection<?> rootItemIds = getContainerDataSource()
                         .rootItemIds();
                 for (Object id : rootItemIds) {
@@ -287,8 +296,8 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
         private void addVisibleChildTree(Object id) {
             if (isNodeOpen(id)) {
-                Collection<?> children = getContainerDataSource().getChildren(
-                        id);
+                Collection<?> children = getContainerDataSource()
+                        .getChildren(id);
                 if (children != null) {
                     for (Object childId : children) {
                         preOrder.add(childId);
@@ -327,7 +336,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Creates an empty TreeTable with a default container.
-     * 
+     *
      * @param caption
      *            the caption for the TreeTable
      */
@@ -338,7 +347,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Creates a TreeTable instance with given captions and data source.
-     * 
+     *
      * @param caption
      *            the caption for the component
      * @param dataSource
@@ -356,7 +365,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
      * The item id that was expanded or collapsed during this request. Reset at
      * the end of paint and only used for determining if a partial or full paint
      * should be done.
-     * 
+     *
      * Can safely be reset to null whenever a change occurs that would prevent a
      * partial update from rendering the correct result, e.g. rows added or
      * removed during an expand operation.
@@ -399,7 +408,8 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
             int indexInRowbuffer) throws PaintException {
         // always paint if present (in parent only if row headers visible)
         if (getRowHeaderMode() == ROW_HEADER_MODE_HIDDEN) {
-            Resource itemIcon = getItemIcon(cells[CELL_ITEMID][indexInRowbuffer]);
+            Resource itemIcon = getItemIcon(
+                    cells[CELL_ITEMID][indexInRowbuffer]);
             if (itemIcon != null) {
                 target.addAttribute("icon", itemIcon);
             }
@@ -407,6 +417,14 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
             target.addAttribute("icon",
                     (Resource) cells[CELL_ICON][indexInRowbuffer]);
         }
+    }
+
+    @Override
+    protected boolean rowHeadersAreEnabled() {
+        if (getRowHeaderMode() == RowHeaderMode.ICON_ONLY) {
+            return false;
+        }
+        return super.rowHeadersAreEnabled();
     }
 
     @Override
@@ -514,7 +532,8 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     @Override
     protected int getAddedRowCount() {
-        return countSubNodesRecursively(getContainerDataSource(), toggledItemId);
+        return countSubNodesRecursively(getContainerDataSource(),
+                toggledItemId);
     }
 
     private int countSubNodesRecursively(Hierarchical hc, Object itemId) {
@@ -550,7 +569,8 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
         return !getContainerStrategy().isNodeOpen(toggledItemId);
     }
 
-    private void toggleChildVisibility(Object itemId, boolean forceFullRefresh) {
+    private void toggleChildVisibility(Object itemId,
+            boolean forceFullRefresh) {
         getContainerStrategy().toggleChildVisibility(itemId);
         // ensure that page still has first item in page, DON'T clear the
         // caches.
@@ -587,7 +607,8 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
         // FIXME: This disables partial updates until TreeTable is fixed so it
         // does not change component hierarchy during paint
-        containerSupportsPartialUpdates = (newDataSource instanceof ItemSetChangeNotifier) && false;
+        containerSupportsPartialUpdates = (newDataSource instanceof ItemSetChangeNotifier)
+                && false;
 
         if (newDataSource != null && !(newDataSource instanceof Hierarchical)) {
             newDataSource = new ContainerHierarchicalWrapper(newDataSource);
@@ -603,7 +624,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     @Override
     public void containerItemSetChange(
-            com.vaadin.data.Container.ItemSetChangeEvent event) {
+            com.vaadin.v7.data.Container.ItemSetChangeEvent event) {
         // Can't do partial repaints if items are added or removed during the
         // expand/collapse request
         toggledItemId = null;
@@ -692,7 +713,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
     /**
      * Sets the Item specified by given identifier as collapsed or expanded. If
      * the Item is collapsed, its children are not displayed to the user.
-     * 
+     *
      * @param itemId
      *            the identifier of the Item
      * @param collapsed
@@ -717,9 +738,9 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Checks if Item with given identifier is collapsed in the UI.
-     * 
+     *
      * <p>
-     * 
+     *
      * @param itemId
      *            the identifier of the checked Item
      * @return true if the Item with given id is collapsed
@@ -733,7 +754,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
      * Explicitly sets the column in which the TreeTable visualizes the
      * hierarchy. If hierarchyColumnId is not set, the hierarchy is visualized
      * in the first visible column.
-     * 
+     *
      * @param hierarchyColumnId
      */
     public void setHierarchyColumn(Object hierarchyColumnId) {
@@ -750,7 +771,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Adds an expand listener.
-     * 
+     *
      * @param listener
      *            the Listener to be added.
      */
@@ -769,7 +790,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Removes an expand listener.
-     * 
+     *
      * @param listener
      *            the Listener to be removed.
      */
@@ -789,7 +810,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Emits an expand event.
-     * 
+     *
      * @param itemId
      *            the item id.
      */
@@ -799,7 +820,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Adds a collapse listener.
-     * 
+     *
      * @param listener
      *            the Listener to be added.
      */
@@ -819,7 +840,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Removes a collapse listener.
-     * 
+     *
      * @param listener
      *            the Listener to be removed.
      */
@@ -839,7 +860,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     /**
      * Emits a collapse event.
-     * 
+     *
      * @param itemId
      *            the item id.
      */
@@ -858,7 +879,7 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
      * Animations can be enabled by passing true to this method. Currently
      * expanding rows slide in from the top and collapsing rows slide out the
      * same way. NOTE! not supported in Internet Explorer 6 or 7.
-     * 
+     *
      * @param animationsEnabled
      *            true or false whether to enable animations or not.
      */
@@ -873,10 +894,92 @@ public class CustomTreeTable extends CustomTable implements Hierarchical {
 
     @Override
     protected List<Object> getItemIds(int firstIndex, int rows) {
-        List<Object> itemIds = new ArrayList<Object>();
+        List<Object> itemIds = new ArrayList<>();
         for (int i = firstIndex; i < firstIndex + rows; i++) {
             itemIds.add(getIdByIndex(i));
         }
         return itemIds;
+    }
+
+    @Override
+    protected void readBody(Element design, DesignContext context) {
+        Element tbody = design.select("> table > tbody").first();
+        if (tbody == null) {
+            return;
+        }
+
+        Set<String> selected = new HashSet<>();
+        Stack<Object> parents = new Stack<>();
+        int lastDepth = -1;
+
+        for (Element tr : tbody.children()) {
+            int depth = DesignAttributeHandler.readAttribute("depth",
+                    tr.attributes(), 0, int.class);
+
+            if (depth < 0 || depth > lastDepth + 1) {
+                throw new DesignException(
+                        "Malformed TreeTable item hierarchy at " + tr
+                                + ": last depth was " + lastDepth);
+            } else if (depth <= lastDepth) {
+                for (int d = depth; d <= lastDepth; d++) {
+                    parents.pop();
+                }
+            }
+
+            Object itemId = readItem(tr, selected, context);
+            setParent(itemId, !parents.isEmpty() ? parents.peek() : null);
+            parents.push(itemId);
+            lastDepth = depth;
+        }
+    }
+
+    @Override
+    protected Object readItem(Element tr, Set<String> selected,
+            DesignContext context) {
+        Object itemId = super.readItem(tr, selected, context);
+
+        if (tr.hasAttr("collapsed")) {
+            boolean collapsed = DesignAttributeHandler
+                    .readAttribute("collapsed", tr.attributes(), boolean.class);
+            setCollapsed(itemId, collapsed);
+        }
+
+        return itemId;
+    }
+
+    @Override
+    protected void writeItems(Element design, DesignContext context) {
+        if (getVisibleColumns().length == 0) {
+            return;
+        }
+        Element tbody = design.child(0).appendElement("tbody");
+        writeItems(tbody, rootItemIds(), 0, context);
+    }
+
+    protected void writeItems(Element tbody, Collection<?> itemIds, int depth,
+            DesignContext context) {
+        for (Object itemId : itemIds) {
+            Element tr = writeItem(tbody, itemId, context);
+            DesignAttributeHandler.writeAttribute("depth", tr.attributes(),
+                    depth, 0, int.class, context);
+
+            if (getChildren(itemId) != null) {
+                writeItems(tbody, getChildren(itemId), depth + 1, context);
+            }
+        }
+    }
+
+    @Override
+    protected Element writeItem(Element tbody, Object itemId,
+            DesignContext context) {
+        Element tr = super.writeItem(tbody, itemId, context);
+        DesignAttributeHandler.writeAttribute("collapsed", tr.attributes(),
+                isCollapsed(itemId), true, boolean.class, context);
+        return tr;
+    }
+
+    @Override
+    protected TreeTableState getState() {
+        return (TreeTableState) super.getState();
     }
 }

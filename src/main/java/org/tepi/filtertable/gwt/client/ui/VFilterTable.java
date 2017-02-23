@@ -18,11 +18,11 @@ import com.vaadin.client.BrowserInfo;
 import com.vaadin.client.Focusable;
 import com.vaadin.client.MeasuredSize;
 import com.vaadin.client.Util;
-import com.vaadin.client.ui.VCustomScrollTable;
-import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 import com.vaadin.client.ui.dd.VLazyInitItemIdentifiers;
 import com.vaadin.shared.ui.dd.AcceptCriterion;
-import com.vaadin.ui.CustomTable;
+import com.vaadin.v7.client.ui.VCustomScrollTable;
+import com.vaadin.v7.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
+import com.vaadin.v7.ui.CustomTable;
 
 public class VFilterTable extends VCustomScrollTable {
 

@@ -39,7 +39,7 @@ import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.ComputedStyle;
 import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
-import com.vaadin.client.ui.VCustomScrollTable;
+import com.vaadin.v7.client.ui.VCustomScrollTable;
 
 public class VFilterTreeTable extends VFilterTable {
 

@@ -29,7 +29,7 @@ import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.ApplicationConnection;
 import com.vaadin.client.BrowserInfo;
-import com.vaadin.client.ComponentConnector;
+import com.vaadin.v7.client.ComponentConnector;
 import com.vaadin.client.ConnectorHierarchyChangeEvent;
 import com.vaadin.client.DirectionalManagedLayout;
 import com.vaadin.client.Paintable;
@@ -39,16 +39,16 @@ import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
 import com.vaadin.client.ui.AbstractHasComponentsConnector;
 import com.vaadin.client.ui.PostLayoutListener;
-import com.vaadin.client.ui.VCustomScrollTable;
-import com.vaadin.client.ui.VCustomScrollTable.ContextMenuDetails;
-import com.vaadin.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 import com.vaadin.shared.ui.Connect;
-import com.vaadin.shared.ui.table.TableConstants;
-import com.vaadin.shared.ui.table.TableState;
+import com.vaadin.v7.shared.ui.table.TableConstants;
+import com.vaadin.v7.shared.ui.table.TableState;
+import com.vaadin.v7.client.ui.VCustomScrollTable;
+import com.vaadin.v7.client.ui.VCustomScrollTable.ContextMenuDetails;
+import com.vaadin.v7.client.ui.VCustomScrollTable.VScrollTableBody.VScrollTableRow;
 
 @Connect(FilterTable.class)
 public class FilterTableConnector extends AbstractHasComponentsConnector
-        implements Paintable, DirectionalManagedLayout, PostLayoutListener {
+        implements Paintable, DirectionalManagedLayout, PostLayoutListener, ComponentConnector {
 
     @Override
     protected void init() {
@@ -367,7 +367,7 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
                     if (uidld == null) {
                         newWidgets.put(cid, null);
                     } else {
-                        ComponentConnector connector = client
+                    	com.vaadin.client.ComponentConnector connector = client
                                 .getPaintable(uidld);
                         newWidgets.put(cid, connector.getWidget());
                         if (!uidld.hasAttribute("cached")
@@ -396,7 +396,7 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
     }
 
     @Override
-    public void updateCaption(ComponentConnector component) {
+    public void updateCaption(com.vaadin.client.ComponentConnector component) {
         // NOP, not rendered
     }
 
@@ -418,9 +418,6 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
             Scheduler.get().scheduleFinally(new ScheduledCommand() {
                 @Override
                 public void execute() {
-                    // IE8 needs some hacks to measure sizes correctly
-                    Util.forceIE8Redraw(getWidget().getElement());
-
                     getLayoutManager().setNeedsMeasure(
                             FilterTableConnector.this);
                     ServerConnector parent = getParent();
@@ -438,7 +435,7 @@ public class FilterTableConnector extends AbstractHasComponentsConnector
 
     @Override
     public boolean isReadOnly() {
-        return super.isReadOnly() || getState().propertyReadOnly;
+        return getState().propertyReadOnly;
     }
 
     @Override

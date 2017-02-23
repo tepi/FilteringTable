@@ -10,16 +10,16 @@ import java.util.Set;
 import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
 import org.tepi.filtertable.datefilter.DateInterval;
 
-import com.vaadin.data.Container;
-import com.vaadin.data.util.converter.Converter.ConversionException;
+import com.vaadin.ui.Component;
+import com.vaadin.ui.HasComponents;
 import com.vaadin.server.LegacyPaint;
 import com.vaadin.server.PaintException;
 import com.vaadin.server.PaintTarget;
-import com.vaadin.ui.AbstractField;
-import com.vaadin.ui.Component;
-import com.vaadin.ui.CustomTreeTable;
-import com.vaadin.ui.HasComponents;
-import com.vaadin.ui.TextField;
+import com.vaadin.v7.data.Container;
+import com.vaadin.v7.data.util.converter.Converter.ConversionException;
+import com.vaadin.v7.ui.AbstractField;
+import com.vaadin.v7.ui.TextField;
+import com.vaadin.v7.ui.CustomTreeTable;
 
 @SuppressWarnings("serial")
 public class FilterTreeTable extends CustomTreeTable implements IFilterTable {
