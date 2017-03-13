@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.vaadin.addons</groupId>
+	<groupId>org.tepi.filtertable</groupId>
 	<artifactId>filteringtable</artifactId>
 	<packaging>jar</packaging>
 	<version>1.0.0.v8</version>
-	<name>MyComponent Add-on</name>
+	<name>FilteringTable</name>
 
 	<prerequisites>
 		<maven>3</maven>
@@ -27,13 +27,6 @@
 		<Vaadin-License-Title>Apache License 2.0</Vaadin-License-Title>
 		<Vaadin-Addon>${project.artifactId}-${project.version}.jar</Vaadin-Addon>
 	</properties>
-
-	<!-- <organization> <name>My Name</name> <url>https://github.com/mygithubaccount/MyComponent/</url> 
-		</organization> <scm> <url>git://github.com/mygithubaccount/MyComponent.git</url> 
-		<connection>scm:git:git://github.com/mygithubaccount/MyComponent.git</connection> 
-		<developerConnection>scm:git:ssh://git@github.com:/mygithubaccount/${componentClassName}.git</developerConnection> 
-		<tag>MyComponent add-on for Vaadin</tag> </scm> <issueManagement> <system>GitHub</system> 
-		<url>https://github.com/mygithubaccount/MyComponent/issues</url> </issueManagement> -->
 
 	<licenses>
 		<license>
