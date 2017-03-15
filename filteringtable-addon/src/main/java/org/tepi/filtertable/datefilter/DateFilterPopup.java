@@ -85,6 +85,20 @@ public class DateFilterPopup extends CustomField<DateInterval> {
 		toField = new InlineDateField();
 		fromField.setImmediate(true);
 		toField.setImmediate(true);
+		fromField.addValueChangeListener(e -> {
+			if (e.getProperty().getValue() != null) {
+				toField.setRangeStart((Date) e.getProperty().getValue());
+			} else {
+				toField.setRangeStart(null);
+			}
+		});
+		toField.addValueChangeListener(e -> {
+			if (e.getProperty().getValue() != null) {
+				fromField.setRangeEnd((Date) e.getProperty().getValue());
+			} else {
+				fromField.setRangeEnd(null);
+			}
+		});
 
 		set = new Button();
 		clear = new Button();

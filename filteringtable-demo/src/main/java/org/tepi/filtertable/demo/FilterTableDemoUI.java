@@ -1,4 +1,4 @@
-package org.vaadin.addons.demo;
+package org.tepi.filtertable.demo;
 
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -46,7 +46,7 @@ import com.vaadin.v7.ui.Table.RowHeaderMode;
 public class FilterTableDemoUI extends UI {
 
 	@WebServlet(value = "/*", asyncSupported = true)
-	@VaadinServletConfiguration(productionMode = false, ui = FilterTableDemoUI.class)
+	@VaadinServletConfiguration(productionMode = false, ui = FilterTableDemoUI.class, widgetset = "org.tepi.filtertable.demo.FilterTableDemoWidgetset")
 	public static class Servlet extends VaadinServlet {
 	}
 
@@ -145,7 +145,7 @@ public class FilterTableDemoUI extends UI {
 
 		filterTable.setContainerDataSource(buildContainer());
 
-		filterTable.setColumnCollapsed("state", true);
+		// filterTable.setColumnCollapsed("state", true);
 
 		filterTable
 				.setVisibleColumns((Object[]) new String[] { "name", "id", "state", "date", "validated", "checked" });
@@ -176,7 +176,7 @@ public class FilterTableDemoUI extends UI {
 
 		filterTable.setContainerDataSource(buildContainer());
 
-		filterTable.setColumnCollapsed("state", true);
+		// filterTable.setColumnCollapsed("state", true);
 
 		filterTable
 				.setVisibleColumns((Object[]) new String[] { "name", "id", "state", "date", "validated", "checked" });
@@ -221,7 +221,7 @@ public class FilterTableDemoUI extends UI {
 
 		filterTable.setContainerDataSource(buildContainer());
 
-		filterTable.setColumnCollapsed("state", true);
+		// filterTable.setColumnCollapsed("state", true);
 
 		filterTable
 				.setVisibleColumns((Object[]) new String[] { "name", "id", "state", "date", "validated", "checked" });
@@ -268,7 +268,7 @@ public class FilterTableDemoUI extends UI {
 		filterTable.setColumnReorderingAllowed(true);
 
 		filterTable.setContainerDataSource(buildHierarchicalContainer());
-		filterTable.setColumnCollapsed("state", true);
+		// filterTable.setColumnCollapsed("state", true);
 
 		filterTable
 				.setVisibleColumns((Object[]) new String[] { "name", "id", "state", "date", "validated", "checked" });

@@ -19,7 +19,7 @@ import com.vaadin.v7.ui.CustomField;
  * Produces the number filter popup for the table
  * 
  * @author Vimukthi
- * @author Teppo Kurki [adapted for V7]
+ * @author Teppo Kurki [adapted for V8]
  */
 @SuppressWarnings({ "serial", "deprecation" })
 public class NumberFilterPopup extends CustomField<NumberInterval> {
@@ -163,14 +163,14 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 			content.setCaption(decorator != null && decorator.getAllItemsVisibleString() != null
 					? decorator.getAllItemsVisibleString() : "");
 		} else {
-			if (interval.getEqualsValue() != null) {
+			if (!interval.getEqualsValue().isEmpty()) {
 				content.setCaption(valueMarker + " = " + interval.getEqualsValue());
-			} else if (interval.getGreaterThanValue() != null && interval.getLessThanValue() != null) {
+			} else if (!interval.getGreaterThanValue().isEmpty() && !interval.getLessThanValue().isEmpty()) {
 				content.setCaption(
 						interval.getGreaterThanValue() + " < " + valueMarker + " < " + interval.getLessThanValue());
-			} else if (interval.getGreaterThanValue() != null) {
+			} else if (!interval.getGreaterThanValue().isEmpty()) {
 				content.setCaption(valueMarker + " > " + interval.getGreaterThanValue());
-			} else if (interval.getLessThanValue() != null) {
+			} else if (!interval.getLessThanValue().isEmpty()) {
 				content.setCaption(valueMarker + " < " + interval.getLessThanValue());
 			}
 		}

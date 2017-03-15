@@ -65,6 +65,11 @@
 		</dependency>
 		<dependency>
 			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-client</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-themes</artifactId>
 		</dependency>
 		<dependency>
@@ -89,17 +94,16 @@
 				<groupId>com.vaadin</groupId>
 				<artifactId>vaadin-maven-plugin</artifactId>
 				<version>${vaadin.plugin.version}</version>
+				<configuration>
+					<extraJvmArgs>-Xmx1G</extraJvmArgs>
+				</configuration>
 				<executions>
-					<!-- You are free to mark this as permanently ignored in Eclipse -->
 					<execution>
-						<configuration>
-						<extraJvmArgs>-Xms1024m -Xmx1024m</extraJvmArgs>
-							<!-- if you don't specify any modules, the plugin will find them -->
-						</configuration>
 						<goals>
 							<goal>resources</goal>
-							<goal>update-widgetset</goal>
-							<goal>compile</goal>
+							<!-- vaadin:compile is disabled to avoid unneeded widgetset compilation -->
+							<!-- either uncommit this or run vaadin:compile target manually when needed -->
+							<!-- <goal>compile</goal> -->
 						</goals>
 					</execution>
 				</executions>

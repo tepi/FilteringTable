@@ -1,16 +1,15 @@
-package org.vaadin.addons.demo;
+package org.tepi.filtertable.demo;
 
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.Locale;
 
 import org.tepi.filtertable.FilterDecorator;
+import org.tepi.filtertable.demo.FilterTableDemoUI.State;
 import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
-import org.vaadin.addons.demo.FilterTableDemoUI.State;
 
 import com.vaadin.server.FontAwesome;
 import com.vaadin.server.Resource;
-import com.vaadin.server.ThemeResource;
 import com.vaadin.v7.shared.ui.datefield.Resolution;
 
 @SuppressWarnings("serial")
@@ -41,13 +40,13 @@ class DemoFilterDecorator implements FilterDecorator, Serializable {
 			State state = (State) value;
 			switch (state) {
 			case CREATED:
-				return new ThemeResource("../runo/icons/16/document.png");
+				return FontAwesome.FILE;
 			case PROCESSING:
-				return new ThemeResource("../runo/icons/16/reload.png");
+				return FontAwesome.CLOCK_O;
 			case PROCESSED:
-				return new ThemeResource("../runo/icons/16/ok.png");
+				return FontAwesome.CHECK;
 			case FINISHED:
-				return new ThemeResource("../runo/icons/16/globe.png");
+				return FontAwesome.FLAG_CHECKERED;
 			}
 		}
 		return null;

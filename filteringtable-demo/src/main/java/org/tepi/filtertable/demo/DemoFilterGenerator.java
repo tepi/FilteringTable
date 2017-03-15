@@ -1,4 +1,4 @@
-package org.vaadin.addons.demo;
+package org.tepi.filtertable.demo;
 
 import java.io.Serializable;
 
