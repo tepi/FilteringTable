@@ -424,17 +424,9 @@ public class FilterTable extends Table implements IFilterTable {
 	}
 
 	/**
-	 * Gets the header style names of the columns.
+	 * Gets the column filter wrapper style names of the columns.
 	 * 
-	 * <p>
-	 * The header style names match the property ids given by the set visible
-	 * column headers. The table must be set in either
-	 * {@link #COLUMN_HEADER_MODE_EXPLICIT} or
-	 * {@link #COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID} mode to show the
-	 * headers.
-	 * </p>
-	 * 
-	 * @return an array of the column header style names or null if there aren't
+	 * @return an array of the column filter wrapper style names or null if there aren't
 	 *         style names set.
 	 */
 	public String[] getColumnHeaderStylenames() {
@@ -452,17 +444,10 @@ public class FilterTable extends Table implements IFilterTable {
 	}
 
 	/**
-	 * Sets the header style names of columns.
-	 * 
-	 * <p>
-	 * The headers match the property ids given by the set visible column
-	 * headers. The table must be set in either
-	 * {@link #COLUMN_HEADER_MODE_EXPLICIT} or
-	 * {@link #COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID} mode to show the
-	 * headers.
+	 * Sets the column filter wrapper style names of columns.
 	 * 
 	 * @param headerStylenames
-	 *            an array of the column header style names that match the
+	 *            an array of the column filter wrapper style names that match the
 	 *            {@link #getVisibleColumns()} method
 	 */
 	public void setColumnHeaderStylenames(String... headerStylenames) {
@@ -482,12 +467,12 @@ public class FilterTable extends Table implements IFilterTable {
 	}
 
 	/**
-	 * Sets the column header style name for the specified column.
+	 * Sets the column filter wrapper style name for the specified column.
 	 * 
 	 * @param propertyId
 	 *            the propertyId identifying the column
 	 * @param headerStylename
-	 *            the header style name to set
+	 *            the column filter wrapper style name to set
 	 */
 	public void setColumnHeaderStylename(Object propertyId, String headerStylename) {
 
@@ -501,11 +486,11 @@ public class FilterTable extends Table implements IFilterTable {
 	}
 
 	/**
-	 * Gets the header style name for the specified column.
+	 * Gets the column filter wrapper style name for the specified column.
 	 * 
 	 * @param propertyId
 	 *            the propertyId identifying the column.
-	 * @return the header style name for the specified column if it has one.
+	 * @return the column filter wrapper style name for the specified column if it has one.
 	 */
 	public String getColumnHeaderStylename(Object propertyId) {
 		if (getColumnHeaderMode() == ColumnHeaderMode.HIDDEN) {

@@ -5,7 +5,7 @@
 	<groupId>org.tepi.filtertable</groupId>
 	<artifactId>filteringtable-demo</artifactId>
 	<packaging>war</packaging>
-	<version>1.0.0.v8</version>
+	<version>1.0.1.v8</version>
 	<name>FilteringTable Add-on Demo</name>
 
 	<prerequisites>

@@ -181,7 +181,6 @@ public class VFilterTable extends VScrollTable {
 				if (columnHeaderStylenames != null) {
 					String styleName = columnHeaderStylenames.getString(key);
 					if (styleName != null && !styleName.trim().isEmpty()) {
-						tHead.getHeaderCell(i).addStyleName(columnHeaderStylenames.getString(key));
 						wrapper.addStyleName(columnHeaderStylenames.getString(key));
 					}
 				}

@@ -11,6 +11,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.MeasuredSize;
+import com.vaadin.client.ValueMap;
 import com.vaadin.client.WidgetUtil;
 import com.vaadin.v7.client.ui.VScrollTable.VScrollTableBody.VScrollTableRow;
 import com.vaadin.v7.client.ui.VTreeTable;
@@ -27,6 +28,8 @@ public class VFilterTreeTable extends VTreeTable {
 
 	private static final String FILTER_PANEL_STYLE = "filters-panel";
 	private static final String FILTER_WRAPPER_STYLE = "filterwrapper";
+	private static final String FILTER_WRAPPER_FIRST_STYLE = "filterwrapper-first";
+	private static final String FILTER_WRAPPER_LAST_STYLE = "filterwrapper-last";
 	private static final String FILTER_PLACEHOLDER_STYLE = "filterplaceholder";
 	private static final String FILTER_TABLE_HEADER_WRAP_STYLE = "v-filter-table-header-wrap";
 	private static final String FILTER_TABLE_HEADER_STYLE = "v-filter-table-header";
@@ -42,6 +45,8 @@ public class VFilterTreeTable extends VTreeTable {
 	private boolean filtersVisible;
 	/* Column filter components - mapped by column keys */
 	public Map<String, Widget> filters = new HashMap<String, Widget>();
+
+	private ValueMap columnHeaderStylenames;
 
 	public VFilterTreeTable() {
 		super();
@@ -136,6 +141,11 @@ public class VFilterTreeTable extends VTreeTable {
 
 				SimplePanel wrapper = new SimplePanel();
 				wrapper.addStyleName(FILTER_WRAPPER_STYLE);
+				if (i == 0) {
+					wrapper.addStyleName(FILTER_WRAPPER_FIRST_STYLE);
+				} else if (i == visibleCellCount - 1) {
+					wrapper.addStyleName(FILTER_WRAPPER_LAST_STYLE);
+				}
 
 				if (widget == null) {
 					/*
@@ -167,6 +177,13 @@ public class VFilterTreeTable extends VTreeTable {
 				wrapper.setHeight(wrapperHeight + "px");
 
 				setFilterWidth(i);
+
+				if (columnHeaderStylenames != null) {
+					String styleName = columnHeaderStylenames.getString(key);
+					if (styleName != null && !styleName.trim().isEmpty()) {
+						wrapper.addStyleName(columnHeaderStylenames.getString(key));
+					}
+				}
 			}
 		}
 	}
@@ -220,6 +237,10 @@ public class VFilterTreeTable extends VTreeTable {
 				}
 			}
 		}
+	}
+
+	public void setColumnHeaderStylenames(ValueMap valueMap) {
+		this.columnHeaderStylenames = valueMap;
 	}
 
 	/**
