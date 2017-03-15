@@ -18,7 +18,7 @@ import com.vaadin.v7.ui.DateField;
  * @author Teppo Kurki
  * 
  */
-@SuppressWarnings({"deprecation" })
+@SuppressWarnings({ "deprecation" })
 public interface FilterDecorator extends Serializable {
 
 	/**
@@ -174,4 +174,12 @@ public interface FilterDecorator extends Serializable {
 	 * @return true to use popup-style, false to use a TextField
 	 */
 	public boolean usePopupForNumericProperty(Object propertyId);
+
+	/**
+	 * Returns the error message that is shown when an invalid number is entered
+	 * into any of the fields in a number filter popup.
+	 * 
+	 * @return Error message
+	 */
+	public String getNumberValidationErrorMessage();
 }

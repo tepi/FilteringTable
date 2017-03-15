@@ -10,6 +10,7 @@ import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.ApplicationConnection;
 import com.vaadin.client.ComponentConnector;
 import com.vaadin.client.UIDL;
+import com.vaadin.client.ValueMap;
 import com.vaadin.shared.ui.Connect;
 import com.vaadin.v7.client.ui.table.TableConnector;
 
@@ -29,11 +30,11 @@ public class FilterTableConnector extends TableConnector {
 	public static final String ATTRIBUTE_FORCE_RENDER = "forceRender";
 	public static final String ATTRIBUTE_COLUMN_ID = "columnid";
 	public static final String ATTRIBUTE_CACHED = "cached";
+	public static final String ATTRIBUTE_COLUMN_HEADER_STYLE_NAMES = "columnheaderstylenames";
 
 	@Override
 	public void updateFromUIDL(UIDL uidl, ApplicationConnection client) {
 		super.updateFromUIDL(uidl, client);
-
 		updateFiltersFromUIDL(uidl.getChildByTagName(FilterTableConnector.TAG_FILTERS), client);
 	}
 
@@ -42,11 +43,6 @@ public class FilterTableConnector extends TableConnector {
 		return (VFilterTable) super.getWidget();
 	}
 
-	/*
-	 * ------------------------------------------------------------- * Private
-	 * methods -------------------------------------------------------------
-	 */
-
 	@SuppressWarnings("deprecation")
 	private void updateFiltersFromUIDL(UIDL uidl, ApplicationConnection client) {
 		VFilterTable filterTable = getWidget();
@@ -54,11 +50,15 @@ public class FilterTableConnector extends TableConnector {
 		boolean filtersVisible = uidl.hasAttribute(ATTRIBUTE_FILTERS_VISIBLE)
 				? uidl.getBooleanAttribute(ATTRIBUTE_FILTERS_VISIBLE) : false;
 		filterTable.setFiltersVisible(filtersVisible);
+		filterTable.updateHeight();
 
 		/* If filters are not set visible, clear and hide filter panel */
 		if (filtersVisible == false) {
 			filterTable.filters.clear();
 		} else {
+			if (uidl.hasAttribute(ATTRIBUTE_COLUMN_HEADER_STYLE_NAMES)) {
+				getWidget().setColumnHeaderStylenames(uidl.getMapAttribute(ATTRIBUTE_COLUMN_HEADER_STYLE_NAMES));
+			}
 			/* Prepare and paint filter components */
 			Map<String, Widget> newWidgets = new HashMap<String, Widget>();
 			boolean allCached = true;

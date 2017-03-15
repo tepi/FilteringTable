@@ -112,24 +112,29 @@ class DemoFilterDecorator implements FilterDecorator, Serializable {
 
 	@Override
 	public boolean usePopupForNumericProperty(Object propertyId) {
-		// TODO Auto-generated method stub
 		return true;
 	}
 
 	@Override
 	public String getDateFormatPattern(Object propertyId) {
-		// TODO Auto-generated method stub
+		// TODO Will use the default settings
 		return null;
 	}
 
 	@Override
 	public Locale getLocale() {
-		// TODO Auto-generated method stub
+		// TODO Will use the default settings
 		return null;
 	}
 
 	@Override
 	public NumberFilterPopupConfig getNumberFilterPopupConfig() {
+		// TODO Will use the default settings
+		return null;
+	}
+
+	@Override
+	public String getNumberValidationErrorMessage() {
 		// TODO Auto-generated method stub
 		return null;
 	}

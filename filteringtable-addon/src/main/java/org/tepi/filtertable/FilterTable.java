@@ -1,15 +1,14 @@
 package org.tepi.filtertable;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
+import org.tepi.filtertable.client.ui.FilterTableConnector;
 import org.tepi.filtertable.datefilter.DateInterval;
 
 import com.vaadin.server.KeyMapper;
@@ -48,12 +47,11 @@ public class FilterTable extends Table implements IFilterTable {
 	private final boolean initDone;
 	/* Force-render filter fields */
 	private boolean reRenderFilterFields;
-	/* Wrap filters with additional div for styling? */
-	private boolean wrapFilters = false;
 	/* Are filters run immediately, or only on demand? */
 	private boolean filtersRunOnDemand = false;
 	/* Custom column header style names */
 	private final HashMap<Object, String> columnHeaderStylenames = new HashMap<Object, String>();
+	/* Fields from Table accessed via reflection */
 	private KeyMapper<Object> _columnIdMap;
 	private HashSet<Component> _visibleComponents;
 
@@ -91,35 +89,27 @@ public class FilterTable extends Table implements IFilterTable {
 	public void paintContent(PaintTarget target) throws PaintException {
 		super.paintContent(target);
 		/* Add filter components to UIDL */
-		target.startTag("filters");
-		target.addAttribute("filtersvisible", filtersVisible);
-		target.addAttribute("forceRender", reRenderFilterFields);
-		target.addAttribute("wrapFilters", wrapFilters);
+		target.startTag(FilterTableConnector.TAG_FILTERS);
+		target.addAttribute(FilterTableConnector.ATTRIBUTE_FILTERS_VISIBLE, filtersVisible);
+		target.addAttribute(FilterTableConnector.ATTRIBUTE_FORCE_RENDER, reRenderFilterFields);
 		reRenderFilterFields = false;
-		/* if (filtersVisible) { */
 		for (Object key : getColumnIdToFilterMap().keySet()) {
 			/* Make sure parent is set properly */
 			if (columnIdToFilterMap.get(key) != null && columnIdToFilterMap.get(key).getParent() == null) {
-				continue;// columnIdToFilterMap.get(key).setParent(this);
+				continue;
 			}
 			/* Paint the filter field */
-			target.startTag("filtercomponent-" + _columnIdMap.key(key));
-			target.addAttribute("columnid", _columnIdMap.key(key));
+			target.startTag(FilterTableConnector.TAG_FILTER_COMPONENT + _columnIdMap.key(key));
+			target.addAttribute(FilterTableConnector.ATTRIBUTE_COLUMN_ID, _columnIdMap.key(key));
 			Component c = getColumnIdToFilterMap().get(key);
 			LegacyPaint.paint(c, target);
-			target.endTag("filtercomponent-" + _columnIdMap.key(key));
-			// } else {
-			// if (columnIdToFilterMap.get(key) != null) {
-			// columnIdToFilterMap.get(key).setParent(null);
-			// }
+			target.endTag(FilterTableConnector.TAG_FILTER_COMPONENT + _columnIdMap.key(key));
 		}
-		// }
-		target.endTag("filters");
-
-		String[] headerStylenames = getColumnHeaderStylenamesForPaint();
+		Map<String, String> headerStylenames = getColumnHeaderStylenamesForPaint();
 		if (headerStylenames != null) {
-			target.addAttribute("columnheaderstylenames", headerStylenames);
+			target.addAttribute(FilterTableConnector.ATTRIBUTE_COLUMN_HEADER_STYLE_NAMES, headerStylenames);
 		}
+		target.endTag(FilterTableConnector.TAG_FILTERS);
 	}
 
 	@Override
@@ -390,20 +380,6 @@ public class FilterTable extends Table implements IFilterTable {
 		}
 	}
 
-	public void setWrapFilters(boolean wrapFilters) {
-		if (this.wrapFilters == wrapFilters) {
-			return;
-		} else {
-			this.wrapFilters = wrapFilters;
-			reRenderFilterFields = true;
-			markAsDirty();
-		}
-	}
-
-	public boolean isWrapFilters() {
-		return wrapFilters;
-	}
-
 	public void setFilterOnDemand(boolean filterOnDemand) {
 		if (filtersRunOnDemand == filterOnDemand) {
 			return;
@@ -426,29 +402,24 @@ public class FilterTable extends Table implements IFilterTable {
 		generator.runFiltersNow();
 	}
 
-	private String[] getColumnHeaderStylenamesForPaint() {
+	private Map<String, String> getColumnHeaderStylenamesForPaint() {
 		String[] allStyleNames = getColumnHeaderStylenames();
 		if (allStyleNames == null) {
 			return null;
 		}
-		List<String> stylenamesForPaint = new ArrayList<String>();
+		Map<String, String> stylenamesForPaint = new HashMap<>();
 		Object[] visibleColumns = getVisibleColumns();
 
 		for (int i = 0; i < allStyleNames.length; i++) {
 			Object colId = visibleColumns[i];
 			String stylename = allStyleNames[i];
 			// don't add collapsed columns
-			if (!collapsedColumnIds.contains(colId)) {
-				if (stylename == null) {
-					// replace nulls with empty strings
-					stylenamesForPaint.add("");
-				} else {
-					stylenamesForPaint.add(stylename);
-				}
+			if (!collapsedColumnIds.contains(colId) && stylename != null) {
+				stylenamesForPaint.put(_columnIdMap.key(colId), stylename);
 			}
 		}
 
-		return stylenamesForPaint.toArray(new String[stylenamesForPaint.size()]);
+		return stylenamesForPaint;
 
 	}
 

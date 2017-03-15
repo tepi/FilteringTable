@@ -3,6 +3,7 @@ package org.tepi.filtertable.numberfilter;
 import org.tepi.filtertable.FilterDecorator;
 import org.vaadin.hene.popupbutton.PopupButton;
 
+import com.vaadin.server.UserError;
 import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
@@ -65,9 +66,15 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 		content.setMargin(true);
 		content.setSizeUndefined();
 
-		content.addComponent(new Label(GT), 0, 0);
-		content.addComponent(new Label(LT), 0, 1);
-		content.addComponent(new Label(EQ), 0, 2);
+		Label label = new Label(GT);
+		content.addComponent(label, 0, 0);
+		content.setComponentAlignment(label, Alignment.MIDDLE_RIGHT);
+		label = new Label(LT);
+		content.addComponent(label, 0, 1);
+		content.setComponentAlignment(label, Alignment.MIDDLE_RIGHT);
+		label = new Label(EQ);
+		content.addComponent(label, 0, 2);
+		content.setComponentAlignment(label, Alignment.MIDDLE_RIGHT);
 
 		// greater than input field
 		gtInput = new TextField();
@@ -94,27 +101,35 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 		eqInput.setValueChangeMode(ValueChangeMode.EAGER);
 
 		ok = new Button(DEFAULT_OK_CAPTION, (ClickListener) event -> {
-			// users inputs
-			String ltNow;
-			String gtNow;
-			String eqNow;
+			String errorMsg = "Please enter a valid number";
+			if (decorator != null && decorator.getNumberValidationErrorMessage() != null) {
+				errorMsg = decorator.getNumberValidationErrorMessage();
+			}
+
+			String ltNow = "";
+			String gtNow = "";
+			String eqNow = "";
+			boolean valid = true;
 			try {
-				Double.valueOf(ltInput.getValue());
-				ltNow = ltInput.getValue();
-			} catch (RuntimeException e1) {
-				ltNow = "";
+				ltNow = parseInput(ltInput);
+			} catch (NumberFormatException e1) {
+				ltInput.setComponentError(new UserError(errorMsg));
+				valid = false;
 			}
 			try {
-				Double.valueOf(gtInput.getValue());
-				gtNow = gtInput.getValue();
-			} catch (RuntimeException e2) {
-				gtNow = "";
+				gtNow = parseInput(gtInput);
+			} catch (NumberFormatException e2) {
+				gtInput.setComponentError(new UserError(errorMsg));
+				valid = false;
 			}
 			try {
-				Double.valueOf(eqInput.getValue());
-				eqNow = eqInput.getValue();
-			} catch (RuntimeException e3) {
-				eqNow = "";
+				eqNow = parseInput(eqInput);
+			} catch (NumberFormatException e3) {
+				eqInput.setComponentError(new UserError(errorMsg));
+				valid = false;
+			}
+			if (!valid) {
+				return;
 			}
 			setValue(new NumberInterval(ltNow, gtNow, eqNow));
 			NumberFilterPopup.this.content.setPopupVisible(false);
@@ -137,6 +152,16 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 		this.content.setContent(content);
 	}
 
+	private String parseInput(TextField input) throws NumberFormatException {
+		String value = input.getValue();
+		if (value == null || value.trim().isEmpty()) {
+			return "";
+		} else {
+			Double.valueOf(value);
+			return value;
+		}
+	}
+
 	@Override
 	public void setValue(NumberInterval newFieldValue)
 			throws com.vaadin.v7.data.Property.ReadOnlyException, ConversionException {
@@ -153,6 +178,9 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 		ltInput.setValue(nullValue ? "" : newFieldValue.getLessThanValue());
 		gtInput.setValue(nullValue ? "" : newFieldValue.getGreaterThanValue());
 		eqInput.setValue(nullValue ? "" : newFieldValue.getEqualsValue());
+		ltInput.setComponentError(null);
+		gtInput.setComponentError(null);
+		eqInput.setComponentError(null);
 		super.setValue(newFieldValue);
 		updateCaption();
 		settingValue = false;

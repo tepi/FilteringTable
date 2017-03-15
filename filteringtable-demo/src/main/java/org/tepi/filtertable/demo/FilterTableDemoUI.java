@@ -13,6 +13,7 @@ import org.tepi.filtertable.FilterTreeTable;
 import org.tepi.filtertable.paged.PagedFilterControlConfig;
 import org.tepi.filtertable.paged.PagedFilterTable;
 
+import com.vaadin.annotations.StyleSheet;
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.Title;
 import com.vaadin.annotations.VaadinServletConfiguration;
@@ -183,7 +184,7 @@ public class FilterTableDemoUI extends UI {
 
 		filterTable
 				.setItemDescriptionGenerator((source, itemId, propertyId) -> "Just testing ItemDescriptionGenerator");
-
+		filterTable.setColumnHeaderStylename("id", "headerStylename-testing");
 		return filterTable;
 	}
 
@@ -299,12 +300,6 @@ public class FilterTableDemoUI extends UI {
 		buttonLayout.addComponent(showFilters);
 		buttonLayout.setComponentAlignment(showFilters, Alignment.MIDDLE_RIGHT);
 		buttonLayout.setExpandRatio(showFilters, 1);
-
-		CheckBox wrapFilters = new CheckBox("Wrap Filter Fields");
-		wrapFilters.setValue(relatedFilterTable.isWrapFilters());
-		wrapFilters.addValueChangeListener(event -> relatedFilterTable.setWrapFilters((Boolean) event.getValue()));
-		buttonLayout.addComponent(wrapFilters);
-		buttonLayout.setComponentAlignment(wrapFilters, Alignment.MIDDLE_RIGHT);
 
 		final Button runNow = new Button("Filter now");
 		runNow.addClickListener(new Button.ClickListener() {

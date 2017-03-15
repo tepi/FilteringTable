@@ -1,13 +1,16 @@
 package org.tepi.filtertable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
+import org.tepi.filtertable.client.ui.FilterTableConnector;
 import org.tepi.filtertable.datefilter.DateInterval;
 
 import com.vaadin.server.KeyMapper;
@@ -50,6 +53,9 @@ public class FilterTreeTable extends TreeTable implements IFilterTable {
 	private boolean wrapFilters = false;
 	/* Are filters run immediately, or only on demand? */
 	private boolean filtersRunOnDemand = false;
+	/* Custom column header style names */
+	private final HashMap<Object, String> columnHeaderStylenames = new HashMap<Object, String>();
+	/* Fields from Table accessed via reflection */
 	private KeyMapper<Object> _columnIdMap;
 	private HashSet<Component> _visibleComponents;
 
@@ -87,25 +93,28 @@ public class FilterTreeTable extends TreeTable implements IFilterTable {
 	public void paintContent(PaintTarget target) throws PaintException {
 		super.paintContent(target);
 		/* Add filter components to UIDL */
-		target.startTag("filters");
-		target.addAttribute("filtersvisible", filtersVisible);
-		target.addAttribute("forceRender", reRenderFilterFields);
+		target.startTag(FilterTableConnector.TAG_FILTERS);
+		target.addAttribute(FilterTableConnector.ATTRIBUTE_FILTERS_VISIBLE, filtersVisible);
+		target.addAttribute(FilterTableConnector.ATTRIBUTE_FORCE_RENDER, reRenderFilterFields);
 		reRenderFilterFields = false;
-		if (filtersVisible) {
-			for (Object key : getColumnIdToFilterMap().keySet()) {
-				/* Do not paint filters which are not children */
-				if (columnIdToFilterMap.get(key) != null && columnIdToFilterMap.get(key).getParent() == null) {
-					continue;
-				}
-				/* Paint the filter field */
-				target.startTag("filtercomponent-" + _columnIdMap.key(key));
-				target.addAttribute("columnid", _columnIdMap.key(key));
-				Component c = getColumnIdToFilterMap().get(key);
-				LegacyPaint.paint(c, target);
-				target.endTag("filtercomponent-" + _columnIdMap.key(key));
+		for (Object key : getColumnIdToFilterMap().keySet()) {
+			/* Make sure parent is set properly */
+			if (columnIdToFilterMap.get(key) != null && columnIdToFilterMap.get(key).getParent() == null) {
+				continue;
 			}
+			/* Paint the filter field */
+			target.startTag(FilterTableConnector.TAG_FILTER_COMPONENT + _columnIdMap.key(key));
+			target.addAttribute(FilterTableConnector.ATTRIBUTE_COLUMN_ID, _columnIdMap.key(key));
+			Component c = getColumnIdToFilterMap().get(key);
+			LegacyPaint.paint(c, target);
+			target.endTag(FilterTableConnector.TAG_FILTER_COMPONENT + _columnIdMap.key(key));
 		}
-		target.endTag("filters");
+		target.endTag(FilterTableConnector.TAG_FILTERS);
+
+		String[] headerStylenames = getColumnHeaderStylenamesForPaint();
+		if (headerStylenames != null) {
+			target.addAttribute(FilterTableConnector.ATTRIBUTE_COLUMN_HEADER_STYLE_NAMES, headerStylenames);
+		}
 	}
 
 	@Override
@@ -408,5 +417,122 @@ public class FilterTreeTable extends TreeTable implements IFilterTable {
 			throw new IllegalStateException("Can't run filters on demand when filtersRunOnDemand is set to false");
 		}
 		generator.runFiltersNow();
+	}
+
+	private String[] getColumnHeaderStylenamesForPaint() {
+		String[] allStyleNames = getColumnHeaderStylenames();
+		if (allStyleNames == null) {
+			return null;
+		}
+		List<String> stylenamesForPaint = new ArrayList<String>();
+		Object[] visibleColumns = getVisibleColumns();
+
+		for (int i = 0; i < allStyleNames.length; i++) {
+			Object colId = visibleColumns[i];
+			String stylename = allStyleNames[i];
+			// don't add collapsed columns
+			if (!collapsedColumnIds.contains(colId)) {
+				if (stylename == null) {
+					// replace nulls with empty strings
+					stylenamesForPaint.add("");
+				} else {
+					stylenamesForPaint.add(stylename);
+				}
+			}
+		}
+
+		return stylenamesForPaint.toArray(new String[stylenamesForPaint.size()]);
+
+	}
+
+	/**
+	 * Gets the header style names of the columns.
+	 * 
+	 * <p>
+	 * The header style names match the property ids given by the set visible
+	 * column headers. The table must be set in either
+	 * {@link #COLUMN_HEADER_MODE_EXPLICIT} or
+	 * {@link #COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID} mode to show the
+	 * headers.
+	 * </p>
+	 * 
+	 * @return an array of the column header style names or null if there aren't
+	 *         style names set.
+	 */
+	public String[] getColumnHeaderStylenames() {
+		if (columnHeaderStylenames.size() == 0) {
+			return null;
+		}
+
+		Object[] visibleColumns = getVisibleColumns();
+		final String[] headerStylenames = new String[visibleColumns.length];
+
+		for (int i = 0; i < visibleColumns.length; i++) {
+			headerStylenames[i] = columnHeaderStylenames.get(visibleColumns[i]);
+		}
+		return headerStylenames;
+	}
+
+	/**
+	 * Sets the header style names of columns.
+	 * 
+	 * <p>
+	 * The headers match the property ids given by the set visible column
+	 * headers. The table must be set in either
+	 * {@link #COLUMN_HEADER_MODE_EXPLICIT} or
+	 * {@link #COLUMN_HEADER_MODE_EXPLICIT_DEFAULTS_ID} mode to show the
+	 * headers.
+	 * 
+	 * @param headerStylenames
+	 *            an array of the column header style names that match the
+	 *            {@link #getVisibleColumns()} method
+	 */
+	public void setColumnHeaderStylenames(String... headerStylenames) {
+		Object[] visibleColumns = getVisibleColumns();
+
+		if (headerStylenames.length != visibleColumns.length) {
+			throw new IllegalArgumentException(
+					"The length of the header style names array must match the number of visible columns");
+		}
+
+		columnHeaderStylenames.clear();
+		for (int i = 0; i < visibleColumns.length; i++) {
+			columnHeaderStylenames.put(visibleColumns[i], headerStylenames[i]);
+		}
+
+		markAsDirty();
+	}
+
+	/**
+	 * Sets the column header style name for the specified column.
+	 * 
+	 * @param propertyId
+	 *            the propertyId identifying the column
+	 * @param headerStylename
+	 *            the header style name to set
+	 */
+	public void setColumnHeaderStylename(Object propertyId, String headerStylename) {
+
+		if (headerStylename == null) {
+			columnHeaderStylenames.remove(propertyId);
+		} else {
+			columnHeaderStylenames.put(propertyId, headerStylename);
+		}
+
+		markAsDirty();
+	}
+
+	/**
+	 * Gets the header style name for the specified column.
+	 * 
+	 * @param propertyId
+	 *            the propertyId identifying the column.
+	 * @return the header style name for the specified column if it has one.
+	 */
+	public String getColumnHeaderStylename(Object propertyId) {
+		if (getColumnHeaderMode() == ColumnHeaderMode.HIDDEN) {
+			return null;
+		}
+		return columnHeaderStylenames.get(propertyId);
 	}
 }
