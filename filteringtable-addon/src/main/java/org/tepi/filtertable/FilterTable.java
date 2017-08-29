@@ -378,7 +378,7 @@ public class FilterTable extends Table implements IFilterTable {
 			/* Set this as parent to visible columns */
 			for (Object key : visibleColumns) {
 				Component filter = columnIdToFilterMap.get(key);
-				if (filter != null) {
+				if (filter != null && isFilterBarVisible()) {
 					filter.setParent(this);
 				}
 			}
