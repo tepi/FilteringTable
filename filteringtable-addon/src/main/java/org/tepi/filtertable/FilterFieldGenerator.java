@@ -260,7 +260,6 @@ class FilterFieldGenerator implements Serializable {
 		String gtValue = interval.getGreaterThanValue();
 		String eqValue = interval.getEqualsValue();
 		Class<?> typeClass = owner.getContainerDataSource().getType(propertyId);
-		;
 
 		if (!eqValue.isEmpty()) {
 			return new Compare.Equal(propertyId, parseNumberValue(typeClass, eqValue));
