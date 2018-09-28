@@ -1,5 +1,7 @@
 package org.tepi.filtertable.numberfilter;
 
+import java.math.BigInteger;
+
 import org.tepi.filtertable.FilterDecorator;
 import org.vaadin.hene.popupbutton.PopupButton;
 
@@ -30,6 +32,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 	private boolean settingValue;
 	private String valueMarker;
 	private NumberInterval interval;
+	private boolean allowDecimalPlaces;
 
 	/* Input fields */
 	private TextField ltInput;
@@ -57,6 +60,10 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 		 * This call is needed for the value setting to function before attach
 		 */
 		getContent();
+	}
+
+	public void setDecimalPlacesAllowed(boolean allowDecimalPlaces) {
+		this.allowDecimalPlaces = allowDecimalPlaces;
 	}
 
 	private void initPopup() {
@@ -157,18 +164,22 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 		if (value == null || value.trim().isEmpty()) {
 			return "";
 		} else {
-			Double.valueOf(value);
+			if (allowDecimalPlaces) {
+				Double.valueOf(value);
+			} else {
+				new BigInteger(value);
+			}
 			return value;
 		}
 	}
 
 	@Override
 	public void setValue(NumberInterval newFieldValue)
-			throws com.vaadin.v7.data.Property.ReadOnlyException, ConversionException {
+		throws com.vaadin.v7.data.Property.ReadOnlyException, ConversionException {
 		settingValue = true;
 		boolean nullValue = false;
 		if (newFieldValue == null || (newFieldValue.getEqualsValue() == null
-				&& newFieldValue.getGreaterThanValue() == null && newFieldValue.getLessThanValue() == null)) {
+			&& newFieldValue.getGreaterThanValue() == null && newFieldValue.getLessThanValue() == null)) {
 			nullValue = true;
 			newFieldValue = null;
 			gtInput.setEnabled(true);
@@ -195,7 +206,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 				content.setCaption(valueMarker + " = " + interval.getEqualsValue());
 			} else if (!interval.getGreaterThanValue().isEmpty() && !interval.getLessThanValue().isEmpty()) {
 				content.setCaption(
-						interval.getGreaterThanValue() + " < " + valueMarker + " < " + interval.getLessThanValue());
+					interval.getGreaterThanValue() + " < " + valueMarker + " < " + interval.getLessThanValue());
 			} else if (!interval.getGreaterThanValue().isEmpty()) {
 				content.setCaption(valueMarker + " > " + interval.getGreaterThanValue());
 			} else if (!interval.getLessThanValue().isEmpty()) {
