@@ -220,8 +220,8 @@ class FilterFieldGenerator implements Serializable {
 				return owner.getFilterGenerator().filterGeneratorFailed(reason, propertyId, value);
 			} else {
 				throw new RuntimeException(
-						"Creating a filter for property '" + propertyId + "' with value '" + value + "'has failed.",
-						reason);
+					"Creating a filter for property '" + propertyId + "' with value '" + value + "'has failed.",
+					reason);
 			}
 		}
 	}
@@ -243,7 +243,7 @@ class FilterFieldGenerator implements Serializable {
 	}
 
 	private Filter generateNumberFilter(Property<?> field, Object propertyId, Object value) throws SecurityException,
-			NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 		/* Handle number filtering */
 		NumberInterval interval = ((NumberFilterPopup) field).getValue();
 		if (interval == null) {
@@ -266,7 +266,7 @@ class FilterFieldGenerator implements Serializable {
 			return new Compare.Equal(propertyId, parseNumberValue(typeClass, eqValue));
 		} else if (!ltValue.isEmpty() && !gtValue.isEmpty()) {
 			return new And(new Compare.Less(propertyId, parseNumberValue(typeClass, ltValue)),
-					new Compare.Greater(propertyId, parseNumberValue(typeClass, gtValue)));
+				new Compare.Greater(propertyId, parseNumberValue(typeClass, gtValue)));
 		} else if (!ltValue.isEmpty()) {
 			return new Compare.Less(propertyId, parseNumberValue(typeClass, ltValue));
 		} else if (!gtValue.isEmpty()) {
@@ -371,10 +371,10 @@ class FilterFieldGenerator implements Serializable {
 			dfp.setImmediate(true);
 			return dfp;
 		} else if ((type == Integer.class || type == Long.class || type == Float.class || type == Double.class
-				|| type == Short.class || type == Byte.class || type == int.class || type == long.class
-				|| type == float.class || type == double.class || type == short.class || type == byte.class
-				|| type == BigDecimal.class || type == BigInteger.class) && owner.getFilterDecorator() != null
-				&& owner.getFilterDecorator().usePopupForNumericProperty(property)) {
+			|| type == Short.class || type == Byte.class || type == int.class || type == long.class
+			|| type == float.class || type == double.class || type == short.class || type == byte.class
+			|| type == BigDecimal.class || type == BigInteger.class) && owner.getFilterDecorator() != null
+			&& owner.getFilterDecorator().usePopupForNumericProperty(property)) {
 			NumberFilterPopup nfp = createNumericField(type, property);
 			nfp.setWidth(100, Unit.PERCENTAGE);
 			nfp.setImmediate(true);
@@ -475,6 +475,9 @@ class FilterFieldGenerator implements Serializable {
 
 	private NumberFilterPopup createNumericField(Class<?> type, Object propertyId) {
 		NumberFilterPopup numberFilterPopup = new NumberFilterPopup(owner.getFilterDecorator());
+		boolean typeHasDecimalPlaces = (type == float.class || type == Float.class || type == double.class
+			|| type == Double.class || type == BigDecimal.class);
+		numberFilterPopup.setDecimalPlacesAllowed(typeHasDecimalPlaces);
 		numbers.put(numberFilterPopup, propertyId);
 		return numberFilterPopup;
 	}
