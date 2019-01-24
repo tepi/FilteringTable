@@ -1,5 +1,7 @@
 package org.tepi.filtertable.numberfilter;
 
+import java.math.BigInteger;
+
 import org.tepi.filtertable.FilterDecorator;
 import org.vaadin.hene.popupbutton.PopupButton;
 
@@ -30,6 +32,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 	private boolean settingValue;
 	private String valueMarker;
 	private NumberInterval interval;
+	private boolean allowDecimalPlaces;
 
 	/* Input fields */
 	private TextField ltInput;
@@ -157,7 +160,11 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 		if (value == null || value.trim().isEmpty()) {
 			return "";
 		} else {
-			Double.valueOf(value);
+			if (allowDecimalPlaces) {
+				Double.valueOf(value);
+			} else {
+				new BigInteger(value);
+			}
 			return value;
 		}
 	}
@@ -189,7 +196,8 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 	private void updateCaption() {
 		if (interval == null) {
 			content.setCaption(decorator != null && decorator.getAllItemsVisibleString() != null
-					? decorator.getAllItemsVisibleString() : "");
+					? decorator.getAllItemsVisibleString()
+					: "");
 		} else {
 			if (!interval.getEqualsValue().isEmpty()) {
 				content.setCaption(valueMarker + " = " + interval.getEqualsValue());
@@ -289,5 +297,9 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 		ltInput.setEnabled(!readOnly);
 		gtInput.setEnabled(!readOnly);
 		eqInput.setEnabled(!readOnly);
+	}
+
+	public void setDecimalPlacesAllowed(boolean allowDecimalPlaces) {
+		this.allowDecimalPlaces = allowDecimalPlaces;
 	}
 }

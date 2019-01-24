@@ -475,6 +475,9 @@ class FilterFieldGenerator implements Serializable {
 
 	private NumberFilterPopup createNumericField(Class<?> type, Object propertyId) {
 		NumberFilterPopup numberFilterPopup = new NumberFilterPopup(owner.getFilterDecorator());
+		boolean typeHasDecimalPlaces = (type == float.class || type == Float.class || type == double.class
+				|| type == Double.class || type == BigDecimal.class);
+		numberFilterPopup.setDecimalPlacesAllowed(typeHasDecimalPlaces);
 		numbers.put(numberFilterPopup, propertyId);
 		return numberFilterPopup;
 	}

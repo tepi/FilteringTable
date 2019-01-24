@@ -222,6 +222,8 @@ public class FilterTableDemoUI extends UI {
 
 		filterTable.setContainerDataSource(buildContainer());
 
+		filterTable.setPageLength(10);
+		
 		// filterTable.setColumnCollapsed("state", true);
 
 		filterTable
