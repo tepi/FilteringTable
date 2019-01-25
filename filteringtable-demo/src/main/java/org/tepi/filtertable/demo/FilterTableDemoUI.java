@@ -149,7 +149,7 @@ public class FilterTableDemoUI extends UI {
 		// filterTable.setColumnCollapsed("state", true);
 
 		filterTable
-				.setVisibleColumns((Object[]) new String[] { "name", "id", "state", "date", "validated", "checked" });
+				.setVisibleColumns((Object[]) new String[] { "name", "id", "state", "date", "validated", "checked", "comp" });
 
 		filterTable
 				.setItemDescriptionGenerator((source, itemId, propertyId) -> "Just testing ItemDescriptionGenerator");
@@ -180,7 +180,7 @@ public class FilterTableDemoUI extends UI {
 		// filterTable.setColumnCollapsed("state", true);
 
 		filterTable
-				.setVisibleColumns((Object[]) new String[] { "name", "id", "state", "date", "validated", "checked" });
+				.setVisibleColumns((Object[]) new String[] { "name", "id", "state", "date", "validated", "checked", "comp" });
 
 		filterTable
 				.setItemDescriptionGenerator((source, itemId, propertyId) -> "Just testing ItemDescriptionGenerator");
@@ -416,6 +416,7 @@ public class FilterTableDemoUI extends UI {
 		cont.addContainerProperty("date", Timestamp.class, null);
 		cont.addContainerProperty("validated", Boolean.class, null);
 		cont.addContainerProperty("checked", Boolean.class, null);
+		cont.addContainerProperty("comp", Component.class, null);
 
 		Random random = new Random();
 		for (int i = 0; i < 10000; i++) {
@@ -441,6 +442,7 @@ public class FilterTableDemoUI extends UI {
 			cont.getContainerProperty(i, "validated").setValue(random.nextBoolean());
 			/* Set checked property */
 			cont.getContainerProperty(i, "checked").setValue(random.nextBoolean());
+			cont.getContainerProperty(i, "comp").setValue(new CheckBox());
 		}
 		return cont;
 	}
