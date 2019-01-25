@@ -567,7 +567,7 @@ class FilterFieldGenerator implements Serializable {
 
 	public void runFiltersNow() {
 		owner.setRefreshingEnabled(false);
-		if (owner.getFilterable() != null) {
+		if (owner.getFilterable() != null && lastOnDemandFilter != null) {
 			owner.getFilterable().removeContainerFilter(lastOnDemandFilter);
 		}
 		List<Filter> filters = new ArrayList<Filter>();
@@ -591,8 +591,8 @@ class FilterFieldGenerator implements Serializable {
 		}
 
 		Filter[] filtersArray = filters.toArray(new Filter[0]);
-		lastOnDemandFilter = new And(filtersArray);
-		if (owner.getFilterable() != null) {
+		lastOnDemandFilter = filters.isEmpty() ? null : new And(filtersArray);
+		if (owner.getFilterable() != null && lastOnDemandFilter != null) {
 			owner.getFilterable().addContainerFilter(lastOnDemandFilter);
 		}
 		owner.setRefreshingEnabled(true);
