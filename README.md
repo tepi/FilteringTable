@@ -6,7 +6,7 @@ FilteringTable
 
 FilterTable is an extension of the Table component in Vaadin. FilterTable is available for Vaadin 6, Vaadin 7 (versions postfixed with '.v7') and Vaadin 8 (versions postfixed with '.v8'). 
 
-#####Added features: 
+##### Added features: 
 * Provides automatically generated filter components between the table header and body 
 * Automatically filters enum, boolean and date properties 
 * Other properties are filtered as a string 
@@ -16,28 +16,14 @@ FilterTable is an extension of the Table component in Vaadin. FilterTable is ava
 * Provides integration of PagedTable add-on with the filter bar 
 * Provides integration of TreeTable with the filter bar 
 
-**NOTE: The V6 version of FT requires Vaadin 6.8.7 or later, starting from FT version 0.8.4.**
-
-**NOTE: The V7 version of FT requires Vaadin 7.0.1 or later, starting from FT version 0.8.4.v7.** 
-
-**NOTE: The V7 version of FT requires Vaadin 7.1.0 or later, starting from FT version 0.9.0.v7.**
-
-**NOTE: The V7 version of FT requires Vaadin 7.2.0 or later, starting from FT version 0.9.9.v7.**
-
-**NOTE: The V7 version of FT requires Vaadin 7.3.0 or later, starting from FT version 0.9.11.v7.**
-
-**NOTE: The V7 version of FT requires Vaadin 7.6.0 or later, starting from FT version 0.9.14.v7.**
-
-**NOTE: The V8 version of FT requires Vaadin 8.0.0 or later and it uses the Vaadin 7 compatibility packages.**
-
-##Please always use the latest version of FilteringTable add-on. Bugfixes will only be done for the latest versions of each branch, and the Vaadin 8 version has priority.
+## Please always use the latest version of FilteringTable add-on. Bugfixes will only be done for the latest versions of each branch, and the Vaadin 8 version has priority. The Vaadin 6 version will no longer receive any fixes.
 
 A big thanks goes to the numerous contributors providing ideas, bug fixes and new features for FilteringTable.
 
 License
 =======
 
-Copyright 2012 - 2017 Teppo Kurki / Vaadin Ltd.
+Copyright 2012 - 2019 Teppo Kurki / Vaadin Ltd.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
