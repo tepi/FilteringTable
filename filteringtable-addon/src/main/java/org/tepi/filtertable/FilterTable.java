@@ -75,9 +75,6 @@ public class FilterTable extends Table implements IFilterTable {
 			java.lang.reflect.Field field = com.vaadin.v7.ui.Table.class.getDeclaredField("columnIdMap");
 			field.setAccessible(true);
 			_columnIdMap = (KeyMapper<Object>) field.get(this);
-			field = com.vaadin.v7.ui.Table.class.getDeclaredField("visibleComponents");
-			field.setAccessible(true);
-			_visibleComponents = (HashSet<Component>) field.get(this);
 		} catch (Exception exception) {
 			throw new IllegalArgumentException("Unable to get columnIdMap or visibleComponents", exception);
 		}
@@ -85,6 +82,21 @@ public class FilterTable extends Table implements IFilterTable {
 		initDone = true;
 	}
 
+	@Override
+	protected void refreshRenderedCells() {
+		super.refreshRenderedCells();
+
+		// NOTE: 'visibleComponents' HashSet is (re)created by method  getVisibleCellsNoCache(...)
+		//       But only when method  refreshRenderedCells()  calls it.
+		try {
+			java.lang.reflect.Field field = com.vaadin.v7.ui.Table.class.getDeclaredField("visibleComponents");
+			field.setAccessible(true);
+			_visibleComponents = (HashSet<Component>) field.get(this);
+		} catch (Exception exception) {
+			throw new IllegalArgumentException("Unable to get visibleComponents", exception);
+		}
+	}
+	
 	@Override
 	public void paintContent(PaintTarget target) throws PaintException {
 		super.paintContent(target);
@@ -363,7 +375,7 @@ public class FilterTable extends Table implements IFilterTable {
 			/* Set this as parent to visible columns */
 			for (Object key : visibleColumns) {
 				Component filter = columnIdToFilterMap.get(key);
-				if (filter != null) {
+				if (filter != null && isFilterBarVisible()) {
 					filter.setParent(this);
 				}
 			}
