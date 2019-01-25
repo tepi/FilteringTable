@@ -8,17 +8,17 @@ import java.util.Locale;
 
 import org.tepi.filtertable.FilterTable;
 
-import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.themes.ValoTheme;
-import com.vaadin.v7.data.Container;
-import com.vaadin.v7.data.util.converter.StringToIntegerConverter;
-import com.vaadin.v7.ui.ComboBox;
-import com.vaadin.v7.ui.TextField;
+import com.vaadin.data.Container;
+import com.vaadin.data.util.converter.StringToIntegerConverter;
+import com.vaadin.shared.ui.label.ContentMode;
+import com.vaadin.ui.ComboBox;
+import com.vaadin.ui.TextField;
 
 @SuppressWarnings({ "serial", "deprecation" })
 public class PagedFilterTable<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>

@@ -6,9 +6,9 @@ import java.util.Locale;
 import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
 import com.vaadin.server.Resource;
-import com.vaadin.v7.shared.ui.datefield.Resolution;
-import com.vaadin.v7.ui.AbstractTextField.TextChangeEventMode;
-import com.vaadin.v7.ui.DateField;
+import com.vaadin.shared.ui.datefield.Resolution;
+import com.vaadin.ui.AbstractTextField.TextChangeEventMode;
+import com.vaadin.ui.DateField;
 
 /**
  * Interface for decorating the UI of the filter components contained in

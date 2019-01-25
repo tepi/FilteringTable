@@ -4,10 +4,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import com.vaadin.v7.data.Container;
-import com.vaadin.v7.data.Item;
-import com.vaadin.v7.data.Property;
-import com.vaadin.v7.data.util.filter.UnsupportedFilterException;
+import com.vaadin.data.Container;
+import com.vaadin.data.Item;
+import com.vaadin.data.Property;
+import com.vaadin.data.util.filter.UnsupportedFilterException;
 
 @SuppressWarnings({ "deprecation" })
 public class PagedFilterTableContainer<T extends Container.Indexed & Container.Filterable & Container.ItemSetChangeNotifier>

@@ -13,8 +13,8 @@ import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.client.MeasuredSize;
 import com.vaadin.client.ValueMap;
 import com.vaadin.client.WidgetUtil;
-import com.vaadin.v7.client.ui.VScrollTable;
-import com.vaadin.v7.client.ui.VScrollTable.VScrollTableBody.VScrollTableRow;
+import com.vaadin.client.ui.VScrollTable;
+import com.vaadin.client.ui.VScrollTable.VScrollTableBody.VScrollTableRow;
 
 /**
  * VFilterTable.

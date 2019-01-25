@@ -11,7 +11,7 @@ import com.vaadin.client.ApplicationConnection;
 import com.vaadin.client.ComponentConnector;
 import com.vaadin.client.UIDL;
 import com.vaadin.shared.ui.Connect;
-import com.vaadin.v7.client.ui.treetable.TreeTableConnector;
+import com.vaadin.client.ui.treetable.TreeTableConnector;
 
 /**
  * Class FilterTableConnector.

@@ -5,18 +5,18 @@ import java.math.BigInteger;
 import org.tepi.filtertable.FilterDecorator;
 import org.vaadin.hene.popupbutton.PopupButton;
 
+import com.vaadin.data.util.converter.Converter.ConversionException;
 import com.vaadin.server.UserError;
-import com.vaadin.shared.ui.ValueChangeMode;
+import com.vaadin.ui.AbstractTextField.TextChangeEventMode;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Component;
+import com.vaadin.ui.CustomField;
 import com.vaadin.ui.GridLayout;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.TextField;
-import com.vaadin.v7.data.util.converter.Converter.ConversionException;
-import com.vaadin.v7.ui.CustomField;
 
 /**
  * Produces the number filter popup for the table
@@ -93,7 +93,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 
 		// disable gt and lt fields when this activates
 		eqInput.addValueChangeListener(e -> {
-			if (e.getValue().equals("")) {
+			if (e.getProperty().getValue().equals("")) {
 				gtInput.setEnabled(true);
 				ltInput.setEnabled(true);
 			} else {
@@ -101,7 +101,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 				ltInput.setEnabled(false);
 			}
 		});
-		eqInput.setValueChangeMode(ValueChangeMode.EAGER);
+		eqInput.setTextChangeEventMode(TextChangeEventMode.EAGER);
 
 		ok = new Button(DEFAULT_OK_CAPTION, (ClickListener) event -> {
 			String errorMsg = "Please enter a valid number";
@@ -171,7 +171,7 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 
 	@Override
 	public void setValue(NumberInterval newFieldValue)
-			throws com.vaadin.v7.data.Property.ReadOnlyException, ConversionException {
+			throws com.vaadin.data.Property.ReadOnlyException, ConversionException {
 		settingValue = true;
 		boolean nullValue = false;
 		if (newFieldValue == null || (newFieldValue.getEqualsValue() == null
@@ -250,9 +250,9 @@ public class NumberFilterPopup extends CustomField<NumberInterval> {
 			}
 		}
 
-		gtInput.setPlaceholder(gtP);
-		ltInput.setPlaceholder(ltP);
-		eqInput.setPlaceholder(eqP);
+		gtInput.setInputPrompt(gtP);
+		ltInput.setInputPrompt(ltP);
+		eqInput.setInputPrompt(eqP);
 		this.ok.setCaption(ok);
 		this.reset.setCaption(reset);
 	}

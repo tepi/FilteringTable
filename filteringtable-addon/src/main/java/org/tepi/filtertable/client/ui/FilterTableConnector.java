@@ -12,7 +12,7 @@ import com.vaadin.client.ComponentConnector;
 import com.vaadin.client.UIDL;
 import com.vaadin.client.ValueMap;
 import com.vaadin.shared.ui.Connect;
-import com.vaadin.v7.client.ui.table.TableConnector;
+import com.vaadin.client.ui.table.TableConnector;
 
 /**
  * Class FilterTableConnector.

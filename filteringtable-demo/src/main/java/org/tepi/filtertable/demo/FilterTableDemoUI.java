@@ -32,14 +32,14 @@ import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.ValoTheme;
-import com.vaadin.v7.data.Container;
-import com.vaadin.v7.data.Container.Filter;
-import com.vaadin.v7.data.Container.Filterable;
-import com.vaadin.v7.data.Item;
-import com.vaadin.v7.data.util.HierarchicalContainer;
-import com.vaadin.v7.data.util.IndexedContainer;
-import com.vaadin.v7.ui.Table;
-import com.vaadin.v7.ui.Table.RowHeaderMode;
+import com.vaadin.data.Container;
+import com.vaadin.data.Container.Filter;
+import com.vaadin.data.Container.Filterable;
+import com.vaadin.data.Item;
+import com.vaadin.data.util.HierarchicalContainer;
+import com.vaadin.data.util.IndexedContainer;
+import com.vaadin.ui.Table;
+import com.vaadin.ui.Table.RowHeaderMode;
 
 @SuppressWarnings("serial")
 @Title("FilterTable Demo Application")
@@ -298,7 +298,7 @@ public class FilterTableDemoUI extends UI {
 
 		CheckBox showFilters = new CheckBox("Toggle Filter Bar visibility");
 		showFilters.setValue(relatedFilterTable.isFilterBarVisible());
-		showFilters.addValueChangeListener(event -> relatedFilterTable.setFilterBarVisible((Boolean) event.getValue()));
+		showFilters.addValueChangeListener(event -> relatedFilterTable.setFilterBarVisible((Boolean) event.getProperty().getValue()));
 		buttonLayout.addComponent(showFilters);
 		buttonLayout.setComponentAlignment(showFilters, Alignment.MIDDLE_RIGHT);
 		buttonLayout.setExpandRatio(showFilters, 1);
@@ -316,7 +316,7 @@ public class FilterTableDemoUI extends UI {
 		runOnDemand.setValue(relatedFilterTable.isFilterOnDemand());
 		runNow.setEnabled(relatedFilterTable.isFilterOnDemand());
 		runOnDemand.addValueChangeListener(event -> {
-			boolean value = event.getValue();
+			boolean value = (boolean) event.getProperty().getValue();
 			relatedFilterTable.setFilterOnDemand(value);
 			runNow.setEnabled(value);
 		});
@@ -358,14 +358,14 @@ public class FilterTableDemoUI extends UI {
 
 		CheckBox showFilters = new CheckBox("Toggle Filter Bar visibility");
 		showFilters.setValue(relatedFilterTable.isFilterBarVisible());
-		showFilters.addValueChangeListener(event -> relatedFilterTable.setFilterBarVisible(event.getValue()));
+		showFilters.addValueChangeListener(event -> relatedFilterTable.setFilterBarVisible((boolean) event.getProperty().getValue()));
 		buttonLayout.addComponent(showFilters);
 		buttonLayout.setComponentAlignment(showFilters, Alignment.MIDDLE_RIGHT);
 		buttonLayout.setExpandRatio(showFilters, 1);
 
 		CheckBox wrapFilters = new CheckBox("Wrap Filter Fields");
 		wrapFilters.setValue(relatedFilterTable.isWrapFilters());
-		wrapFilters.addValueChangeListener(event -> relatedFilterTable.setWrapFilters(event.getValue()));
+		wrapFilters.addValueChangeListener(event -> relatedFilterTable.setWrapFilters((boolean) event.getProperty().getValue()));
 		buttonLayout.addComponent(wrapFilters);
 		buttonLayout.setComponentAlignment(wrapFilters, Alignment.MIDDLE_RIGHT);
 
@@ -382,7 +382,7 @@ public class FilterTableDemoUI extends UI {
 		runOnDemand.setValue(relatedFilterTable.isFilterOnDemand());
 		runNow.setEnabled(relatedFilterTable.isFilterOnDemand());
 		runOnDemand.addValueChangeListener(event -> {
-			boolean value = event.getValue();
+			boolean value = (boolean) event.getProperty().getValue();
 			relatedFilterTable.setFilterOnDemand(value);
 			runNow.setEnabled(value);
 		});

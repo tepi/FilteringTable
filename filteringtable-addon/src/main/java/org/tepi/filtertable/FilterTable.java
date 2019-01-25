@@ -17,11 +17,11 @@ import com.vaadin.server.PaintException;
 import com.vaadin.server.PaintTarget;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.HasComponents;
-import com.vaadin.v7.data.Container;
-import com.vaadin.v7.data.util.converter.Converter.ConversionException;
-import com.vaadin.v7.ui.AbstractField;
-import com.vaadin.v7.ui.Table;
-import com.vaadin.v7.ui.TextField;
+import com.vaadin.data.Container;
+import com.vaadin.data.util.converter.Converter.ConversionException;
+import com.vaadin.ui.AbstractField;
+import com.vaadin.ui.Table;
+import com.vaadin.ui.TextField;
 
 /**
  * FilterTable is an extension of the Vaadin Table component that provides
@@ -72,7 +72,7 @@ public class FilterTable extends Table implements IFilterTable {
 	public FilterTable(String caption) {
 		super(caption);
 		try {
-			java.lang.reflect.Field field = com.vaadin.v7.ui.Table.class.getDeclaredField("columnIdMap");
+			java.lang.reflect.Field field = com.vaadin.ui.Table.class.getDeclaredField("columnIdMap");
 			field.setAccessible(true);
 			_columnIdMap = (KeyMapper<Object>) field.get(this);
 		} catch (Exception exception) {
@@ -89,7 +89,7 @@ public class FilterTable extends Table implements IFilterTable {
 		// NOTE: 'visibleComponents' HashSet is (re)created by method  getVisibleCellsNoCache(...)
 		//       But only when method  refreshRenderedCells()  calls it.
 		try {
-			java.lang.reflect.Field field = com.vaadin.v7.ui.Table.class.getDeclaredField("visibleComponents");
+			java.lang.reflect.Field field = com.vaadin.ui.Table.class.getDeclaredField("visibleComponents");
 			field.setAccessible(true);
 			_visibleComponents = (HashSet<Component>) field.get(this);
 		} catch (Exception exception) {

@@ -10,7 +10,7 @@ import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 
 import com.vaadin.server.FontAwesome;
 import com.vaadin.server.Resource;
-import com.vaadin.v7.shared.ui.datefield.Resolution;
+import com.vaadin.shared.ui.datefield.Resolution;
 
 @SuppressWarnings("serial")
 class DemoFilterDecorator implements FilterDecorator, Serializable {

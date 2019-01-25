@@ -15,11 +15,11 @@ import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.v7.data.util.converter.Converter.ConversionException;
-import com.vaadin.v7.shared.ui.datefield.Resolution;
-import com.vaadin.v7.ui.CustomField;
-import com.vaadin.v7.ui.DateField;
-import com.vaadin.v7.ui.InlineDateField;
+import com.vaadin.data.util.converter.Converter.ConversionException;
+import com.vaadin.shared.ui.datefield.Resolution;
+import com.vaadin.ui.CustomField;
+import com.vaadin.ui.DateField;
+import com.vaadin.ui.InlineDateField;
 
 /**
  * Extension of PopupButton used to implement filter UI for Date properties.
@@ -64,7 +64,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
 
 	@Override
 	public void setValue(DateInterval newFieldValue)
-			throws com.vaadin.v7.data.Property.ReadOnlyException, ConversionException {
+			throws com.vaadin.data.Property.ReadOnlyException, ConversionException {
 		if (newFieldValue == null) {
 			newFieldValue = new DateInterval(null, null);
 		}
