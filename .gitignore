@@ -3,3 +3,4 @@ target/
 .project
 .classpath
 .DS_Store
+**/rebel.xml
