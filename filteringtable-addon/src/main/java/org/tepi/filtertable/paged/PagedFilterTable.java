@@ -299,4 +299,10 @@ public class PagedFilterTable<T extends Container.Indexed & Container.Filterable
 		super.resetFilters();
 		setCurrentPage(1);
 	}
+	
+	@Override
+	public void runFilters() {
+		super.runFilters();
+		setCurrentPage(1);
+	}
 }
