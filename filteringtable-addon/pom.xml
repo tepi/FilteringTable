@@ -5,7 +5,7 @@
 	<groupId>org.tepi.filtertable</groupId>
 	<artifactId>filteringtable</artifactId>
 	<packaging>jar</packaging>
-	<version>1.0.1.v8</version>
+	<version>1.0.2.v8</version>
 	<name>FilteringTable</name>
 
 	<prerequisites>
