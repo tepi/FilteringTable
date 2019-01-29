@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import org.tepi.filtertable.FilterFieldGenerator.IFilterTable;
 import org.tepi.filtertable.client.ui.FilterTableConnector;
@@ -54,6 +55,8 @@ public class FilterTable extends Table implements IFilterTable {
 	/* Fields from Table accessed via reflection */
 	private KeyMapper<Object> _columnIdMap;
 	private HashSet<Component> _visibleComponents;
+	/* Timezone for date filters */
+	private TimeZone timeZone;
 
 	/**
 	 * Creates a new empty FilterTable
@@ -509,5 +512,22 @@ public class FilterTable extends Table implements IFilterTable {
 			return null;
 		}
 		return columnHeaderStylenames.get(propertyId);
+	}
+	
+	/**
+	 * Get TimeZone, used for Date filters
+	 * @return TimeZone of FilterTable
+	 */
+	public TimeZone getTimeZone() {
+	        return timeZone;
+	}
+
+	/**
+	 * Set TimeZone, used for Date filters
+	 * @param timeZone TimeZone of FilterTable
+	 */
+	public void setTimeZone(TimeZone timeZone) {
+	        this.timeZone = timeZone;
+	        generator.setTimeZone(timeZone);
 	}
 }

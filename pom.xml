@@ -5,7 +5,7 @@
 	<groupId>org.tepi.filteringtable</groupId>
 	<artifactId>filteringtable-root</artifactId>
 	<packaging>pom</packaging>
-	<version>1.0.1.v8</version>
+	<version>1.0.2.v8</version>
 	<name>FilteringTable Add-on Root Project</name>
 
 	<prerequisites>

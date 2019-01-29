@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import org.tepi.filtertable.FilterDecorator;
 import org.vaadin.hene.popupbutton.PopupButton;
@@ -40,6 +41,7 @@ public class DateFilterPopup extends CustomField<DateInterval> {
 	protected Button set, clear;
 	private final Object propertyId;
 	private String dateFormatPattern;
+	private TimeZone timeZone;
 
 	private static final String DEFAULT_FROM_CAPTION = "From";
 	private static final String DEFAULT_TO_CAPTION = "To";
@@ -182,6 +184,9 @@ public class DateFilterPopup extends CustomField<DateInterval> {
 			}
 		} else {
 			SimpleDateFormat sdf = new SimpleDateFormat(dateFormatPattern);
+			if (timeZone != null) {
+				sdf.setTimeZone(timeZone);
+			}
 			content.setCaption((fromField.getValue() == null ? "" : sdf.format(fromField.getValue())) + " - "
 					+ (toField.getValue() == null ? "" : sdf.format(toField.getValue())));
 		}
@@ -278,5 +283,17 @@ public class DateFilterPopup extends CustomField<DateInterval> {
 		clear.setEnabled(!readOnly);
 		fromField.setEnabled(!readOnly);
 		toField.setEnabled(!readOnly);
+	}
+	
+	public TimeZone getTimeZone() {
+		return timeZone;
+	}
+
+	public void setTimeZone(TimeZone timeZone) {
+		this.timeZone = timeZone;
+		if (timeZone != null) {
+			fromField.setTimeZone(timeZone);
+			toField.setTimeZone(timeZone);
+		}
 	}
 }
